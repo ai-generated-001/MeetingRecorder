@@ -1,0 +1,93 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+      - 'V*'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and package
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore MeetingRecorder.slnx
+
+      - name: Build
+        run: dotnet build MeetingRecorder.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test MeetingRecorder.slnx -c Release --no-build --verbosity normal
+
+      - name: Publish win-x64
+        run: dotnet publish MeetingRecorder/MeetingRecorder.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o artifacts/publish/win-x64
+
+      - name: Create zip package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          $zipName = "MeetingRecorder-${{ github.ref_name }}-win-x64.zip"
+          Compress-Archive -Path artifacts/publish/win-x64/* -DestinationPath "artifacts/$zipName" -Force
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: MeetingRecorder-${{ github.ref_name }}-win-x64
+          path: artifacts/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    runs-on: windows-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish win-x64
+        run: dotnet publish MeetingRecorder/MeetingRecorder.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o artifacts/publish/win-x64
+
+      - name: Create zip package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          $zipName = "MeetingRecorder-${{ github.ref_name }}-win-x64.zip"
+          Compress-Archive -Path artifacts/publish/win-x64/* -DestinationPath "artifacts/$zipName" -Force
+
+      - name: Create or update GitHub release asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $asset = "artifacts/MeetingRecorder-$tag-win-x64.zip"
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $asset --clobber
+          } else {
+            gh release create $tag $asset --title $tag --notes "Automated release for $tag"
+          }
