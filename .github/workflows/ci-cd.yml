@@ -10,6 +10,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build and package
@@ -40,13 +43,13 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path artifacts -Force | Out-Null
-          $zipName = "MeetingRecorder-${{ github.ref_name }}-win-x64.zip"
+          $zipName = "MeetingRecorder-win-x64.zip"
           Compress-Archive -Path artifacts/publish/win-x64/* -DestinationPath "artifacts/$zipName" -Force
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: MeetingRecorder-${{ github.ref_name }}-win-x64
+          name: MeetingRecorder-${{ github.run_id }}-win-x64
           path: artifacts/*.zip
           if-no-files-found: error
 
@@ -59,23 +62,11 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4.2.2
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v5.0.0
+      - name: Download packaged artifact
+        uses: actions/download-artifact@v4.1.8
         with:
-          dotnet-version: '10.0.x'
-
-      - name: Publish win-x64
-        run: dotnet publish MeetingRecorder/MeetingRecorder.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o artifacts/publish/win-x64
-
-      - name: Create zip package
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
-          $zipName = "MeetingRecorder-${{ github.ref_name }}-win-x64.zip"
-          Compress-Archive -Path artifacts/publish/win-x64/* -DestinationPath "artifacts/$zipName" -Force
+          name: MeetingRecorder-${{ github.run_id }}-win-x64
+          path: artifacts
 
       - name: Create or update GitHub release asset
         shell: pwsh
@@ -83,7 +74,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "${{ github.ref_name }}"
+          $source = "artifacts/MeetingRecorder-win-x64.zip"
           $asset = "artifacts/MeetingRecorder-$tag-win-x64.zip"
+          Copy-Item $source $asset -Force
 
           gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) {
