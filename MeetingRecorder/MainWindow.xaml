@@ -1,0 +1,27 @@
+<Window x:Class="MeetingRecorder.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:MeetingRecorder.Models"
+        Title="Automated Meeting Recorder" Height="230" Width="400"
+        WindowStartupLocation="CenterScreen"
+        DataContext="{StaticResource MainViewModel}">
+    <Grid Margin="20">
+        <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="Meeting Recorder Status:" FontWeight="Bold" Margin="0,0,0,10"/>
+            <TextBlock Text="{Binding StatusText}" FontSize="18" Foreground="DarkBlue" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
+                <TextBlock Text="Output format:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <RadioButton Content="MP3" VerticalAlignment="Center" Margin="0,0,10,0"
+                             IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Mp3}}"/>
+                <RadioButton Content="WAV" VerticalAlignment="Center"
+                             IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Wav}}"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="Open Recordings Folder" Command="{Binding OpenFolderCommand}" Margin="5" Padding="10,5"/>
+                <Button Content="Exit" Command="{Binding ExitCommand}" Margin="5" Padding="10,5"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
