@@ -18,8 +18,9 @@ public class AudioSessionDetector : IDisposable
     private bool _isMeetingActive;
     private DateTime? _lastActiveTime;
     private readonly CancellationTokenSource _cts = new();
+    private MeetingDetectedEventArgs? _currentMeeting;
 
-    public event EventHandler? MeetingStarted;
+    public event EventHandler<MeetingDetectedEventArgs>? MeetingStarted;
     public event EventHandler? MeetingEnded;
 
     public AudioSessionDetector(AppSettings settings)
@@ -54,6 +55,7 @@ public class AudioSessionDetector : IDisposable
     private void CheckAudioSessions()
     {
         bool anyWhitelistedActive = false;
+        MeetingDetectedEventArgs? detectedMeeting = null;
 
         using var device = _deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
         var sessionManager = device.AudioSessionManager;
@@ -75,6 +77,7 @@ public class AudioSessionDetector : IDisposable
                         if (_whitelistedProcesses.Contains(processName))
                         {
                             anyWhitelistedActive = true;
+                            detectedMeeting = new MeetingDetectedEventArgs(processName, process.MainWindowTitle);
                             session.Dispose();
                             break;
                         }
@@ -87,7 +90,7 @@ public class AudioSessionDetector : IDisposable
             }
             session.Dispose();
         }
-        
+
         // Note: sessions and sessionManager in NAudio 2.x don't implement IDisposable
         // but individual sessions do.
 
@@ -97,7 +100,8 @@ public class AudioSessionDetector : IDisposable
             if (!_isMeetingActive)
             {
                 _isMeetingActive = true;
-                MeetingStarted?.Invoke(this, EventArgs.Empty);
+                _currentMeeting = detectedMeeting;
+                MeetingStarted?.Invoke(this, _currentMeeting ?? new MeetingDetectedEventArgs("Meeting", null));
             }
         }
         else
@@ -107,6 +111,7 @@ public class AudioSessionDetector : IDisposable
                 if (_lastActiveTime.HasValue && (DateTime.UtcNow - _lastActiveTime.Value).TotalSeconds >= _settings.DebounceSeconds)
                 {
                     _isMeetingActive = false;
+                    _currentMeeting = null;
                     MeetingEnded?.Invoke(this, EventArgs.Empty);
                 }
             }
