@@ -125,7 +125,13 @@ public class WasapiRecorder : IDisposable
 
         while (!token.IsCancellationRequested && _isRecording)
         {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
+            long loopStart = Environment.TickCount64;
+
+            if ((_loopbackBuffer?.BufferedBytes ?? 0) == 0 && (_micBuffer?.BufferedBytes ?? 0) == 0)
+            {
+                Thread.Sleep(ChunkMs);
+                continue;
+            }
 
             int samplesRead = _mixer!.Read(buffer, 0, buffer.Length);
             if (samplesRead > 0)
@@ -136,7 +142,7 @@ public class WasapiRecorder : IDisposable
                     for (int i = 0; i < samplesRead; i++)
                     {
                         short s = (short)Math.Clamp((int)(buffer[i] * 32767f), short.MinValue, short.MaxValue);
-                        pcmBuffer[i * 2]     = (byte)(s & 0xFF);
+                        pcmBuffer[i * 2] = (byte)(s & 0xFF);
                         pcmBuffer[i * 2 + 1] = (byte)(s >> 8);
                     }
                     _mp3Writer!.Write(pcmBuffer, 0, samplesRead * 2);
@@ -147,8 +153,8 @@ public class WasapiRecorder : IDisposable
                 }
             }
 
-            // Pace the loop to real-time so silence is not written at CPU speed
-            int sleepMs = ChunkMs - (int)sw.ElapsedMilliseconds;
+            int elapsedMs = (int)(Environment.TickCount64 - loopStart);
+            int sleepMs = ChunkMs - elapsedMs;
             if (sleepMs > 0)
                 Thread.Sleep(sleepMs);
         }

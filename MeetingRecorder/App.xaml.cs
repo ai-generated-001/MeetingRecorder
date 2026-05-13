@@ -18,15 +18,30 @@ public partial class App : Application
         _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
         _notifyIcon.Icon = SystemIcons.Application;
         _notifyIcon.ForceCreate();
+
+        ShowMainWindow();
     }
 
     private void Show_Click(object sender, RoutedEventArgs e)
+    {
+        ShowMainWindow();
+    }
+
+    private void ShowMainWindow()
     {
         var mainWindow = MainWindow as MainWindow;
         if (mainWindow == null)
         {
             mainWindow = new MainWindow();
+            MainWindow = mainWindow;
         }
+
+        const double margin = 16;
+        var workArea = SystemParameters.WorkArea;
+        mainWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+        mainWindow.Left = workArea.Right - mainWindow.Width - margin;
+        mainWindow.Top = workArea.Bottom - mainWindow.Height - margin;
+
         mainWindow.Show();
         mainWindow.Activate();
     }
