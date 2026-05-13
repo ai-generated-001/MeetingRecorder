@@ -1,85 +1,113 @@
-name: CI/CD
+name: CI and Release
 
 on:
   push:
-    branches:
-      - '**'
-    tags:
-      - 'v*'
-      - 'V*'
+    branches: ["master", "main"]
+    tags: ["*"]
   pull_request:
+    branches: ["master", "main"]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
-    name: Build and package
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      assembly_version: ${{ steps.version.outputs.assembly_version }}
+      artifact_name: ${{ steps.package.outputs.artifact_name }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v5.0.0
+        uses: actions/checkout@v4
         with:
-          dotnet-version: '10.0.x'
+          fetch-depth: 0
 
-      - name: Restore
-        run: dotnet restore MeetingRecorder.slnx
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
 
-      - name: Build
-        run: dotnet build MeetingRecorder.slnx -c Release --no-restore
-
-      - name: Test
-        run: dotnet test MeetingRecorder.slnx -c Release --no-build --verbosity normal
-
-      - name: Publish win-x64
-        run: dotnet publish MeetingRecorder/MeetingRecorder.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o artifacts/publish/win-x64
-
-      - name: Create zip package
+      - name: Resolve version
+        id: version
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
-          $zipName = "MeetingRecorder-win-x64.zip"
-          Compress-Archive -Path artifacts/publish/win-x64/* -DestinationPath "artifacts/$zipName" -Force
+          if ($env:GITHUB_REF -like 'refs/tags/*') {
+            $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          }
+          else {
+            $shortSha = $env:GITHUB_SHA.Substring(0, 7)
+            $version = "0.0.0-ci.$env:GITHUB_RUN_NUMBER+$shortSha"
+          }
+
+          if ($version -match '^(\d+)\.(\d+)\.(\d+)') {
+            $assemblyVersion = "$($Matches[1]).$($Matches[2]).$($Matches[3]).0"
+          }
+          else {
+            $assemblyVersion = '1.0.0.0'
+          }
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "assembly_version=$assemblyVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Restore
+        run: dotnet restore MeetingRecorder/MeetingRecorder.csproj
+
+      - name: Build
+        run: >
+          dotnet build MeetingRecorder/MeetingRecorder.csproj
+          -c Release
+          --no-restore
+          -p:Version=${{ steps.version.outputs.version }}
+          -p:FileVersion=${{ steps.version.outputs.assembly_version }}
+          -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }}
+
+      - name: Publish win-x64
+        run: >
+          dotnet publish MeetingRecorder/MeetingRecorder.csproj
+          -c Release
+          -r win-x64
+          --self-contained false
+          --no-build
+          -p:Version=${{ steps.version.outputs.version }}
+          -p:FileVersion=${{ steps.version.outputs.assembly_version }}
+          -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }}
+          -o publish/win-x64
+
+      - name: Package artifact
+        id: package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $artifactName = "MeetingRecorder-win-x64-v${{ steps.version.outputs.version }}.zip"
+          Compress-Archive -Path publish/win-x64/* -DestinationPath "artifacts/$artifactName" -Force
+          "artifact_name=$artifactName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v4
         with:
-          name: MeetingRecorder-${{ github.run_id }}-win-x64
+          name: release-bundle
           path: artifacts/*.zip
           if-no-files-found: error
 
   release:
-    name: Publish GitHub Release
-    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/')
     needs: build
-    permissions:
-      contents: write
+    runs-on: ubuntu-latest
 
     steps:
       - name: Download packaged artifact
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v4
         with:
-          name: MeetingRecorder-${{ github.run_id }}-win-x64
+          name: release-bundle
           path: artifacts
 
-      - name: Create or update GitHub release asset
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $tag = "${{ github.ref_name }}"
-          $source = "artifacts/MeetingRecorder-win-x64.zip"
-          $asset = "artifacts/MeetingRecorder-$tag-win-x64.zip"
-          Copy-Item $source $asset -Force
-
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag $asset --clobber
-          } else {
-            gh release create $tag $asset --title $tag --notes "Automated release for $tag"
-          }
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: MeetingRecorder ${{ github.ref_name }}
+          generate_release_notes: true
+          files: artifacts/*.zip
