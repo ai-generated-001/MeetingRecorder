@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using MeetingRecorder.Models;
@@ -85,12 +86,16 @@ public class MainViewModel : INotifyPropertyChanged
         _detector.StartMonitoring();
     }
 
-    private void OnMeetingStarted(object? sender, EventArgs e)
+    private void OnMeetingStarted(object? sender, MeetingDetectedEventArgs e)
     {
         if (Status != AppStatus.Recording)
         {
             string ext = _settings.OutputFormat == OutputFormat.Mp3 ? "mp3" : "wav";
-            string fileName = $"Meeting_{DateTime.Now:yyyyMMdd_HHmmss}.{ext}";
+            string baseName = $"Meeting_{DateTime.Now:yyyyMMdd_HHmmss}";
+            string? titlePrefix = SanitizeFileNameSegment(e.WindowTitle);
+            string fileName = string.IsNullOrWhiteSpace(titlePrefix)
+                ? $"{baseName}.{ext}"
+                : $"{titlePrefix}_{baseName}.{ext}";
             string filePath = Path.Combine(_settings.OutputDirectory, fileName);
 
             _recorder.Start(filePath, _settings.OutputFormat);
@@ -105,6 +110,33 @@ public class MainViewModel : INotifyPropertyChanged
             _recorder.Stop();
             Status = AppStatus.Detecting;
         }
+    }
+
+    private static string? SanitizeFileNameSegment(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var cleaned = new string(value
+            .Trim()
+            .Select(c => invalidChars.Contains(c) ? '_' : c)
+            .ToArray());
+
+        cleaned = cleaned.Replace(' ', '_');
+        while (cleaned.Contains("__", StringComparison.Ordinal))
+        {
+            cleaned = cleaned.Replace("__", "_", StringComparison.Ordinal);
+        }
+
+        return cleaned.Trim('_') switch
+        {
+            "" => null,
+            var s when s.Length > 60 => s[..60],
+            var s => s
+        };
     }
 
     private void UpdateStatusText()
