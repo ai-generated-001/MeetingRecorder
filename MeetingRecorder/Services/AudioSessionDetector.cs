@@ -14,6 +14,7 @@ public class AudioSessionDetector : IDisposable
 {
     private readonly AppSettings _settings;
     private readonly MMDeviceEnumerator _deviceEnumerator;
+    private readonly HashSet<string> _whitelistedProcesses;
     private bool _isMeetingActive;
     private DateTime? _lastActiveTime;
     private readonly CancellationTokenSource _cts = new();
@@ -25,6 +26,7 @@ public class AudioSessionDetector : IDisposable
     {
         _settings = settings;
         _deviceEnumerator = new MMDeviceEnumerator();
+        _whitelistedProcesses = new HashSet<string>(_settings.WhitelistedProcesses, StringComparer.OrdinalIgnoreCase);
     }
 
     public void StartMonitoring()
@@ -70,7 +72,7 @@ public class AudioSessionDetector : IDisposable
                         using var process = Process.GetProcessById((int)processId);
                         string processName = process.ProcessName;
 
-                        if (_settings.WhitelistedProcesses.Any(p => string.Equals(p, processName, StringComparison.OrdinalIgnoreCase)))
+                        if (_whitelistedProcesses.Contains(processName))
                         {
                             anyWhitelistedActive = true;
                             session.Dispose();
