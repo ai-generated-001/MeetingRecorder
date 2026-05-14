@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="clr-namespace:MeetingRecorder.Models"
         xmlns:viewmodels="clr-namespace:MeetingRecorder.ViewModels"
-        Title="Meeting Recorder" Height="350" Width="460"
+        Title="Meeting Recorder" Height="400" Width="510"
         MinHeight="350" MinWidth="420"
         WindowStartupLocation="CenterScreen"
         Background="#FFF6F8FB"
@@ -61,18 +61,40 @@
                     </Grid>
                 </Border>
 
-                <StackPanel Grid.Row="3" Orientation="Horizontal" VerticalAlignment="Top">
-                    <TextBlock Text="Output format:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#FF374151"/>
-                    <RadioButton Content="MP3" VerticalAlignment="Center" Margin="0,0,14,0"
-                                 IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Mp3}}"/>
-                    <RadioButton Content="WAV" VerticalAlignment="Center"
-                                 IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Wav}}"/>
-                </StackPanel>
+                <Grid Grid.Row="3" VerticalAlignment="Top" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-                    <Button Content="Open Recordings Folder" Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" Padding="14,7" MinWidth="170"/>
-                    <Button Content="Exit" Command="{Binding ExitCommand}" Padding="14,7" MinWidth="90"/>
-                </StackPanel>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Output format:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#FF374151"/>
+                        <RadioButton Content="MP3" VerticalAlignment="Center" Margin="0,0,14,0"
+                                     IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Mp3}}"/>
+                        <RadioButton Content="WAV" VerticalAlignment="Center"
+                                     IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Wav}}"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1" Content="Settings" Command="{Binding OpenSettingsCommand}" Padding="10,5" MinWidth="90"/>
+                </Grid>
+
+                <Grid Grid.Row="4" Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
+                        <Button Content="Start Monitoring" Command="{Binding StartMonitoringCommand}" Margin="0,0,8,0" Padding="14,7" Width="140"/>
+                        <Button Content="Stop Monitoring" Command="{Binding StopMonitoringCommand}" Margin="0,0,8,0" Padding="14,7" Width="140"/>
+                        <Button Content="Stop Recording" Command="{Binding StopRecordingCommand}" Padding="14,7" Width="130"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Open Recordings Folder" Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" Padding="14,7" Width="190"/>
+                        <Button Content="Exit" Command="{Binding ExitCommand}" Padding="14,7" Width="90"/>
+                    </StackPanel>
+                </Grid>
             </Grid>
         </Border>
     </Grid>
