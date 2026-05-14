@@ -15,11 +15,14 @@ public class AudioSessionDetector : IDisposable
     private readonly AppSettings _settings;
     private readonly MMDeviceEnumerator _deviceEnumerator;
     private readonly HashSet<string> _whitelistedProcesses;
+    private readonly object _sync = new();
     private bool _isMeetingActive;
     private DateTime? _lastActiveTime;
-    private readonly CancellationTokenSource _cts = new();
+    private CancellationTokenSource? _cts;
+    private Task? _monitoringTask;
     private MeetingDetectedEventArgs? _currentMeeting;
 
+    public bool IsMonitoring { get; private set; }
     public event EventHandler<MeetingDetectedEventArgs>? MeetingStarted;
     public event EventHandler? MeetingEnded;
 
@@ -32,31 +35,117 @@ public class AudioSessionDetector : IDisposable
 
     public void StartMonitoring()
     {
-        Task.Run(MonitorLoop, _cts.Token);
+        lock (_sync)
+        {
+            if (IsMonitoring)
+            {
+                return;
+            }
+
+            _cts = new CancellationTokenSource();
+            _monitoringTask = Task.Run(() => MonitorLoop(_cts.Token), _cts.Token);
+            IsMonitoring = true;
+        }
     }
 
-    private async Task MonitorLoop()
+    public void StopMonitoring()
     {
-        while (!_cts.Token.IsCancellationRequested)
+        Task? monitoringTask;
+        lock (_sync)
+        {
+            if (!IsMonitoring)
+            {
+                return;
+            }
+
+            _cts?.Cancel();
+            monitoringTask = _monitoringTask;
+        }
+
+        try
+        {
+            monitoringTask?.Wait();
+        }
+        catch (AggregateException ex) when (ex.InnerExceptions.All(e => e is TaskCanceledException or OperationCanceledException))
+        {
+        }
+        finally
+        {
+            lock (_sync)
+            {
+                _cts?.Dispose();
+                _cts = null;
+                _monitoringTask = null;
+                IsMonitoring = false;
+                _isMeetingActive = false;
+                _lastActiveTime = null;
+                _currentMeeting = null;
+            }
+        }
+    }
+
+    private async Task MonitorLoop(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
         {
             try
             {
                 CheckAudioSessions();
+                await Task.Delay(3000, token);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error checking audio sessions: {ex.Message}");
             }
+        }
+    }
 
-            await Task.Delay(3000, _cts.Token);
+    public MeetingDetectedEventArgs? GetCurrentActiveMeeting()
+    {
+        lock (_sync)
+        {
+            return FindActiveMeeting();
         }
     }
 
     private void CheckAudioSessions()
     {
-        bool anyWhitelistedActive = false;
-        MeetingDetectedEventArgs? detectedMeeting = null;
+        lock (_sync)
+        {
+            var detectedMeeting = FindActiveMeeting();
+            bool anyWhitelistedActive = detectedMeeting is not null;
 
+            if (anyWhitelistedActive)
+            {
+                _lastActiveTime = DateTime.UtcNow;
+                if (!_isMeetingActive)
+                {
+                    _isMeetingActive = true;
+                    _currentMeeting = detectedMeeting;
+                    MeetingStarted?.Invoke(this, _currentMeeting ?? new MeetingDetectedEventArgs("Meeting", null));
+                }
+            }
+            else
+            {
+                if (_isMeetingActive)
+                {
+                    if (_lastActiveTime.HasValue && (DateTime.UtcNow - _lastActiveTime.Value).TotalSeconds >= _settings.DebounceSeconds)
+                    {
+                        _isMeetingActive = false;
+                        _currentMeeting = null;
+                        MeetingEnded?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+            }
+        }
+    }
+
+    private MeetingDetectedEventArgs? FindActiveMeeting()
+    {
         using var device = _deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
         var sessionManager = device.AudioSessionManager;
         var sessions = sessionManager.Sessions;
@@ -76,10 +165,9 @@ public class AudioSessionDetector : IDisposable
 
                         if (_whitelistedProcesses.Contains(processName))
                         {
-                            anyWhitelistedActive = true;
-                            detectedMeeting = new MeetingDetectedEventArgs(processName, process.MainWindowTitle);
+                            var result = new MeetingDetectedEventArgs(processName, process.MainWindowTitle);
                             session.Dispose();
-                            break;
+                            return result;
                         }
                     }
                     catch
@@ -88,40 +176,18 @@ public class AudioSessionDetector : IDisposable
                     }
                 }
             }
+
             session.Dispose();
         }
 
         // Note: sessions and sessionManager in NAudio 2.x don't implement IDisposable
         // but individual sessions do.
-
-        if (anyWhitelistedActive)
-        {
-            _lastActiveTime = DateTime.UtcNow;
-            if (!_isMeetingActive)
-            {
-                _isMeetingActive = true;
-                _currentMeeting = detectedMeeting;
-                MeetingStarted?.Invoke(this, _currentMeeting ?? new MeetingDetectedEventArgs("Meeting", null));
-            }
-        }
-        else
-        {
-            if (_isMeetingActive)
-            {
-                if (_lastActiveTime.HasValue && (DateTime.UtcNow - _lastActiveTime.Value).TotalSeconds >= _settings.DebounceSeconds)
-                {
-                    _isMeetingActive = false;
-                    _currentMeeting = null;
-                    MeetingEnded?.Invoke(this, EventArgs.Empty);
-                }
-            }
-        }
+        return null;
     }
 
     public void Dispose()
     {
-        _cts.Cancel();
-        _cts.Dispose();
+        StopMonitoring();
         _deviceEnumerator.Dispose();
     }
 }

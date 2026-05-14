@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Input;
 using MeetingRecorder.Models;
 using MeetingRecorder.Services;
@@ -37,6 +38,7 @@ public class MainViewModel : INotifyPropertyChanged
                 _status = value;
                 OnPropertyChanged();
                 UpdateStatusText();
+                CommandManager.InvalidateRequerySuggested();
             }
         }
     }
@@ -55,6 +57,10 @@ public class MainViewModel : INotifyPropertyChanged
     }
 
     public ICommand OpenFolderCommand { get; }
+    public ICommand OpenSettingsCommand { get; }
+    public ICommand StartMonitoringCommand { get; }
+    public ICommand StopMonitoringCommand { get; }
+    public ICommand StopRecordingCommand { get; }
     public ICommand ExitCommand { get; }
 
     public OutputFormat OutputFormat
@@ -80,10 +86,59 @@ public class MainViewModel : INotifyPropertyChanged
         _detector.MeetingEnded += OnMeetingEnded;
 
         OpenFolderCommand = new RelayCommand(_ => OpenRecordingsFolder());
+        OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
+        StartMonitoringCommand = new RelayCommand(_ => StartMonitoring(), _ => !_detector.IsMonitoring);
+        StopMonitoringCommand = new RelayCommand(_ => StopMonitoring(), _ => _detector.IsMonitoring);
+        StopRecordingCommand = new RelayCommand(_ => StopRecordingAndRecheck(), _ => Status == AppStatus.Recording);
         ExitCommand = new RelayCommand(_ => System.Windows.Application.Current.Shutdown());
 
-        Status = AppStatus.Detecting;
+        if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
+        {
+            Status = AppStatus.Idle;
+            return;
+        }
+
+        StartMonitoring();
+    }
+
+    private void StartMonitoring()
+    {
+        if (_detector.IsMonitoring)
+        {
+            return;
+        }
+
         _detector.StartMonitoring();
+        Status = AppStatus.Detecting;
+    }
+
+    private void StopMonitoring()
+    {
+        if (!_detector.IsMonitoring)
+        {
+            return;
+        }
+
+        if (Status == AppStatus.Recording)
+        {
+            _recorder.Stop();
+        }
+
+        _detector.StopMonitoring();
+        Status = AppStatus.Idle;
+    }
+
+    private void OpenSettings()
+    {
+        var settingsWindow = new SettingsWindow(_settings.OutputDirectory)
+        {
+            Owner = Application.Current?.MainWindow
+        };
+
+        if (settingsWindow.ShowDialog() == true)
+        {
+            _settings.OutputDirectory = settingsWindow.OutputDirectory;
+        }
     }
 
     private void OnMeetingStarted(object? sender, MeetingDetectedEventArgs e)
@@ -108,7 +163,7 @@ public class MainViewModel : INotifyPropertyChanged
         if (Status == AppStatus.Recording)
         {
             _recorder.Stop();
-            Status = AppStatus.Detecting;
+            Status = _detector.IsMonitoring ? AppStatus.Detecting : AppStatus.Idle;
         }
     }
 
@@ -143,7 +198,7 @@ public class MainViewModel : INotifyPropertyChanged
     {
         StatusText = Status switch
         {
-            AppStatus.Idle => "Idle",
+            AppStatus.Idle => "Monitoring stopped",
             AppStatus.Detecting => "Monitoring for meetings...",
             AppStatus.Recording => "Recording meeting...",
             _ => "Unknown"
@@ -157,6 +212,28 @@ public class MainViewModel : INotifyPropertyChanged
             Directory.CreateDirectory(_settings.OutputDirectory);
         }
         Process.Start("explorer.exe", _settings.OutputDirectory);
+    }
+
+    private void StopRecordingAndRecheck()
+    {
+        if (Status != AppStatus.Recording)
+        {
+            return;
+        }
+
+        _recorder.Stop();
+        Status = _detector.IsMonitoring ? AppStatus.Detecting : AppStatus.Idle;
+
+        if (!_detector.IsMonitoring)
+        {
+            return;
+        }
+
+        var activeMeeting = _detector.GetCurrentActiveMeeting();
+        if (activeMeeting is not null)
+        {
+            OnMeetingStarted(this, activeMeeting);
+        }
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
