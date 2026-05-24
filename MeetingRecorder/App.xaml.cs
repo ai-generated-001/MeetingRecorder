@@ -1,24 +1,41 @@
 using System;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
-using System.Windows.Interop;
+using System.Threading;
 using System.Windows;
 using H.NotifyIcon;
+using MeetingRecorder.Models;
+using MeetingRecorder.Services;
+using MeetingRecorder.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
+using Application = System.Windows.Application;
 
 namespace MeetingRecorder;
 
 public partial class App : Application
 {
     private TaskbarIcon? _notifyIcon;
+    private ServiceProvider? _serviceProvider;
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        var uiCulture = CultureInfo.CurrentUICulture;
+        var culture = CultureInfo.CurrentCulture;
+
+        CultureInfo.DefaultThreadCurrentUICulture = uiCulture;
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        Thread.CurrentThread.CurrentUICulture = uiCulture;
+        Thread.CurrentThread.CurrentCulture = culture;
+        global::MeetingRecorder.Resources.Culture = uiCulture;
+
+        ConfigureServices();
+
         base.OnStartup(e);
 
-        // Find the icon in the resources
         _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
+        _notifyIcon.DataContext = _serviceProvider!.GetRequiredService<MainViewModel>();
 
-        // Set the icon from AppResources
         using (var stream = new MemoryStream(AppResources.icon))
         {
             _notifyIcon.Icon = new Icon(stream);
@@ -27,6 +44,30 @@ public partial class App : Application
         _notifyIcon.ForceCreate();
 
         ShowMainWindow();
+    }
+
+    private void ConfigureServices()
+    {
+        var services = new ServiceCollection();
+
+        services.AddSingleton<AppSettings>();
+        services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+        services.AddSingleton<IFileIOService, FileIOService>();
+        services.AddSingleton<IScreenCaptureService, ScreenCaptureService>();
+        services.AddSingleton<IGlobalHotkeyService>(_ => new GlobalHotkeyService(IntPtr.Zero));
+        services.AddSingleton<IAudioSessionMonitor, AudioSessionDetector>();
+        services.AddSingleton<IAudioRecorder, WasapiRecorder>();
+        services.AddSingleton<INoteWriterService, NoteWriterService>();
+        services.AddSingleton<SessionCoordinator>(sp =>
+            new SessionCoordinator(
+                sp.GetRequiredService<IAudioSessionMonitor>(),
+                sp.GetRequiredService<IDateTimeProvider>(),
+                TimeSpan.FromSeconds(sp.GetRequiredService<AppSettings>().DebounceSeconds)));
+
+        services.AddSingleton<MainViewModel>();
+        services.AddTransient<MainWindow>();
+
+        _serviceProvider = services.BuildServiceProvider();
     }
 
     private void Show_Click(object sender, RoutedEventArgs e)
@@ -39,7 +80,7 @@ public partial class App : Application
         var mainWindow = MainWindow as MainWindow;
         if (mainWindow == null)
         {
-            mainWindow = new MainWindow();
+            mainWindow = _serviceProvider!.GetRequiredService<MainWindow>();
             MainWindow = mainWindow;
         }
 
@@ -56,6 +97,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _notifyIcon?.Dispose();
+        _serviceProvider?.Dispose();
         base.OnExit(e);
     }
 }

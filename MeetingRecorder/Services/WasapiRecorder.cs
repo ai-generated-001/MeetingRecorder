@@ -11,7 +11,7 @@ using MeetingRecorder.Models;
 
 namespace MeetingRecorder.Services;
 
-public class WasapiRecorder : IDisposable
+public class WasapiRecorder : IAudioRecorder
 {
     private WasapiLoopbackCapture? _loopbackCapture;
     private WasapiCapture? _micCapture;

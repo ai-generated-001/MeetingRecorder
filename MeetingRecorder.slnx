@@ -2,5 +2,6 @@
   <Folder Name="/Solution Items/">
     <File Path="Architecture_Spec.md" />
   </Folder>
+  <Project Path="MeetingRecorder.Tests/MeetingRecorder.Tests.csproj" />
   <Project Path="MeetingRecorder/MeetingRecorder.csproj" />
 </Solution>

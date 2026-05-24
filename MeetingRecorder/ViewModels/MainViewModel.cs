@@ -18,13 +18,15 @@ public enum AppStatus
     Recording
 }
 
-public class MainViewModel : INotifyPropertyChanged
+public class MainViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly AppSettings _settings;
-    private readonly AudioSessionDetector _detector;
-    private readonly WasapiRecorder _recorder;
+    private readonly IAudioRecorder _recorder;
+    private readonly SessionCoordinator _sessionCoordinator;
+    private readonly IFileIOService _fileIOService;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private AppStatus _status = AppStatus.Idle;
-    private string _statusText = "Initializing...";
+    private string _statusText = Resources.Idle;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -76,20 +78,28 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public MainViewModel()
+    public MainViewModel(
+        AppSettings settings,
+        IAudioRecorder recorder,
+        SessionCoordinator sessionCoordinator,
+        IFileIOService fileIOService,
+        IDateTimeProvider dateTimeProvider)
     {
-        _settings = new AppSettings();
-        _detector = new AudioSessionDetector(_settings);
-        _recorder = new WasapiRecorder();
+        _settings = settings;
+        _recorder = recorder;
+        _sessionCoordinator = sessionCoordinator;
+        _fileIOService = fileIOService;
+        _dateTimeProvider = dateTimeProvider;
 
-        _detector.MeetingStarted += OnMeetingStarted;
-        _detector.MeetingEnded += OnMeetingEnded;
+        _sessionCoordinator.RecordingRequested += OnRecordingRequested;
+        _sessionCoordinator.RecordingStopped += OnRecordingStopped;
+        _sessionCoordinator.StateChanged += OnStateChanged;
 
         OpenFolderCommand = new RelayCommand(_ => OpenRecordingsFolder());
         OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
-        StartMonitoringCommand = new RelayCommand(_ => StartMonitoring(), _ => !_detector.IsMonitoring);
-        StopMonitoringCommand = new RelayCommand(_ => StopMonitoring(), _ => _detector.IsMonitoring);
-        StopRecordingCommand = new RelayCommand(_ => StopRecordingAndRecheck(), _ => Status == AppStatus.Recording);
+        StartMonitoringCommand = new RelayCommand(_ => StartMonitoring(), _ => Status == AppStatus.Idle);
+        StopMonitoringCommand = new RelayCommand(_ => StopMonitoring(), _ => Status != AppStatus.Idle);
+        StopRecordingCommand = new RelayCommand(_ => _sessionCoordinator.StopRecordingManually(), _ => Status == AppStatus.Recording);
         ExitCommand = new RelayCommand(_ => System.Windows.Application.Current.Shutdown());
 
         if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
@@ -103,36 +113,19 @@ public class MainViewModel : INotifyPropertyChanged
 
     private void StartMonitoring()
     {
-        if (_detector.IsMonitoring)
-        {
-            return;
-        }
-
-        _detector.StartMonitoring();
-        Status = AppStatus.Detecting;
+        _sessionCoordinator.Start();
     }
 
     private void StopMonitoring()
     {
-        if (!_detector.IsMonitoring)
-        {
-            return;
-        }
-
-        if (Status == AppStatus.Recording)
-        {
-            _recorder.Stop();
-        }
-
-        _detector.StopMonitoring();
-        Status = AppStatus.Idle;
+        _sessionCoordinator.Stop();
     }
 
     private void OpenSettings()
     {
         var settingsWindow = new SettingsWindow(_settings.OutputDirectory)
         {
-            Owner = Application.Current?.MainWindow
+            Owner = System.Windows.Application.Current?.MainWindow
         };
 
         if (settingsWindow.ShowDialog() == true)
@@ -141,30 +134,33 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    private void OnMeetingStarted(object? sender, MeetingDetectedEventArgs e)
+    private void OnRecordingRequested(object? sender, MeetingDetectedEventArgs e)
     {
-        if (Status != AppStatus.Recording)
-        {
-            string ext = _settings.OutputFormat == OutputFormat.Mp3 ? "mp3" : "wav";
-            string baseName = $"Meeting_{DateTime.Now:yyyyMMdd_HHmmss}";
-            string? titlePrefix = SanitizeFileNameSegment(e.WindowTitle);
-            string fileName = string.IsNullOrWhiteSpace(titlePrefix)
-                ? $"{baseName}.{ext}"
-                : $"{titlePrefix}_{baseName}.{ext}";
-            string filePath = Path.Combine(_settings.OutputDirectory, fileName);
+        string ext = _settings.OutputFormat == OutputFormat.Mp3 ? "mp3" : "wav";
+        string baseName = $"Meeting_{_dateTimeProvider.Now:yyyyMMdd_HHmmss}";
+        string? titlePrefix = SanitizeFileNameSegment(e.WindowTitle);
+        string fileName = string.IsNullOrWhiteSpace(titlePrefix)
+            ? $"{baseName}.{ext}"
+            : $"{titlePrefix}_{baseName}.{ext}";
+        string filePath = Path.Combine(_settings.OutputDirectory, fileName);
 
-            _recorder.Start(filePath, _settings.OutputFormat);
-            Status = AppStatus.Recording;
-        }
+        _recorder.Start(filePath, _settings.OutputFormat);
     }
 
-    private void OnMeetingEnded(object? sender, EventArgs e)
+    private void OnRecordingStopped(object? sender, EventArgs e)
     {
-        if (Status == AppStatus.Recording)
+        _recorder.Stop();
+    }
+
+    private void OnStateChanged(object? sender, SessionStateChangedEventArgs e)
+    {
+        Status = e.NewState switch
         {
-            _recorder.Stop();
-            Status = _detector.IsMonitoring ? AppStatus.Detecting : AppStatus.Idle;
-        }
+            SessionState.Idle => AppStatus.Idle,
+            SessionState.Detecting => AppStatus.Detecting,
+            SessionState.Recording => AppStatus.Recording,
+            _ => AppStatus.Idle
+        };
     }
 
     private static string? SanitizeFileNameSegment(string? value)
@@ -198,47 +194,29 @@ public class MainViewModel : INotifyPropertyChanged
     {
         StatusText = Status switch
         {
-            AppStatus.Idle => "Monitoring stopped",
-            AppStatus.Detecting => "Monitoring for meetings...",
-            AppStatus.Recording => "Recording meeting...",
-            _ => "Unknown"
+            AppStatus.Idle => Resources.Idle,
+            AppStatus.Detecting => Resources.StatusDetecting,
+            AppStatus.Recording => Resources.Recording,
+            _ => Resources.StatusUnknown
         };
     }
 
     private void OpenRecordingsFolder()
     {
-        if (!Directory.Exists(_settings.OutputDirectory))
-        {
-            Directory.CreateDirectory(_settings.OutputDirectory);
-        }
+        _fileIOService.EnsureDirectory(_settings.OutputDirectory);
         Process.Start("explorer.exe", _settings.OutputDirectory);
-    }
-
-    private void StopRecordingAndRecheck()
-    {
-        if (Status != AppStatus.Recording)
-        {
-            return;
-        }
-
-        _recorder.Stop();
-        Status = _detector.IsMonitoring ? AppStatus.Detecting : AppStatus.Idle;
-
-        if (!_detector.IsMonitoring)
-        {
-            return;
-        }
-
-        var activeMeeting = _detector.GetCurrentActiveMeeting();
-        if (activeMeeting is not null)
-        {
-            OnMeetingStarted(this, activeMeeting);
-        }
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    public void Dispose()
+    {
+        _sessionCoordinator.RecordingRequested -= OnRecordingRequested;
+        _sessionCoordinator.RecordingStopped -= OnRecordingStopped;
+        _sessionCoordinator.StateChanged -= OnStateChanged;
     }
 }
 

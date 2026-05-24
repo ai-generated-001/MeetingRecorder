@@ -39,7 +39,7 @@ public partial class SettingsWindow : Window
         var selected = OutputDirectoryTextBox.Text?.Trim();
         if (string.IsNullOrWhiteSpace(selected))
         {
-            MessageBox.Show(this, "Please choose a valid folder.", "Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+            System.Windows.MessageBox.Show(this, "Please choose a valid folder.", "Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
