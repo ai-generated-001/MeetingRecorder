@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Interop;
 using System.Windows;
 using H.NotifyIcon;
@@ -16,7 +17,13 @@ public partial class App : Application
 
         // Find the icon in the resources
         _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
-        _notifyIcon.Icon = SystemIcons.Application;
+
+        // Set the icon from AppResources
+        using (var stream = new MemoryStream(AppResources.icon))
+        {
+            _notifyIcon.Icon = new Icon(stream);
+        }
+
         _notifyIcon.ForceCreate();
 
         ShowMainWindow();

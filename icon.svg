@@ -1,0 +1,19 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 深色沉稳背景圆角矩形 -->
+  <rect width="256" height="256" rx="50" fill="#202020"/>
+  
+  <!-- 外圈虚线：象征音频信号的捕捉与监控 -->
+  <circle cx="128" cy="128" r="85" stroke="#E0E0E0" stroke-width="12" stroke-dasharray="24 12" stroke-linecap="round"/>
+  
+  <!-- 中心：象征录音状态的经典红色圆点 -->
+  <circle cx="128" cy="128" r="38" fill="#FF4444">
+    <!-- 呼吸灯动画效果 -->
+    <animate attributeName="opacity" values="1;0.3;1" dur="2.5s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- 底部微调：象征音频均衡器的极简波形 -->
+  <rect x="88" y="180" width="12" height="24" rx="6" fill="#888888"/>
+  <rect x="110" y="170" width="12" height="44" rx="6" fill="#FFFFFF"/>
+  <rect x="132" y="175" width="12" height="34" rx="6" fill="#CCCCCC"/>
+  <rect x="154" y="184" width="12" height="16" rx="6" fill="#666666"/>
+</svg>

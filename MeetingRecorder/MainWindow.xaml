@@ -3,10 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="clr-namespace:MeetingRecorder.Models"
         xmlns:viewmodels="clr-namespace:MeetingRecorder.ViewModels"
-        Title="Meeting Recorder" Height="400" Width="510"
+        Title="Meeting Recorder" Height="400" Width="540"
         MinHeight="350" MinWidth="420"
         WindowStartupLocation="CenterScreen"
         Background="#FFF6F8FB"
+        Icon="Resources/icon.ico"
         DataContext="{StaticResource MainViewModel}">
     <Grid Margin="20">
         <Border Background="White" CornerRadius="12" Padding="18" BorderBrush="#FFE4E8EF" BorderThickness="1">
