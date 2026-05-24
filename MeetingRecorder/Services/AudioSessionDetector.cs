@@ -10,7 +10,7 @@ using MeetingRecorder.Models;
 
 namespace MeetingRecorder.Services;
 
-public class AudioSessionDetector : IDisposable
+public class AudioSessionDetector : IAudioSessionMonitor
 {
     private readonly AppSettings _settings;
     private readonly MMDeviceEnumerator _deviceEnumerator;

@@ -1,12 +1,17 @@
 using System.ComponentModel;
 using System.Windows;
+using MeetingRecorder.ViewModels;
 
 namespace MeetingRecorder;
 
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    private readonly MainViewModel _viewModel;
+
+    public MainWindow(MainViewModel viewModel)
     {
+        _viewModel = viewModel;
+        DataContext = _viewModel;
         InitializeComponent();
     }
 

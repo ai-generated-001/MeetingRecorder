@@ -3,12 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="clr-namespace:MeetingRecorder.Models"
         xmlns:viewmodels="clr-namespace:MeetingRecorder.ViewModels"
+        xmlns:properties="clr-namespace:MeetingRecorder"
         Title="Meeting Recorder" Height="400" Width="540"
         MinHeight="350" MinWidth="420"
         WindowStartupLocation="CenterScreen"
         Background="#FFF6F8FB"
-        Icon="Resources/icon.ico"
-        DataContext="{StaticResource MainViewModel}">
+        Icon="Resources/icon.ico">
     <Grid Margin="20">
         <Border Background="White" CornerRadius="12" Padding="18" BorderBrush="#FFE4E8EF" BorderThickness="1">
             <Grid>
@@ -76,7 +76,7 @@
                                      IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Wav}}"/>
                     </StackPanel>
 
-                    <Button Grid.Column="1" Content="Settings" Command="{Binding OpenSettingsCommand}" Padding="10,5" MinWidth="90"/>
+                    <Button Grid.Column="1" Content="{x:Static properties:Resources.Settings}" Command="{Binding OpenSettingsCommand}" Padding="10,5" MinWidth="90"/>
                 </Grid>
 
                 <Grid Grid.Row="4" Margin="0,8,0,0">
@@ -93,7 +93,7 @@
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="Open Recordings Folder" Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" Padding="14,7" Width="190"/>
-                        <Button Content="Exit" Command="{Binding ExitCommand}" Padding="14,7" Width="90"/>
+                        <Button Content="{x:Static properties:Resources.Exit}" Command="{Binding ExitCommand}" Padding="14,7" Width="90"/>
                     </StackPanel>
                 </Grid>
             </Grid>
