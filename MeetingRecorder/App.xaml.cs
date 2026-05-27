@@ -18,18 +18,25 @@ public partial class App : Application
     private TaskbarIcon? _notifyIcon;
     private ServiceProvider? _serviceProvider;
 
+    internal static void ApplyUiLanguage(string languageCode)
+    {
+        var culture = string.IsNullOrWhiteSpace(languageCode)
+            ? CultureInfo.InstalledUICulture
+            : new CultureInfo(languageCode);
+
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        Thread.CurrentThread.CurrentUICulture = culture;
+        Thread.CurrentThread.CurrentCulture = culture;
+        global::MeetingRecorder.Resources.Culture = culture;
+    }
+
     protected override void OnStartup(StartupEventArgs e)
     {
-        var uiCulture = CultureInfo.CurrentUICulture;
-        var culture = CultureInfo.CurrentCulture;
-
-        CultureInfo.DefaultThreadCurrentUICulture = uiCulture;
-        CultureInfo.DefaultThreadCurrentCulture = culture;
-        Thread.CurrentThread.CurrentUICulture = uiCulture;
-        Thread.CurrentThread.CurrentCulture = culture;
-        global::MeetingRecorder.Resources.Culture = uiCulture;
-
         ConfigureServices();
+
+        var settings = _serviceProvider!.GetRequiredService<AppSettings>();
+        ApplyUiLanguage(settings.UiLanguage);
 
         base.OnStartup(e);
 

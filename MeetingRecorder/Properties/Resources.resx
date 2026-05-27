@@ -86,4 +86,55 @@
   <data name="StatusUnknown" xml:space="preserve">
 	<value>Unknown</value>
   </data>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Meeting Recorder</value>
+  </data>
+  <data name="HeaderTitle" xml:space="preserve">
+    <value>Automated Meeting Recorder</value>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>Runs in tray and records automatically when supported meeting apps are active.</value>
+  </data>
+  <data name="StatusLabel" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="OutputFormatLabel" xml:space="preserve">
+    <value>Output format:</value>
+  </data>
+  <data name="StartMonitoring" xml:space="preserve">
+    <value>Start Monitoring</value>
+  </data>
+  <data name="StopMonitoring" xml:space="preserve">
+    <value>Stop Monitoring</value>
+  </data>
+  <data name="StopRecording" xml:space="preserve">
+    <value>Stop Recording</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Open Recordings Folder</value>
+  </data>
+  <data name="ShowStatusWindow" xml:space="preserve">
+    <value>Show Status Window</value>
+  </data>
+  <data name="RecordingsFolder" xml:space="preserve">
+    <value>Recordings folder</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="UiLanguageLabel" xml:space="preserve">
+    <value>UI language</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SelectFolderDescription" xml:space="preserve">
+    <value>Select where recordings will be saved.</value>
+  </data>
+  <data name="SelectValidFolder" xml:space="preserve">
+    <value>Please choose a valid folder.</value>
+  </data>
 </root>

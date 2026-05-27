@@ -78,6 +78,19 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    public string SettingsButtonText => Resources.Settings;
+    public string ExitButtonText => Resources.Exit;
+    public string AppTitle => Resources.AppTitle;
+    public string HeaderTitle => Resources.HeaderTitle;
+    public string AppDescription => Resources.AppDescription;
+    public string StatusLabel => Resources.StatusLabel;
+    public string OutputFormatLabel => Resources.OutputFormatLabel;
+    public string StartMonitoringText => Resources.StartMonitoring;
+    public string StopMonitoringText => Resources.StopMonitoring;
+    public string StopRecordingText => Resources.StopRecording;
+    public string OpenFolderText => Resources.OpenFolder;
+    public string ShowStatusWindowText => Resources.ShowStatusWindow;
+
     public MainViewModel(
         AppSettings settings,
         IAudioRecorder recorder,
@@ -123,7 +136,7 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
 
     private void OpenSettings()
     {
-        var settingsWindow = new SettingsWindow(_settings.OutputDirectory)
+        var settingsWindow = new SettingsWindow(_settings.OutputDirectory, _settings.UiLanguage)
         {
             Owner = System.Windows.Application.Current?.MainWindow
         };
@@ -131,7 +144,27 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         if (settingsWindow.ShowDialog() == true)
         {
             _settings.OutputDirectory = settingsWindow.OutputDirectory;
+            _settings.UiLanguage = settingsWindow.UiLanguage;
+            App.ApplyUiLanguage(_settings.UiLanguage);
+            UpdateLanguage();
         }
+    }
+
+    public void UpdateLanguage()
+    {
+        OnPropertyChanged(nameof(SettingsButtonText));
+        OnPropertyChanged(nameof(ExitButtonText));
+        OnPropertyChanged(nameof(AppTitle));
+        OnPropertyChanged(nameof(HeaderTitle));
+        OnPropertyChanged(nameof(AppDescription));
+        OnPropertyChanged(nameof(StatusLabel));
+        OnPropertyChanged(nameof(OutputFormatLabel));
+        OnPropertyChanged(nameof(StartMonitoringText));
+        OnPropertyChanged(nameof(StopMonitoringText));
+        OnPropertyChanged(nameof(StopRecordingText));
+        OnPropertyChanged(nameof(OpenFolderText));
+        OnPropertyChanged(nameof(ShowStatusWindowText));
+        UpdateStatusText();
     }
 
     private void OnRecordingRequested(object? sender, MeetingDetectedEventArgs e)

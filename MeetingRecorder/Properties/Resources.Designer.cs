@@ -80,5 +80,107 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("StatusUnknown", resourceCulture);
             }
         }
+
+        public static string AppTitle {
+            get {
+                return ResourceManager.GetString("AppTitle", resourceCulture);
+            }
+        }
+
+        public static string HeaderTitle {
+            get {
+                return ResourceManager.GetString("HeaderTitle", resourceCulture);
+            }
+        }
+
+        public static string AppDescription {
+            get {
+                return ResourceManager.GetString("AppDescription", resourceCulture);
+            }
+        }
+
+        public static string StatusLabel {
+            get {
+                return ResourceManager.GetString("StatusLabel", resourceCulture);
+            }
+        }
+
+        public static string OutputFormatLabel {
+            get {
+                return ResourceManager.GetString("OutputFormatLabel", resourceCulture);
+            }
+        }
+
+        public static string StartMonitoring {
+            get {
+                return ResourceManager.GetString("StartMonitoring", resourceCulture);
+            }
+        }
+
+        public static string StopMonitoring {
+            get {
+                return ResourceManager.GetString("StopMonitoring", resourceCulture);
+            }
+        }
+
+        public static string StopRecording {
+            get {
+                return ResourceManager.GetString("StopRecording", resourceCulture);
+            }
+        }
+
+        public static string OpenFolder {
+            get {
+                return ResourceManager.GetString("OpenFolder", resourceCulture);
+            }
+        }
+
+        public static string ShowStatusWindow {
+            get {
+                return ResourceManager.GetString("ShowStatusWindow", resourceCulture);
+            }
+        }
+
+        public static string RecordingsFolder {
+            get {
+                return ResourceManager.GetString("RecordingsFolder", resourceCulture);
+            }
+        }
+
+        public static string Browse {
+            get {
+                return ResourceManager.GetString("Browse", resourceCulture);
+            }
+        }
+
+        public static string UiLanguageLabel {
+            get {
+                return ResourceManager.GetString("UiLanguageLabel", resourceCulture);
+            }
+        }
+
+        public static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+
+        public static string Save {
+            get {
+                return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+
+        public static string SelectFolderDescription {
+            get {
+                return ResourceManager.GetString("SelectFolderDescription", resourceCulture);
+            }
+        }
+
+        public static string SelectValidFolder {
+            get {
+                return ResourceManager.GetString("SelectValidFolder", resourceCulture);
+            }
+        }
     }
 }

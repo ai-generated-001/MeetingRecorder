@@ -86,4 +86,55 @@
   <data name="StatusUnknown" xml:space="preserve">
 	<value>未知</value>
   </data>
+  <data name="AppTitle" xml:space="preserve">
+    <value>会议录制器</value>
+  </data>
+  <data name="HeaderTitle" xml:space="preserve">
+    <value>自动会议录制器</value>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>在系统托盘运行，当支持的会议软件活动时自动录音。</value>
+  </data>
+  <data name="StatusLabel" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="OutputFormatLabel" xml:space="preserve">
+    <value>输出格式：</value>
+  </data>
+  <data name="StartMonitoring" xml:space="preserve">
+    <value>开始监控</value>
+  </data>
+  <data name="StopMonitoring" xml:space="preserve">
+    <value>停止监控</value>
+  </data>
+  <data name="StopRecording" xml:space="preserve">
+    <value>停止录音</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>打开录音文件夹</value>
+  </data>
+  <data name="ShowStatusWindow" xml:space="preserve">
+    <value>显示状态窗口</value>
+  </data>
+  <data name="RecordingsFolder" xml:space="preserve">
+    <value>录音保存文件夹</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>浏览...</value>
+  </data>
+  <data name="UiLanguageLabel" xml:space="preserve">
+    <value>界面语言</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="SelectFolderDescription" xml:space="preserve">
+    <value>选择录音保存的文件夹。</value>
+  </data>
+  <data name="SelectValidFolder" xml:space="preserve">
+    <value>请选择一个有效的文件夹。</value>
+  </data>
 </root>

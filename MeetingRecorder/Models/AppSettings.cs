@@ -7,7 +7,7 @@ public class AppSettings
 {
     public List<string> WhitelistedProcesses { get; set; } = new()
     {
-        "wemeetapp", "Zoom", "ms-teams", "Feishu", "DingTalk", "Webex"
+        "wemeetapp", "Zoom", "ms-teams", "ms-teams_modulehost", "Teams", "Feishu", "DingTalk", "Webex"
     };
 
     public string OutputDirectory { get; set; } = Path.Combine(
@@ -17,6 +17,8 @@ public class AppSettings
     public int DebounceSeconds { get; set; } = 5;
 
     public OutputFormat OutputFormat { get; set; } = OutputFormat.Mp3;
+
+    public string UiLanguage { get; set; } = "";
 }
 
 public enum OutputFormat

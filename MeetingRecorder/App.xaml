@@ -12,11 +12,11 @@
                         ToolTipText="{Binding StatusText}">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Show Status Window" Click="Show_Click" />
-                    <MenuItem Header="Open Recordings Folder"
+                    <MenuItem Header="{Binding PlacementTarget.DataContext.ShowStatusWindowText, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="Show_Click" />
+                    <MenuItem Header="{Binding PlacementTarget.DataContext.OpenFolderText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                               Command="{Binding PlacementTarget.DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                     <Separator />
-                    <MenuItem Header="{x:Static properties:Resources.Exit}"
+                    <MenuItem Header="{Binding PlacementTarget.DataContext.ExitButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                               Command="{Binding PlacementTarget.DataContext.ExitCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>

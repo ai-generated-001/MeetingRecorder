@@ -6,9 +6,6 @@ namespace MeetingRecorder.Services;
 public sealed class SessionCoordinator : IDisposable
 {
     private readonly IAudioSessionMonitor _audioSessionMonitor;
-    private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly TimeSpan _debounceDuration;
-    private DateTime? _meetingInactiveSinceUtc;
 
     public SessionState State { get; private set; } = SessionState.Idle;
 
@@ -19,8 +16,6 @@ public sealed class SessionCoordinator : IDisposable
     public SessionCoordinator(IAudioSessionMonitor audioSessionMonitor, IDateTimeProvider dateTimeProvider, TimeSpan debounceDuration)
     {
         _audioSessionMonitor = audioSessionMonitor;
-        _dateTimeProvider = dateTimeProvider;
-        _debounceDuration = debounceDuration;
 
         _audioSessionMonitor.MeetingStarted += OnMeetingStarted;
         _audioSessionMonitor.MeetingEnded += OnMeetingEnded;
@@ -39,8 +34,6 @@ public sealed class SessionCoordinator : IDisposable
 
     public void Stop()
     {
-        _meetingInactiveSinceUtc = null;
-
         if (_audioSessionMonitor.IsMonitoring)
         {
             _audioSessionMonitor.StopMonitoring();
@@ -78,8 +71,6 @@ public sealed class SessionCoordinator : IDisposable
 
     private void OnMeetingStarted(object? sender, MeetingDetectedEventArgs e)
     {
-        _meetingInactiveSinceUtc = null;
-
         if (State == SessionState.Recording)
         {
             return;
@@ -96,15 +87,6 @@ public sealed class SessionCoordinator : IDisposable
             return;
         }
 
-        var now = _dateTimeProvider.UtcNow;
-        _meetingInactiveSinceUtc ??= now;
-
-        if (now - _meetingInactiveSinceUtc.Value < _debounceDuration)
-        {
-            return;
-        }
-
-        _meetingInactiveSinceUtc = null;
         RecordingStopped?.Invoke(this, EventArgs.Empty);
         TransitionTo(_audioSessionMonitor.IsMonitoring ? SessionState.Detecting : SessionState.Idle);
     }
