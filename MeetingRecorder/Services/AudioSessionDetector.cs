@@ -150,39 +150,60 @@ public class AudioSessionDetector : IAudioSessionMonitor
         var sessionManager = device.AudioSessionManager;
         var sessions = sessionManager.Sessions;
 
+        MeetingDetectedEventArgs? result = null;
+
         for (int i = 0; i < sessions.Count; i++)
         {
             var session = sessions[i];
-            if (session.State == AudioSessionState.AudioSessionStateActive)
+            try
             {
-                uint processId = session.GetProcessID;
-                if (processId != 0)
+                if (result == null && session.State == AudioSessionState.AudioSessionStateActive)
                 {
-                    try
+                    uint processId = session.GetProcessID;
+                    if (processId != 0)
                     {
-                        using var process = Process.GetProcessById((int)processId);
-                        string processName = process.ProcessName;
-
-                        if (_whitelistedProcesses.Contains(processName))
+                        try
                         {
-                            var result = new MeetingDetectedEventArgs(processName, process.MainWindowTitle);
-                            session.Dispose();
-                            return result;
+                            using var process = Process.GetProcessById((int)processId);
+                            string processName = process.ProcessName;
+
+                            if (_whitelistedProcesses.Contains(processName))
+                            {
+                                string? windowTitle = process.MainWindowTitle;
+                                if (string.IsNullOrWhiteSpace(windowTitle) && processName.Equals("ms-teams_modulehost", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    try
+                                    {
+                                        var mainTeams = Process.GetProcessesByName("ms-teams")
+                                            .FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.MainWindowTitle));
+                                        if (mainTeams != null)
+                                        {
+                                            windowTitle = mainTeams.MainWindowTitle;
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        // Ignore process access errors
+                                    }
+                                }
+
+                                result = new MeetingDetectedEventArgs(processName, windowTitle);
+                            }
                         }
-                    }
-                    catch
-                    {
-                        // Process might have exited
+                        catch
+                        {
+                            // Process might have exited
+                        }
                     }
                 }
             }
-
-            session.Dispose();
+            finally
+            {
+                session.Dispose();
+            }
         }
 
-        // Note: sessions and sessionManager in NAudio 2.x don't implement IDisposable
-        // but individual sessions do.
-        return null;
+        return result;
     }
 
     public void Dispose()

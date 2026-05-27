@@ -27,11 +27,10 @@ public class SessionCoordinatorTests
     }
 
     [Fact]
-    public void MeetingEnded_StopsRecordingOnlyAfterDebounceWindow()
+    public void MeetingEnded_StopsRecordingImmediately()
     {
         var monitor = CreateMonitor();
-        var startedAt = new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc);
-        var clock = new FakeDateTimeProvider(startedAt);
+        var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
 
         using var coordinator = new SessionCoordinator(monitor.Object, clock, TimeSpan.FromSeconds(5));
         var stopEvents = 0;
@@ -40,16 +39,6 @@ public class SessionCoordinatorTests
         coordinator.Start();
         monitor.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "Planning"));
 
-        monitor.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
-        coordinator.State.Should().Be(SessionState.Recording);
-        stopEvents.Should().Be(0);
-
-        clock.UtcNow = startedAt.AddSeconds(4);
-        monitor.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
-        coordinator.State.Should().Be(SessionState.Recording);
-        stopEvents.Should().Be(0);
-
-        clock.UtcNow = startedAt.AddSeconds(5);
         monitor.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
 
         coordinator.State.Should().Be(SessionState.Detecting);

@@ -4,7 +4,7 @@
         xmlns:models="clr-namespace:MeetingRecorder.Models"
         xmlns:viewmodels="clr-namespace:MeetingRecorder.ViewModels"
         xmlns:properties="clr-namespace:MeetingRecorder"
-        Title="Meeting Recorder" Height="400" Width="540"
+        Title="{Binding AppTitle}" Height="400" Width="540"
         MinHeight="350" MinWidth="420"
         WindowStartupLocation="CenterScreen"
         Background="#FFF6F8FB"
@@ -20,8 +20,8 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Text="Automated Meeting Recorder" FontSize="20" FontWeight="SemiBold" Foreground="#FF1F2937"/>
-                <TextBlock Grid.Row="1" Margin="0,6,0,14" Text="Runs in tray and records automatically when supported meeting apps are active."
+                <TextBlock Grid.Row="0" Text="{Binding HeaderTitle}" FontSize="20" FontWeight="SemiBold" Foreground="#FF1F2937"/>
+                <TextBlock Grid.Row="1" Margin="0,6,0,14" Text="{Binding AppDescription}"
                            TextWrapping="Wrap" Foreground="#FF6B7280"/>
 
                 <Border Grid.Row="2" Background="#FFF9FAFB" BorderBrush="#FFE5E7EB" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,14">
@@ -32,7 +32,7 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel>
-                            <TextBlock Text="Status" FontWeight="SemiBold" Foreground="#FF374151"/>
+                            <TextBlock Text="{Binding StatusLabel}" FontWeight="SemiBold" Foreground="#FF374151"/>
                             <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
@@ -69,14 +69,14 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Output format:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#FF374151"/>
+                        <TextBlock Text="{Binding OutputFormatLabel}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#FF374151"/>
                         <RadioButton Content="MP3" VerticalAlignment="Center" Margin="0,0,14,0"
                                      IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Mp3}}"/>
                         <RadioButton Content="WAV" VerticalAlignment="Center"
                                      IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Wav}}"/>
                     </StackPanel>
 
-                    <Button Grid.Column="1" Content="{x:Static properties:Resources.Settings}" Command="{Binding OpenSettingsCommand}" Padding="10,5" MinWidth="90"/>
+                    <Button Grid.Column="1" Content="{Binding SettingsButtonText}" Command="{Binding OpenSettingsCommand}" Padding="10,5" MinWidth="90"/>
                 </Grid>
 
                 <Grid Grid.Row="4" Margin="0,8,0,0">
@@ -86,14 +86,14 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
-                        <Button Content="Start Monitoring" Command="{Binding StartMonitoringCommand}" Margin="0,0,8,0" Padding="14,7" Width="140"/>
-                        <Button Content="Stop Monitoring" Command="{Binding StopMonitoringCommand}" Margin="0,0,8,0" Padding="14,7" Width="140"/>
-                        <Button Content="Stop Recording" Command="{Binding StopRecordingCommand}" Padding="14,7" Width="130"/>
+                        <Button Content="{Binding StartMonitoringText}" Command="{Binding StartMonitoringCommand}" Margin="0,0,8,0" Padding="14,7" Width="140"/>
+                        <Button Content="{Binding StopMonitoringText}" Command="{Binding StopMonitoringCommand}" Margin="0,0,8,0" Padding="14,7" Width="140"/>
+                        <Button Content="{Binding StopRecordingText}" Command="{Binding StopRecordingCommand}" Padding="14,7" Width="130"/>
                     </StackPanel>
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Open Recordings Folder" Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" Padding="14,7" Width="190"/>
-                        <Button Content="{x:Static properties:Resources.Exit}" Command="{Binding ExitCommand}" Padding="14,7" Width="90"/>
+                        <Button Content="{Binding OpenFolderText}" Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" Padding="14,7" Width="190"/>
+                        <Button Content="{Binding ExitButtonText}" Command="{Binding ExitCommand}" Padding="14,7" Width="90"/>
                     </StackPanel>
                 </Grid>
             </Grid>
