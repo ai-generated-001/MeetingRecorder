@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
@@ -80,7 +81,7 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public string SettingsButtonText => Resources.Settings;
     public string ExitButtonText => Resources.Exit;
-    public string AppTitle => Resources.AppTitle;
+    public string AppTitle => string.Format("{0} {1}", Resources.AppTitle, Assembly.GetExecutingAssembly().GetName().Version);
     public string HeaderTitle => Resources.HeaderTitle;
     public string AppDescription => Resources.AppDescription;
     public string StatusLabel => Resources.StatusLabel;
