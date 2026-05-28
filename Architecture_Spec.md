@@ -23,7 +23,9 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 
 1. **AudioSessionDetector (`IAudioSessionMonitor`)**
    - Polls active communication audio sessions every ~3 seconds.
-   - Checks process names against `AppSettings.WhitelistedProcesses`.
+   - Checks process names against `AppSettings.WhitelistedProcesses` (e.g. handles `ms-teams_modulehost` for new Teams audio sessions).
+   - Resolves window titles from sibling/parent processes if the active session process has no main window (e.g. gets the main `ms-teams` window title for `ms-teams_modulehost` sessions).
+   - Guarantees full disposal of all retrieved audio session COM wrappers to prevent memory/handle leaks.
    - Raises `MeetingStarted` when a whitelisted process has an active session.
    - Raises `MeetingEnded` after inactivity exceeds debounce configuration.
 
@@ -52,6 +54,10 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
    - Initializes `H.NotifyIcon.TaskbarIcon` as the tray entry point.
    - Shows and positions the floating main window near the bottom-right work area.
 
+6. **Dynamic UI Localizer**
+   - Manages localized text strings (`Resources.resx` and `Resources.zh-CN.resx`) for UI controls.
+   - Binds UI headers, buttons, and status labels to dynamic properties in `MainViewModel` that raise `PropertyChanged` events when the UI culture changes, enabling instant runtime translation updates without application restarts.
+
 ## 4. State and Event Flow
 1. App startup configures DI and creates `MainViewModel`.
 2. `MainViewModel` starts `SessionCoordinator`, moving state to `Detecting`.
@@ -63,7 +69,7 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 
 ## 5. Configuration Model
 `AppSettings` currently controls:
-- `WhitelistedProcesses` (default: wemeetapp, Zoom, ms-teams, Feishu, DingTalk, Webex)
+- `WhitelistedProcesses` (default: wemeetapp, Zoom, ms-teams, ms-teams_modulehost, Teams, Feishu, DingTalk, Webex)
 - `OutputDirectory` (default under Documents\MeetingRecordings)
 - `DebounceSeconds` (default: 5)
 - `OutputFormat` (`Mp3` or `Wav`)
@@ -91,3 +97,6 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 - Ensure deterministic cleanup for capture/writer resources on stop/exit.
 - Preserve reliable unattended tray-first operation.
 - Keep boundaries testable through service abstractions (`MeetingRecorder.Tests` covers coordinator and note writer behavior).
+
+## 8. Specification Maintenance Guideline (CRITICAL)
+- **Developer and AI Agent Responsibility:** Every developer and AI agent working on this codebase must update this technical specification (`Architecture_Spec.md`) whenever architectural changes, configuration options, process whitelists, UI behaviors, or component responsibilities are modified. This maintains the integrity and correctness of the design documentation as a single source of truth.
