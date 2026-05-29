@@ -11,13 +11,13 @@
         <tb:TaskbarIcon x:Key="NotifyIcon"
                         ToolTipText="{Binding StatusText}">
             <tb:TaskbarIcon.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Header="{Binding PlacementTarget.DataContext.ShowStatusWindowText, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="Show_Click" />
-                    <MenuItem Header="{Binding PlacementTarget.DataContext.OpenFolderText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                              Command="{Binding PlacementTarget.DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                <ContextMenu Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}">
+                    <MenuItem Header="{Binding ShowStatusWindowText}" Click="Show_Click" />
+                    <MenuItem Header="{Binding OpenFolderText}"
+                              Command="{Binding OpenFolderCommand}" />
                     <Separator />
-                    <MenuItem Header="{Binding PlacementTarget.DataContext.ExitButtonText, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                              Command="{Binding PlacementTarget.DataContext.ExitCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <MenuItem Header="{Binding ExitButtonText}"
+                              Command="{Binding ExitCommand}" />
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
