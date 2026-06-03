@@ -76,6 +76,7 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
             {
                 _settings.OutputFormat = value;
                 OnPropertyChanged();
+                App.SaveSettings(_settings);
             }
         }
     }
@@ -143,9 +144,19 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         var settingsWindow = new SettingsWindow(
             _settings.OutputDirectory,
             _settings.UiLanguage,
+            _settings.GoogleDriveEnabled,
             _settings.GoogleClientId,
             _settings.GoogleClientSecret,
-            clearTokenAction: ClearGoogleToken)
+            _settings.GoogleDriveFolderPath,
+            clearTokenAction: ClearGoogleToken,
+            getLoginStatusFunc: async (ct) =>
+            {
+                if (_cloudSyncService is GoogleDriveSyncService syncService)
+                {
+                    return await syncService.GetAccountStatusStringAsync(ct);
+                }
+                return Resources.GoogleDriveNotSignedIn;
+            })
         {
             Owner = System.Windows.Application.Current?.MainWindow
         };
@@ -155,14 +166,18 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
             _settings.OutputDirectory = settingsWindow.OutputDirectory;
             _settings.UiLanguage = settingsWindow.UiLanguage;
 
-            // If the user changed OAuth credentials, reset the cached drive service
-            // so the next upload re-authenticates with the new keys.
+            // If the user changed the enabled flag, credentials, or target folder,
+            // reset the cached drive service so the next upload re-authenticates / re-resolves.
             bool credentialsChanged =
+                _settings.GoogleDriveEnabled != settingsWindow.GoogleDriveEnabled ||
                 _settings.GoogleClientId != settingsWindow.GoogleClientId ||
-                _settings.GoogleClientSecret != settingsWindow.GoogleClientSecret;
+                _settings.GoogleClientSecret != settingsWindow.GoogleClientSecret ||
+                _settings.GoogleDriveFolderPath != settingsWindow.GoogleDriveFolderPath;
 
+            _settings.GoogleDriveEnabled = settingsWindow.GoogleDriveEnabled;
             _settings.GoogleClientId = settingsWindow.GoogleClientId;
             _settings.GoogleClientSecret = settingsWindow.GoogleClientSecret;
+            _settings.GoogleDriveFolderPath = settingsWindow.GoogleDriveFolderPath;
 
             if (credentialsChanged)
             {
@@ -171,6 +186,7 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
 
             App.ApplyUiLanguage(_settings.UiLanguage);
             UpdateLanguage();
+            App.SaveSettings(_settings);
         }
     }
 

@@ -119,6 +119,10 @@ public sealed class SessionCoordinator : IDisposable
             : $"{titlePrefix}_{baseName}.md";
         _currentNotesPath = Path.Combine(_settings.OutputDirectory, notesFileName);
 
+        // Guarantee the output directory exists before the recorder opens the audio file.
+        // This handles paths typed manually in Settings that may not yet exist on disk.
+        _fileIOService.EnsureDirectory(_settings.OutputDirectory);
+
         RecordingRequested?.Invoke(this, new RecordingRequestedEventArgs(e, _currentAudioPath));
         TransitionTo(SessionState.Recording);
     }
@@ -167,13 +171,16 @@ public sealed class SessionCoordinator : IDisposable
             }
         }
 
-        if (_currentAudioPath != null)
+        if (_settings.GoogleDriveEnabled)
         {
-            _cloudSyncService.EnqueueUpload(_currentAudioPath);
-        }
-        if (_currentNotesPath != null)
-        {
-            _cloudSyncService.EnqueueUpload(_currentNotesPath);
+            if (_currentAudioPath != null)
+            {
+                _cloudSyncService.EnqueueUpload(_currentAudioPath);
+            }
+            if (_currentNotesPath != null)
+            {
+                _cloudSyncService.EnqueueUpload(_currentNotesPath);
+            }
         }
 
         TransitionTo(_audioSessionMonitor.IsMonitoring ? SessionState.Detecting : SessionState.Idle);
