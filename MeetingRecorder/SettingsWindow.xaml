@@ -3,42 +3,86 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:properties="clr-namespace:MeetingRecorder"
         Title="{x:Static properties:Resources.Settings}"
-        Height="230"
-        Width="560"
-        MinHeight="230"
-        MinWidth="560"
+        Height="460"
+        Width="580"
+        MinHeight="460"
+        MinWidth="580"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="16">
         <Grid.RowDefinitions>
+            <!-- Recordings folder -->
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <!-- UI language -->
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <!-- Google Drive section -->
+            <RowDefinition Height="Auto"/>
+            <!-- Buttons -->
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.RecordingsFolder}" Margin="0,0,0,8" FontWeight="SemiBold"/>
+        <!-- Recordings folder -->
+        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.RecordingsFolder}"
+                   Margin="0,0,0,8" FontWeight="SemiBold"/>
 
         <Grid Grid.Row="1" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-
-            <TextBox x:Name="OutputDirectoryTextBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <Button Grid.Column="1" Content="{x:Static properties:Resources.Browse}" Width="90" Padding="10,5" Click="Browse_Click"/>
+            <TextBox x:Name="OutputDirectoryTextBox" Grid.Column="0"
+                     VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <Button Grid.Column="1" Content="{x:Static properties:Resources.Browse}"
+                    Width="90" Padding="10,5" Click="Browse_Click"/>
         </Grid>
 
-        <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.UiLanguageLabel}" Margin="0,0,0,8" FontWeight="SemiBold"/>
+        <!-- UI language -->
+        <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.UiLanguageLabel}"
+                   Margin="0,0,0,8" FontWeight="SemiBold"/>
 
         <ComboBox x:Name="LanguageComboBox" Grid.Row="3" Margin="0,0,0,14"
                   DisplayMemberPath="DisplayName"
                   SelectedValuePath="Code"/>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
-            <Button Content="{x:Static properties:Resources.Cancel}" Width="90" Padding="10,5" Margin="0,0,8,0" IsCancel="True"/>
-            <Button Content="{x:Static properties:Resources.Save}" Width="90" Padding="10,5" IsDefault="True" Click="Save_Click"/>
+        <!-- Google Drive BYOK section -->
+        <Border Grid.Row="4" BorderBrush="#FFD1D5DB" BorderThickness="1"
+                CornerRadius="6" Padding="12" Margin="0,0,0,14">
+            <StackPanel>
+                <TextBlock Text="{x:Static properties:Resources.GoogleDriveSection}"
+                           FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#FF374151"/>
+
+                <!-- Client ID -->
+                <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}"
+                           Margin="0,0,0,4" Foreground="#FF6B7280" FontSize="12"/>
+                <TextBox x:Name="ClientIdTextBox"
+                         Margin="0,0,0,10" Padding="6,4"
+                         ToolTip="OAuth 2.0 Client ID from Google Cloud Console"/>
+
+                <!-- Client Secret -->
+                <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}"
+                           Margin="0,0,0,4" Foreground="#FF6B7280" FontSize="12"/>
+                <PasswordBox x:Name="ClientSecretPasswordBox"
+                             Margin="0,0,0,10" Padding="6,4"
+                             ToolTip="OAuth 2.0 Client Secret from Google Cloud Console"/>
+
+                <!-- Clear token -->
+                <Button x:Name="ClearTokenButton"
+                        Content="{x:Static properties:Resources.ClearTokenButton}"
+                        HorizontalAlignment="Left"
+                        Padding="10,5"
+                        Click="ClearToken_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Dialog buttons -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Button Content="{x:Static properties:Resources.Cancel}"
+                    Width="90" Padding="10,5" Margin="0,0,8,0" IsCancel="True"/>
+            <Button Content="{x:Static properties:Resources.Save}"
+                    Width="90" Padding="10,5" IsDefault="True" Click="Save_Click"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -135,6 +135,21 @@
     <value>Select where recordings will be saved.</value>
   </data>
   <data name="SelectValidFolder" xml:space="preserve">
-    <value>Please choose a valid folder.</value>
+	<value>Please choose a valid folder.</value>
+  </data>
+  <data name="GoogleDriveSection" xml:space="preserve">
+	<value>Google Drive sync (optional — overrides embedded credentials)</value>
+  </data>
+  <data name="GoogleClientIdLabel" xml:space="preserve">
+	<value>Client ID</value>
+  </data>
+  <data name="GoogleClientSecretLabel" xml:space="preserve">
+	<value>Client Secret</value>
+  </data>
+  <data name="ClearTokenButton" xml:space="preserve">
+	<value>Clear saved token</value>
+  </data>
+  <data name="TokenClearedMessage" xml:space="preserve">
+	<value>Saved Google token cleared. You will be prompted to sign in again on the next upload.</value>
   </data>
 </root>
