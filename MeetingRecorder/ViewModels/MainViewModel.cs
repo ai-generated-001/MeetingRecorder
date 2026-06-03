@@ -26,6 +26,7 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
     private readonly SessionCoordinator _sessionCoordinator;
     private readonly IFileIOService _fileIOService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ICloudSyncService _cloudSyncService;
     private AppStatus _status = AppStatus.Idle;
     private string _statusText = Resources.Idle;
 
@@ -97,13 +98,15 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         IAudioRecorder recorder,
         SessionCoordinator sessionCoordinator,
         IFileIOService fileIOService,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ICloudSyncService cloudSyncService)
     {
         _settings = settings;
         _recorder = recorder;
         _sessionCoordinator = sessionCoordinator;
         _fileIOService = fileIOService;
         _dateTimeProvider = dateTimeProvider;
+        _cloudSyncService = cloudSyncService;
 
         _sessionCoordinator.RecordingRequested += OnRecordingRequested;
         _sessionCoordinator.RecordingStopped += OnRecordingStopped;
@@ -137,7 +140,12 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
 
     private void OpenSettings()
     {
-        var settingsWindow = new SettingsWindow(_settings.OutputDirectory, _settings.UiLanguage)
+        var settingsWindow = new SettingsWindow(
+            _settings.OutputDirectory,
+            _settings.UiLanguage,
+            _settings.GoogleClientId,
+            _settings.GoogleClientSecret,
+            clearTokenAction: ClearGoogleToken)
         {
             Owner = System.Windows.Application.Current?.MainWindow
         };
@@ -146,6 +154,21 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         {
             _settings.OutputDirectory = settingsWindow.OutputDirectory;
             _settings.UiLanguage = settingsWindow.UiLanguage;
+
+            // If the user changed OAuth credentials, reset the cached drive service
+            // so the next upload re-authenticates with the new keys.
+            bool credentialsChanged =
+                _settings.GoogleClientId != settingsWindow.GoogleClientId ||
+                _settings.GoogleClientSecret != settingsWindow.GoogleClientSecret;
+
+            _settings.GoogleClientId = settingsWindow.GoogleClientId;
+            _settings.GoogleClientSecret = settingsWindow.GoogleClientSecret;
+
+            if (credentialsChanged)
+            {
+                (_cloudSyncService as GoogleDriveSyncService)?.ResetCredentials();
+            }
+
             App.ApplyUiLanguage(_settings.UiLanguage);
             UpdateLanguage();
         }
@@ -168,17 +191,9 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         UpdateStatusText();
     }
 
-    private void OnRecordingRequested(object? sender, MeetingDetectedEventArgs e)
+    private void OnRecordingRequested(object? sender, RecordingRequestedEventArgs e)
     {
-        string ext = _settings.OutputFormat == OutputFormat.Mp3 ? "mp3" : "wav";
-        string baseName = $"Meeting_{_dateTimeProvider.Now:yyyyMMdd_HHmmss}";
-        string? titlePrefix = SanitizeFileNameSegment(e.WindowTitle);
-        string fileName = string.IsNullOrWhiteSpace(titlePrefix)
-            ? $"{baseName}.{ext}"
-            : $"{titlePrefix}_{baseName}.{ext}";
-        string filePath = Path.Combine(_settings.OutputDirectory, fileName);
-
-        _recorder.Start(filePath, _settings.OutputFormat);
+        _recorder.Start(e.AudioFilePath, _settings.OutputFormat);
     }
 
     private void OnRecordingStopped(object? sender, EventArgs e)
@@ -193,34 +208,8 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
             SessionState.Idle => AppStatus.Idle,
             SessionState.Detecting => AppStatus.Detecting,
             SessionState.Recording => AppStatus.Recording,
+            SessionState.Saving => AppStatus.Idle,
             _ => AppStatus.Idle
-        };
-    }
-
-    private static string? SanitizeFileNameSegment(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        var invalidChars = Path.GetInvalidFileNameChars();
-        var cleaned = new string(value
-            .Trim()
-            .Select(c => invalidChars.Contains(c) ? '_' : c)
-            .ToArray());
-
-        cleaned = cleaned.Replace(' ', '_');
-        while (cleaned.Contains("__", StringComparison.Ordinal))
-        {
-            cleaned = cleaned.Replace("__", "_", StringComparison.Ordinal);
-        }
-
-        return cleaned.Trim('_') switch
-        {
-            "" => null,
-            var s when s.Length > 60 => s[..60],
-            var s => s
         };
     }
 
@@ -233,6 +222,23 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
             AppStatus.Recording => Resources.Recording,
             _ => Resources.StatusUnknown
         };
+    }
+
+    private void ClearGoogleToken()
+    {
+        // Wipe every encrypted token file in the token.json folder.
+        var tokenDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.json");
+        if (Directory.Exists(tokenDir))
+        {
+            foreach (var file in Directory.GetFiles(tokenDir, "dpapi_*.dat"))
+            {
+                try { File.Delete(file); }
+                catch { /* best-effort */ }
+            }
+        }
+
+        // Also reset the in-memory DriveService so the next upload re-authenticates.
+        (_cloudSyncService as GoogleDriveSyncService)?.ResetCredentials();
     }
 
     private void OpenRecordingsFolder()
