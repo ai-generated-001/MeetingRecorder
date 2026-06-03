@@ -59,11 +59,24 @@ The application features automated Google Drive synchronization. At the end of e
 
 For safety, the authentication tokens are encrypted locally on your machine using Windows Data Protection API (DPAPI) and saved under `token.json/`.
 
-To enable this feature, you must configure a Google Cloud project and embed the client secrets into the application using a `credentials.json` file.
+To enable this feature, the application requires a Google Cloud project client ID and client secret. This can be configured in two ways:
 
-### How to Create `credentials.json`
+1. **Build-Time Injection (GitHub Actions)**:
+   Define the following repository secrets in your GitHub repository:
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+   
+   The GitHub Actions workflow will automatically pass these to MSBuild during compilation via:
+   ```powershell
+   dotnet build -p:GoogleClientId="YOUR_CLIENT_ID" -p:GoogleClientSecret="YOUR_CLIENT_SECRET"
+   ```
+   
+2. **User-Supplied settings ("Bring Your Own Key")**:
+   Users can manually input their own Google Client ID and Client Secret directly in the application's Settings window.
 
-Follow these steps to generate a valid `credentials.json` file for the application:
+### How to Create OAuth Client Credentials
+
+Follow these steps to generate a valid OAuth client ID and client secret:
 
 1. **Go to the Google Cloud Console**:
    Open [Google Cloud Console](https://console.cloud.google.com/).
@@ -86,13 +99,8 @@ Follow these steps to generate a valid `credentials.json` file for the applicati
    - Set **Application type** to **Desktop app**.
    - Name it (e.g., `MeetingRecorder Desktop Client`).
    - Click **Create**.
-6. **Download `credentials.json`**:
-   - A dialog will appear saying "OAuth client created". Click **Download JSON** to download the client secrets file.
-   - Alternatively, in the credentials list under **OAuth 2.0 Client IDs**, click the download icon next to your newly created client ID.
-7. **Embed `credentials.json` in the project**:
-   - Rename the downloaded file to exactly `credentials.json`.
-   - Place it inside the `MeetingRecorder/` project folder (i.e. `MeetingRecorder/credentials.json`).
-   - The MSBuild system will automatically embed it as a resource during the next build.
+6. **Obtain Client ID and Secret**:
+   - A dialog will appear showing the Client ID and Client Secret. Copy these values to inject during build time, or input them directly into the application's Settings screen.
 
 ## License
 

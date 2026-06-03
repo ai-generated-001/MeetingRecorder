@@ -28,13 +28,13 @@ public class AppSettings
 
     /// <summary>
     /// Optional user-supplied OAuth 2.0 Client ID ("Bring Your Own Key").
-    /// When set, overrides the embedded credentials.json.
+    /// When set, overrides the build-time injected credentials.
     /// </summary>
     public string GoogleClientId { get; set; } = "";
 
     /// <summary>
     /// Optional user-supplied OAuth 2.0 Client Secret ("Bring Your Own Key").
-    /// When set, overrides the embedded credentials.json.
+    /// When set, overrides the build-time injected credentials.
     /// </summary>
     public string GoogleClientSecret { get; set; } = "";
 

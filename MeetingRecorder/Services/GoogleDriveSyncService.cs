@@ -190,17 +190,24 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
             };
         }
 
-        // Fall back to the embedded credentials.json.
+        // Fall back to the build-time injected client ID and secret.
         var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream("MeetingRecorder.credentials.json");
-        if (stream == null)
+        var metadata = assembly.GetCustomAttributes<AssemblyMetadataAttribute>();
+        var injectedClientId = metadata.FirstOrDefault(a => a.Key == "GoogleClientId")?.Value;
+        var injectedClientSecret = metadata.FirstOrDefault(a => a.Key == "GoogleClientSecret")?.Value;
+
+        if (!string.IsNullOrWhiteSpace(injectedClientId) && !string.IsNullOrWhiteSpace(injectedClientSecret))
         {
-            throw new InvalidOperationException(
-                "No Google OAuth credentials found. " +
-                "Please supply a Client ID and Client Secret in Settings, " +
-                "or embed a credentials.json file in the project.");
+            return new ClientSecrets
+            {
+                ClientId = injectedClientId,
+                ClientSecret = injectedClientSecret
+            };
         }
-        return GoogleClientSecrets.FromStream(stream).Secrets;
+
+        throw new InvalidOperationException(
+            "No Google OAuth credentials found. " +
+            "Please supply a Client ID and Client Secret in Settings.");
     }
 
     private async Task<string> GetOrCreateFolderIdAsync(DriveService service, CancellationToken cancellationToken)

@@ -8,6 +8,8 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <GoogleClientId Condition="'$(GoogleClientId)' == ''"></GoogleClientId>
+    <GoogleClientSecret Condition="'$(GoogleClientSecret)' == ''"></GoogleClientSecret>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,7 +35,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="credentials.json" />
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>GoogleClientId</_Parameter1>
+      <_Parameter2>$(GoogleClientId)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>GoogleClientSecret</_Parameter1>
+      <_Parameter2>$(GoogleClientSecret)</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>

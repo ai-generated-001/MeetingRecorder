@@ -110,8 +110,7 @@ Folder existence checks are case-insensitive. If a user specifies a target folde
     │   └── MainViewModel.cs
     ├── MainWindow.xaml
     ├── SettingsWindow.xaml
-    ├── App.xaml.cs
-    └── credentials.json (Embedded Resource)
+    └── App.xaml.cs
 
 ## 7. Engineering Constraints and Goals
 - Keep monitoring overhead low (polling loop + debounce).
