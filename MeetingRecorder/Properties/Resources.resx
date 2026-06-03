@@ -152,4 +152,28 @@
   <data name="TokenClearedMessage" xml:space="preserve">
 	<value>Saved Google token cleared. You will be prompted to sign in again on the next upload.</value>
   </data>
+  <data name="GoogleDriveFolderPathLabel" xml:space="preserve">
+	<value>Drive folder path</value>
+  </data>
+  <data name="GoogleDriveFolderPathPlaceholder" xml:space="preserve">
+	<value>e.g. Meeting_Auto_Sync or Work/Meetings</value>
+  </data>
+  <data name="GoogleDriveEnabledLabel" xml:space="preserve">
+	<value>Enable Google Drive sync</value>
+  </data>
+  <data name="GoogleDriveStatusLabel" xml:space="preserve">
+	<value>Status:</value>
+  </data>
+  <data name="GoogleDriveStatusChecking" xml:space="preserve">
+	<value>Checking...</value>
+  </data>
+  <data name="GoogleDriveNotSignedIn" xml:space="preserve">
+	<value>Not signed in</value>
+  </data>
+  <data name="GoogleDriveSignedIn" xml:space="preserve">
+	<value>Signed in</value>
+  </data>
+  <data name="GoogleDriveSignedInAs" xml:space="preserve">
+	<value>Signed in as {0}</value>
+  </data>
 </root>

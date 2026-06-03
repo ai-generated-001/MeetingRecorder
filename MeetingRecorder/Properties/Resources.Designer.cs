@@ -212,5 +212,53 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("TokenClearedMessage", resourceCulture);
             }
         }
+
+        public static string GoogleDriveFolderPathLabel {
+            get {
+                return ResourceManager.GetString("GoogleDriveFolderPathLabel", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveFolderPathPlaceholder {
+            get {
+                return ResourceManager.GetString("GoogleDriveFolderPathPlaceholder", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveEnabledLabel {
+            get {
+                return ResourceManager.GetString("GoogleDriveEnabledLabel", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveStatusLabel {
+            get {
+                return ResourceManager.GetString("GoogleDriveStatusLabel", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveStatusChecking {
+            get {
+                return ResourceManager.GetString("GoogleDriveStatusChecking", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveNotSignedIn {
+            get {
+                return ResourceManager.GetString("GoogleDriveNotSignedIn", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveSignedIn {
+            get {
+                return ResourceManager.GetString("GoogleDriveSignedIn", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveSignedInAs {
+            get {
+                return ResourceManager.GetString("GoogleDriveSignedInAs", resourceCulture);
+            }
+        }
     }
 }

@@ -4,27 +4,181 @@
         xmlns:models="clr-namespace:MeetingRecorder.Models"
         xmlns:viewmodels="clr-namespace:MeetingRecorder.ViewModels"
         xmlns:properties="clr-namespace:MeetingRecorder"
-        Title="{Binding AppTitle}" Height="400" Width="540"
-        MinHeight="350" MinWidth="420"
+        Title="{Binding AppTitle}" 
+        Height="450" 
+        Width="560"
+        MinHeight="450" 
+        MinWidth="560"
         WindowStartupLocation="CenterScreen"
         Background="#FFF6F8FB"
-        Icon="Resources/icon.ico">
+        Icon="Resources/icon.ico"
+        FontFamily="Segoe UI"
+        FontSize="13"
+        Foreground="#FF374151">
+
+    <Window.Resources>
+        <!-- Base Button Style -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FFD1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#FF374151"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFF9FAFB"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF9CA3AF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFE5E7EB"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#FFF3F4F6"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFE5E7EB"/>
+                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Primary Button Style -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#FF2563EB"/>
+            <Setter Property="BorderBrush" Value="#FF2563EB"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF1D4ED8"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF1D4ED8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF1E40AF"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF1E40AF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#FF93C5FD"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF93C5FD"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Danger Button Style -->
+        <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#FFFEE2E2"/>
+            <Setter Property="BorderBrush" Value="#FFFCA5A5"/>
+            <Setter Property="Foreground" Value="#FF991B1B"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFEE2E2"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFEF4444"/>
+                                <Setter Property="Foreground" Value="#FFB91C1C"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFECACA"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFDC2626"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#FFF9FAFB"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFE5E7EB"/>
+                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- RadioButton Style -->
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#FF374151"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,0,0,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid x:Name="templateRoot" Background="Transparent" SnapsToDevicePixels="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid x:Name="radioGrid" Height="18" Width="18" VerticalAlignment="Center">
+                                <Border x:Name="radioBorder" BorderBrush="#FFD1D5DB" BorderThickness="1.5" Background="White" CornerRadius="9"/>
+                                <Ellipse x:Name="radioGlyph" Fill="#FF2563EB" Width="8" Height="8" Visibility="Collapsed"/>
+                            </Grid>
+                            <ContentPresenter x:Name="contentPresenter" Grid.Column="1" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="true">
+                                <Setter TargetName="radioBorder" Property="BorderBrush" Value="#FF2563EB"/>
+                                <Setter TargetName="radioBorder" Property="Background" Value="#FFEBF5FF"/>
+                                <Setter TargetName="radioGlyph" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="radioBorder" Property="BorderBrush" Value="#FF93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter TargetName="radioBorder" Property="Background" Value="#FFF3F4F6"/>
+                                <Setter TargetName="radioBorder" Property="BorderBrush" Value="#FFE5E7EB"/>
+                                <Setter TargetName="radioGlyph" Property="Fill" Value="#FF9CA3AF"/>
+                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Grid Margin="20">
-        <Border Background="White" CornerRadius="12" Padding="18" BorderBrush="#FFE4E8EF" BorderThickness="1">
+        <Border Background="White" CornerRadius="12" Padding="20" BorderBrush="#FFE4E8EF" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
+                    <!-- Title & description -->
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <!-- Status card -->
                     <RowDefinition Height="Auto"/>
+                    <!-- Output format and Settings -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Divider -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Control buttons -->
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Text="{Binding HeaderTitle}" FontSize="20" FontWeight="SemiBold" Foreground="#FF1F2937"/>
-                <TextBlock Grid.Row="1" Margin="0,6,0,14" Text="{Binding AppDescription}"
-                           TextWrapping="Wrap" Foreground="#FF6B7280"/>
+                <TextBlock Grid.Row="0" Text="{Binding HeaderTitle}" FontSize="20" FontWeight="Bold" Foreground="#FF1F2937"/>
+                <TextBlock Grid.Row="1" Margin="0,6,0,16" Text="{Binding AppDescription}" TextWrapping="Wrap" Foreground="#FF6B7280" FontSize="12"/>
 
-                <Border Grid.Row="2" Background="#FFF9FAFB" BorderBrush="#FFE5E7EB" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,14">
+                <!-- Status Card -->
+                <Border Grid.Row="2" Background="#FFF9FAFB" BorderBrush="#FFE5E7EB" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,16">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -32,8 +186,8 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel>
-                            <TextBlock Text="{Binding StatusLabel}" FontWeight="SemiBold" Foreground="#FF374151"/>
-                            <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0">
+                            <TextBlock Text="{Binding StatusLabel}" FontWeight="SemiBold" Foreground="#FF374151" FontSize="12"/>
+                            <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="Bold" Margin="0,4,0,0">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Foreground" Value="#FF1D4ED8"/>
@@ -47,7 +201,8 @@
                             </TextBlock>
                         </StackPanel>
 
-                        <Ellipse Grid.Column="1" Width="14" Height="14" VerticalAlignment="Center" Margin="10,0,0,0">
+                        <!-- Glowing status badge -->
+                        <Ellipse Grid.Column="1" Width="12" Height="12" VerticalAlignment="Center" Margin="10,0,0,0">
                             <Ellipse.Style>
                                 <Style TargetType="Ellipse">
                                     <Setter Property="Fill" Value="#FF2563EB"/>
@@ -62,38 +217,43 @@
                     </Grid>
                 </Border>
 
-                <Grid Grid.Row="3" VerticalAlignment="Top" Margin="0,0,0,8">
+                <!-- Format & Settings Row -->
+                <Grid Grid.Row="3" VerticalAlignment="Top" Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding OutputFormatLabel}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#FF374151"/>
-                        <RadioButton Content="MP3" VerticalAlignment="Center" Margin="0,0,14,0"
+                        <TextBlock Text="{Binding OutputFormatLabel}" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="#FF4B5563" FontWeight="Medium"/>
+                        <RadioButton Content="MP3" VerticalAlignment="Center" Margin="0,0,16,0"
                                      IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Mp3}}"/>
                         <RadioButton Content="WAV" VerticalAlignment="Center"
                                      IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Wav}}"/>
                     </StackPanel>
 
-                    <Button Grid.Column="1" Content="{Binding SettingsButtonText}" Command="{Binding OpenSettingsCommand}" Padding="10,5" MinWidth="90"/>
+                    <Button Grid.Column="1" Content="{Binding SettingsButtonText}" Command="{Binding OpenSettingsCommand}" Width="90"/>
                 </Grid>
 
-                <Grid Grid.Row="4" Margin="0,8,0,0">
+                <!-- Separator -->
+                <Border Grid.Row="4" BorderBrush="#FFE5E7EB" BorderThickness="0,1,0,0" Margin="0,4,0,16" SnapsToDevicePixels="True"/>
+
+                <!-- Action buttons -->
+                <Grid Grid.Row="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
-                        <Button Content="{Binding StartMonitoringText}" Command="{Binding StartMonitoringCommand}" Margin="0,0,8,0" Padding="14,7" Width="140"/>
-                        <Button Content="{Binding StopMonitoringText}" Command="{Binding StopMonitoringCommand}" Margin="0,0,8,0" Padding="14,7" Width="140"/>
-                        <Button Content="{Binding StopRecordingText}" Command="{Binding StopRecordingCommand}" Padding="14,7" Width="130"/>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+                        <Button Content="{Binding StartMonitoringText}" Command="{Binding StartMonitoringCommand}" Margin="0,0,8,0" Width="140"/>
+                        <Button Content="{Binding StopMonitoringText}" Command="{Binding StopMonitoringCommand}" Margin="0,0,8,0" Width="140"/>
+                        <Button Content="{Binding StopRecordingText}" Command="{Binding StopRecordingCommand}" Style="{StaticResource DangerButtonStyle}" Width="130"/>
                     </StackPanel>
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="{Binding OpenFolderText}" Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" Padding="14,7" Width="190"/>
-                        <Button Content="{Binding ExitButtonText}" Command="{Binding ExitCommand}" Padding="14,7" Width="90"/>
+                        <Button Content="{Binding OpenFolderText}" Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" Width="190"/>
+                        <Button Content="{Binding ExitButtonText}" Command="{Binding ExitCommand}" Width="90"/>
                     </StackPanel>
                 </Grid>
             </Grid>
