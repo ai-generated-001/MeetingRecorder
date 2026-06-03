@@ -13,9 +13,25 @@ public class SessionCoordinatorTests
     {
         var monitor = CreateMonitor();
         var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
+        var settings = new AppSettings();
+        var fileIOService = new Mock<IFileIOService>();
+        var noteWriterService = new Mock<INoteWriterService>();
+        var cloudSyncService = new Mock<ICloudSyncService>();
 
-        using var coordinator = new SessionCoordinator(monitor.Object, clock, TimeSpan.FromSeconds(5));
-        MeetingDetectedEventArgs? requestedMeeting = null;
+        fileIOService
+            .Setup(x => x.AppendAllTextAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<System.Threading.CancellationToken>()))
+            .Returns(System.Threading.Tasks.Task.CompletedTask);
+
+        using var coordinator = new SessionCoordinator(
+            monitor.Object, 
+            clock, 
+            TimeSpan.FromSeconds(5),
+            settings,
+            fileIOService.Object,
+            noteWriterService.Object,
+            cloudSyncService.Object);
+
+        RecordingRequestedEventArgs? requestedMeeting = null;
         coordinator.RecordingRequested += (_, e) => requestedMeeting = e;
 
         coordinator.Start();
@@ -23,7 +39,7 @@ public class SessionCoordinatorTests
 
         coordinator.State.Should().Be(SessionState.Recording);
         requestedMeeting.Should().NotBeNull();
-        requestedMeeting!.ProcessName.Should().Be("teams");
+        requestedMeeting!.MeetingDetails.ProcessName.Should().Be("teams");
     }
 
     [Fact]
@@ -31,8 +47,24 @@ public class SessionCoordinatorTests
     {
         var monitor = CreateMonitor();
         var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
+        var settings = new AppSettings();
+        var fileIOService = new Mock<IFileIOService>();
+        var noteWriterService = new Mock<INoteWriterService>();
+        var cloudSyncService = new Mock<ICloudSyncService>();
 
-        using var coordinator = new SessionCoordinator(monitor.Object, clock, TimeSpan.FromSeconds(5));
+        fileIOService
+            .Setup(x => x.AppendAllTextAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<System.Threading.CancellationToken>()))
+            .Returns(System.Threading.Tasks.Task.CompletedTask);
+
+        using var coordinator = new SessionCoordinator(
+            monitor.Object, 
+            clock, 
+            TimeSpan.FromSeconds(5),
+            settings,
+            fileIOService.Object,
+            noteWriterService.Object,
+            cloudSyncService.Object);
+
         var stopEvents = 0;
         coordinator.RecordingStopped += (_, _) => stopEvents++;
 

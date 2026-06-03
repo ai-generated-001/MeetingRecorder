@@ -182,5 +182,35 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("SelectValidFolder", resourceCulture);
             }
         }
+
+        public static string GoogleDriveSection {
+            get {
+                return ResourceManager.GetString("GoogleDriveSection", resourceCulture);
+            }
+        }
+
+        public static string GoogleClientIdLabel {
+            get {
+                return ResourceManager.GetString("GoogleClientIdLabel", resourceCulture);
+            }
+        }
+
+        public static string GoogleClientSecretLabel {
+            get {
+                return ResourceManager.GetString("GoogleClientSecretLabel", resourceCulture);
+            }
+        }
+
+        public static string ClearTokenButton {
+            get {
+                return ResourceManager.GetString("ClearTokenButton", resourceCulture);
+            }
+        }
+
+        public static string TokenClearedMessage {
+            get {
+                return ResourceManager.GetString("TokenClearedMessage", resourceCulture);
+            }
+        }
     }
 }

@@ -4,5 +4,6 @@ public enum SessionState
 {
     Idle,
     Detecting,
-    Recording
+    Recording,
+    Saving
 }

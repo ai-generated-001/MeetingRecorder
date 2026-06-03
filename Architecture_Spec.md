@@ -30,9 +30,10 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
    - Raises `MeetingEnded` after inactivity exceeds debounce configuration.
 
 2. **SessionCoordinator**
-   - Maintains `SessionState` (`Idle`, `Detecting`, `Recording`).
-   - Subscribes to detector events and emits:
-     - `RecordingRequested(MeetingDetectedEventArgs)`
+   - Maintains `SessionState` (`Idle`, `Detecting`, `Recording`, `Saving`).
+   - Subscribes to detector events, coordinates note generation, and triggers cloud sync.
+   - Emits:
+     - `RecordingRequested(RecordingRequestedEventArgs)`
      - `RecordingStopped`
      - `StateChanged`
    - Applies debounce and supports manual stop behavior while continuing monitoring.
@@ -58,6 +59,11 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
    - Manages localized text strings (`Resources.resx` and `Resources.zh-CN.resx`) for UI controls.
    - Binds UI headers, buttons, and status labels to dynamic properties in `MainViewModel` that raise `PropertyChanged` events when the UI culture changes, enabling instant runtime translation updates without application restarts.
 
+7. **GoogleDriveSyncService (`ICloudSyncService`)**
+   - Implements a thread-safe, non-blocking background queue using `System.Threading.Channels.Channel<string>`.
+   - Authenticates silently to Google Drive using `GoogleWebAuthorizationBroker` with access tokens securely encrypted locally using Windows DPAPI (`DpapiFileDataStore`).
+   - Automatically finds or creates a target folder named `"Meeting_Auto_Sync"` and uploads files asynchronously.
+
 ## 4. State and Event Flow
 1. App startup configures DI and creates `MainViewModel`.
 2. `MainViewModel` starts `SessionCoordinator`, moving state to `Detecting`.
@@ -65,7 +71,7 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 4. `SessionCoordinator` raises `RecordingRequested` and transitions to `Recording`.
 5. `MainViewModel` starts `IAudioRecorder` with generated output path/format.
 6. On meeting inactivity beyond debounce, detector triggers `MeetingEnded`.
-7. `SessionCoordinator` raises `RecordingStopped` and returns to `Detecting` (or `Idle` if monitoring stopped).
+7. `SessionCoordinator` transitions to `Saving`, raises `RecordingStopped` (flushing recorder files), writes the markdown notes file using `INoteWriterService` and `IFileIOService`, enqueues both the audio and markdown files in the background sync service, and returns to `Detecting` (or `Idle` if monitoring stopped).
 
 ## 5. Configuration Model
 `AppSettings` currently controls:
@@ -85,12 +91,17 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
     │   ├── IAudioRecorder.cs
     │   ├── AudioSessionDetector.cs
     │   ├── SessionCoordinator.cs
-    │   └── WasapiRecorder.cs
+    │   ├── WasapiRecorder.cs
+    │   ├── ICloudSyncService.cs
+    │   ├── GoogleDriveSyncService.cs
+    │   ├── DpapiFileDataStore.cs
+    │   └── RecordingRequestedEventArgs.cs
     ├── ViewModels/
     │   └── MainViewModel.cs
     ├── MainWindow.xaml
     ├── SettingsWindow.xaml
-    └── App.xaml.cs
+    ├── App.xaml.cs
+    └── credentials.json (Embedded Resource)
 
 ## 7. Engineering Constraints and Goals
 - Keep monitoring overhead low (polling loop + debounce).
