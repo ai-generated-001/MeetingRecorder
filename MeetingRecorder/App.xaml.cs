@@ -9,6 +9,7 @@ using MeetingRecorder.Models;
 using MeetingRecorder.Services;
 using MeetingRecorder.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using Application = System.Windows.Application;
 
 namespace MeetingRecorder;
@@ -53,11 +54,56 @@ public partial class App : Application
         ShowMainWindow();
     }
 
+    private static readonly string SettingsFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "MeetingRecorder",
+        "settings.json");
+
+    private static AppSettings LoadSettings()
+    {
+        try
+        {
+            if (File.Exists(SettingsFilePath))
+            {
+                var json = File.ReadAllText(SettingsFilePath);
+                var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                if (settings != null)
+                {
+                    return settings;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load settings: {ex.Message}");
+        }
+        return new AppSettings();
+    }
+
+    internal static void SaveSettings(AppSettings settings)
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(SettingsFilePath);
+            if (directory != null && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+            var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(SettingsFilePath, json);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to save settings: {ex.Message}");
+        }
+    }
+
     private void ConfigureServices()
     {
         var services = new ServiceCollection();
 
-        services.AddSingleton<AppSettings>();
+        var settings = LoadSettings();
+        services.AddSingleton<AppSettings>(settings);
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         services.AddSingleton<IFileIOService, FileIOService>();
         services.AddSingleton<IScreenCaptureService, ScreenCaptureService>();

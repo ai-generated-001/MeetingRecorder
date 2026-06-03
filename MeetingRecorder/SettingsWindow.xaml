@@ -3,86 +3,413 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:properties="clr-namespace:MeetingRecorder"
         Title="{x:Static properties:Resources.Settings}"
-        Height="460"
+        Height="580"
         Width="580"
-        MinHeight="460"
+        MinHeight="580"
         MinWidth="580"
         ResizeMode="NoResize"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <!-- Recordings folder -->
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <!-- UI language -->
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <!-- Google Drive section -->
-            <RowDefinition Height="Auto"/>
-            <!-- Buttons -->
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        WindowStartupLocation="CenterOwner"
+        Background="#FFF6F8FB"
+        FontFamily="Segoe UI"
+        FontSize="13"
+        Foreground="#FF374151">
 
-        <!-- Recordings folder -->
-        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.RecordingsFolder}"
-                   Margin="0,0,0,8" FontWeight="SemiBold"/>
+    <Window.Resources>
+        <!-- TextBox Style -->
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FFE4E8EF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#FF1F2937"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF2563EB"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#FFF3F4F6"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFE5E7EB"/>
+                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-        <Grid Grid.Row="1" Margin="0,0,0,14">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="OutputDirectoryTextBox" Grid.Column="0"
-                     VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <Button Grid.Column="1" Content="{x:Static properties:Resources.Browse}"
-                    Width="90" Padding="10,5" Click="Browse_Click"/>
-        </Grid>
+        <!-- PasswordBox Style -->
+        <Style TargetType="PasswordBox">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FFE4E8EF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#FF1F2937"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF2563EB"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#FFF3F4F6"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFE5E7EB"/>
+                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-        <!-- UI language -->
-        <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.UiLanguageLabel}"
-                   Margin="0,0,0,8" FontWeight="SemiBold"/>
+        <!-- Base Button Style -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FFD1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#FF374151"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFF9FAFB"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF9CA3AF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFE5E7EB"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#FFF3F4F6"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFE5E7EB"/>
+                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-        <ComboBox x:Name="LanguageComboBox" Grid.Row="3" Margin="0,0,0,14"
-                  DisplayMemberPath="DisplayName"
-                  SelectedValuePath="Code"/>
+        <!-- Primary Button Style -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#FF2563EB"/>
+            <Setter Property="BorderBrush" Value="#FF2563EB"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF1D4ED8"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF1D4ED8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF1E40AF"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF1E40AF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#FF93C5FD"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF93C5FD"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-        <!-- Google Drive BYOK section -->
-        <Border Grid.Row="4" BorderBrush="#FFD1D5DB" BorderThickness="1"
-                CornerRadius="6" Padding="12" Margin="0,0,0,14">
-            <StackPanel>
-                <TextBlock Text="{x:Static properties:Resources.GoogleDriveSection}"
-                           FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#FF374151"/>
+        <!-- Danger Button Style -->
+        <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#FFFEE2E2"/>
+            <Setter Property="BorderBrush" Value="#FFFCA5A5"/>
+            <Setter Property="Foreground" Value="#FF991B1B"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFEE2E2"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFEF4444"/>
+                                <Setter Property="Foreground" Value="#FFB91C1C"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFECACA"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFDC2626"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#FFF9FAFB"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFE5E7EB"/>
+                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                <!-- Client ID -->
-                <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}"
-                           Margin="0,0,0,4" Foreground="#FF6B7280" FontSize="12"/>
-                <TextBox x:Name="ClientIdTextBox"
-                         Margin="0,0,0,10" Padding="6,4"
-                         ToolTip="OAuth 2.0 Client ID from Google Cloud Console"/>
+        <!-- ComboBox ToggleButton Style -->
+        <Style x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="border" BorderBrush="#FFE4E8EF" BorderThickness="1" Background="White" CornerRadius="6" SnapsToDevicePixels="true">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="32"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="1" BorderBrush="Transparent" BorderThickness="0" Background="Transparent">
+                                    <Path x:Name="Arrow" Data="M 0,0 L 4,4 L 8,0" Stroke="#FF6B7280" StrokeThickness="1.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF93C5FD"/>
+                                <Setter TargetName="Arrow" Property="Stroke" Value="#FF374151"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="true">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF2563EB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                <!-- Client Secret -->
-                <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}"
-                           Margin="0,0,0,4" Foreground="#FF6B7280" FontSize="12"/>
-                <PasswordBox x:Name="ClientSecretPasswordBox"
-                             Margin="0,0,0,10" Padding="6,4"
-                             ToolTip="OAuth 2.0 Client Secret from Google Cloud Console"/>
+        <!-- ComboBox Style -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FFE4E8EF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#FF1F2937"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid SnapsToDevicePixels="true">
+                            <ToggleButton x:Name="ToggleButton" Style="{StaticResource ComboBoxToggleButton}" Focusable="false" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <ContentPresenter x:Name="ContentSite" IsHitTestVisible="false" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" Margin="10,3,32,3" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="true" Focusable="false" PopupAnimation="Slide">
+                                <Grid x:Name="DropDown" SnapsToDevicePixels="true" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder" BorderBrush="#FFE4E8EF" BorderThickness="1" Background="White" CornerRadius="6" Margin="0,4,0,4">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="#FF000000" BlurRadius="5" ShadowDepth="1" Opacity="0.1"/>
+                                        </Border.Effect>
+                                        <ScrollViewer Margin="4" SnapsToDevicePixels="true" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                            <StackPanel IsItemsHost="true" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                <!-- Clear token -->
-                <Button x:Name="ClearTokenButton"
-                        Content="{x:Static properties:Resources.ClearTokenButton}"
-                        HorizontalAlignment="Left"
-                        Padding="10,5"
-                        Click="ClearToken_Click"/>
-            </StackPanel>
+        <!-- ComboBoxItem Style -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="4" SnapsToDevicePixels="true">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter Property="Background" Value="#FFF3F4F6"/>
+                                <Setter Property="Foreground" Value="#FF1F2937"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="true">
+                                <Setter Property="Background" Value="#FFEBF5FF"/>
+                                <Setter Property="Foreground" Value="#FF2563EB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- CheckBox Style -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#FF374151"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,0,0,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid x:Name="templateRoot" Background="Transparent" SnapsToDevicePixels="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid x:Name="checkboxGrid" Height="18" Width="18" VerticalAlignment="Center">
+                                <Border x:Name="checkBoxBorder" BorderBrush="#FFD1D5DB" BorderThickness="1.5" Background="White" CornerRadius="4"/>
+                                <Path x:Name="optionMark" Data="M 3,8 L 7,12 L 15,4" Stroke="#FF2563EB" StrokeThickness="2.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Visibility="Collapsed"/>
+                            </Grid>
+                            <ContentPresenter x:Name="contentPresenter" Grid.Column="1" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="true">
+                                <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="#FF2563EB"/>
+                                <Setter TargetName="checkBoxBorder" Property="Background" Value="#FFEBF5FF"/>
+                                <Setter TargetName="optionMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="#FF93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter TargetName="checkBoxBorder" Property="Background" Value="#FFF3F4F6"/>
+                                <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="#FFE5E7EB"/>
+                                <Setter TargetName="optionMark" Property="Stroke" Value="#FF9CA3AF"/>
+                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Border Background="White" CornerRadius="12" Padding="20" BorderBrush="#FFE4E8EF" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <!-- Content (Header, Settings, Scrollable) -->
+                    <RowDefinition Height="*"/>
+                    <!-- Divider -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Footer Buttons -->
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Scrollable Content Area -->
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                    <StackPanel Margin="0,0,8,0">
+                        <!-- Header -->
+                        <TextBlock Text="{x:Static properties:Resources.Settings}" FontSize="20" FontWeight="Bold" Foreground="#FF1F2937" Margin="0,0,0,4"/>
+                        <TextBlock Text="Configure recording output, UI language, and cloud sync integration." FontSize="12" Foreground="#FF6B7280" Margin="0,0,0,20" TextWrapping="Wrap"/>
+
+                        <!-- General Settings Section Header -->
+                        <TextBlock Text="General Settings" FontSize="14" FontWeight="SemiBold" Foreground="#FF1F2937" Margin="0,0,0,10"/>
+                        
+                        <!-- Recordings folder -->
+                        <TextBlock Text="{x:Static properties:Resources.RecordingsFolder}" Margin="0,0,0,6" FontSize="12" Foreground="#FF4B5563" FontWeight="Medium"/>
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="OutputDirectoryTextBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Grid.Column="1" Content="{x:Static properties:Resources.Browse}" Width="90" Click="Browse_Click"/>
+                        </Grid>
+
+                        <!-- UI language -->
+                        <TextBlock Text="{x:Static properties:Resources.UiLanguageLabel}" Margin="0,0,0,6" FontSize="12" Foreground="#FF4B5563" FontWeight="Medium"/>
+                        <ComboBox x:Name="LanguageComboBox" Margin="0,0,0,20" DisplayMemberPath="DisplayName" SelectedValuePath="Code" HorizontalAlignment="Stretch"/>
+
+                        <!-- Google Drive BYOK section Card -->
+                        <Border BorderBrush="#FFE5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,10" Background="#FFF9FAFB">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.GoogleDriveSection}" FontWeight="SemiBold" Margin="0,0,0,4" FontSize="14" Foreground="#FF1F2937"/>
+                                <TextBlock Text="Sync recordings to your Google Drive automatically using your credentials." Margin="0,0,0,12" FontSize="12" Foreground="#FF6B7280" TextWrapping="Wrap"/>
+
+                                <!-- Enable toggle -->
+                                <CheckBox x:Name="GoogleDriveEnabledCheckBox" Content="{x:Static properties:Resources.GoogleDriveEnabledLabel}" Margin="0,0,0,12" FontWeight="Medium"/>
+
+                                <!-- Detail fields — greyed out when sync is disabled -->
+                                <StackPanel IsEnabled="{Binding IsChecked, ElementName=GoogleDriveEnabledCheckBox}">
+                                    <!-- Separator line -->
+                                    <Border BorderBrush="#FFE5E7EB" BorderThickness="0,1,0,0" Margin="0,4,0,12" SnapsToDevicePixels="True"/>
+
+                                    <!-- Login Status -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Static properties:Resources.GoogleDriveStatusLabel}" Foreground="#FF4B5563" Margin="0,0,8,0" FontWeight="Medium"/>
+                                        <!-- Colored status badge -->
+                                        <Border CornerRadius="4" Padding="8,3" Background="#FFF3F4F6" VerticalAlignment="Center">
+                                            <TextBlock x:Name="StatusValueTextBlock" Text="{x:Static properties:Resources.GoogleDriveStatusChecking}" FontWeight="SemiBold" FontSize="11" Foreground="#FF6B7280"/>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- Client ID -->
+                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>
+                                    <TextBox x:Name="ClientIdTextBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client ID from Google Cloud Console"/>
+
+                                    <!-- Client Secret -->
+                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>
+                                    <PasswordBox x:Name="ClientSecretPasswordBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client Secret from Google Cloud Console"/>
+
+                                    <!-- Drive folder path -->
+                                    <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>
+                                    <Grid Margin="0,0,0,16">
+                                        <TextBox x:Name="DriveFolderPathTextBox" ToolTip="Folder path in Google Drive. Use / to separate nested folders."/>
+                                        <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathPlaceholder}" Foreground="#FFA0AEC0" FontSize="12" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text, ElementName=DriveFolderPathTextBox}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <!-- Clear token -->
+                                    <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Padding="12,6" Click="ClearToken_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Footer Divider -->
+                <Border Grid.Row="1" BorderBrush="#FFE5E7EB" BorderThickness="0,1,0,0" Margin="0,12,0,16" SnapsToDevicePixels="True"/>
+
+                <!-- Dialog buttons -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="{x:Static properties:Resources.Cancel}" Width="90" Margin="0,0,8,0" IsCancel="True"/>
+                    <Button Content="{x:Static properties:Resources.Save}" Style="{StaticResource PrimaryButtonStyle}" Width="90" IsDefault="True" Click="Save_Click"/>
+                </StackPanel>
+            </Grid>
         </Border>
-
-        <!-- Dialog buttons -->
-        <StackPanel Grid.Row="5" Orientation="Horizontal"
-                    HorizontalAlignment="Right" VerticalAlignment="Bottom">
-            <Button Content="{x:Static properties:Resources.Cancel}"
-                    Width="90" Padding="10,5" Margin="0,0,8,0" IsCancel="True"/>
-            <Button Content="{x:Static properties:Resources.Save}"
-                    Width="90" Padding="10,5" IsDefault="True" Click="Save_Click"/>
-        </StackPanel>
     </Grid>
 </Window>

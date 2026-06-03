@@ -74,11 +74,21 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 7. `SessionCoordinator` transitions to `Saving`, raises `RecordingStopped` (flushing recorder files), writes the markdown notes file using `INoteWriterService` and `IFileIOService`, enqueues both the audio and markdown files in the background sync service, and returns to `Detecting` (or `Idle` if monitoring stopped).
 
 ## 5. Configuration Model
-`AppSettings` currently controls:
+`AppSettings` controls:
 - `WhitelistedProcesses` (default: wemeetapp, Zoom, ms-teams, ms-teams_modulehost, Teams, Feishu, DingTalk, Webex)
 - `OutputDirectory` (default under Documents\MeetingRecordings)
 - `DebounceSeconds` (default: 5)
 - `OutputFormat` (`Mp3` or `Wav`)
+- `UiLanguage` (UI translation language)
+- `GoogleDriveEnabled` (enable/disable sync)
+- `GoogleClientId` & `GoogleClientSecret` (optional custom API keys)
+- `GoogleDriveFolderPath` (remote upload directory)
+
+### Persistence
+Settings are automatically saved as JSON in the local application data directory (`%LocalAppData%\MeetingRecorder\settings.json`) whenever they are updated from the UI or Settings Window. On application startup, settings are loaded from this file or default settings are created if it does not exist.
+
+### Google Drive Path Resolution
+Folder existence checks are case-insensitive. If a user specifies a target folder path like `work/meetings` but the folders exist on Google Drive as `Work/Meetings`, the upload service resolves the path to the correct existing folders using their actual casing, and the local settings are automatically updated to match the correct casing found on Google Drive.
 
 ## 6. Current Project Structure (Implemented)
 

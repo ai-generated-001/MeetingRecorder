@@ -152,4 +152,28 @@
   <data name="TokenClearedMessage" xml:space="preserve">
 	<value>Google 令牌已清除。下次上传时将重新要求登录。</value>
   </data>
+  <data name="GoogleDriveFolderPathLabel" xml:space="preserve">
+	<value>云端硬盘文件夹路径</value>
+  </data>
+  <data name="GoogleDriveFolderPathPlaceholder" xml:space="preserve">
+	<value>例如：Meeting_Auto_Sync 或 Work/Meetings</value>
+  </data>
+  <data name="GoogleDriveEnabledLabel" xml:space="preserve">
+	<value>启用 Google Drive 同步</value>
+  </data>
+  <data name="GoogleDriveStatusLabel" xml:space="preserve">
+	<value>状态：</value>
+  </data>
+  <data name="GoogleDriveStatusChecking" xml:space="preserve">
+	<value>正在检查...</value>
+  </data>
+  <data name="GoogleDriveNotSignedIn" xml:space="preserve">
+	<value>未登录</value>
+  </data>
+  <data name="GoogleDriveSignedIn" xml:space="preserve">
+	<value>已登录</value>
+  </data>
+  <data name="GoogleDriveSignedInAs" xml:space="preserve">
+	<value>已登录：{0}</value>
+  </data>
 </root>
