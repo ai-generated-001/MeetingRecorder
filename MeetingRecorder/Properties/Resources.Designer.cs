@@ -260,5 +260,29 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("GoogleDriveSignedInAs", resourceCulture);
             }
         }
+
+        public static string GoogleDriveSignInButton {
+            get {
+                return ResourceManager.GetString("GoogleDriveSignInButton", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveSigningIn {
+            get {
+                return ResourceManager.GetString("GoogleDriveSigningIn", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveLoginSuccess {
+            get {
+                return ResourceManager.GetString("GoogleDriveLoginSuccess", resourceCulture);
+            }
+        }
+
+        public static string GoogleDriveLoginFailed {
+            get {
+                return ResourceManager.GetString("GoogleDriveLoginFailed", resourceCulture);
+            }
+        }
     }
 }

@@ -62,6 +62,7 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 7. **GoogleDriveSyncService (`ICloudSyncService`)**
    - Implements a thread-safe, non-blocking background queue using `System.Threading.Channels.Channel<string>`.
    - Authenticates silently to Google Drive using `GoogleWebAuthorizationBroker` with access tokens securely encrypted locally using Windows DPAPI (`DpapiFileDataStore`).
+   - Supports manual user authentication ("Sign in" button in the settings window) allowing immediate login testing with default (built-in) credentials (custom BYOK credentials are temporarily disabled).
    - Automatically finds or creates a target folder named `"Meeting_Auto_Sync"` and uploads files asynchronously.
 
 ## 4. State and Event Flow
@@ -81,7 +82,7 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 - `OutputFormat` (`Mp3` or `Wav`)
 - `UiLanguage` (UI translation language)
 - `GoogleDriveEnabled` (enable/disable sync)
-- `GoogleClientId` & `GoogleClientSecret` (optional custom API keys)
+- `GoogleClientId` & `GoogleClientSecret` (optional custom API keys — temporarily disabled, built-in credentials are used instead)
 - `GoogleDriveFolderPath` (remote upload directory)
 
 ### Persistence

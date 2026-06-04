@@ -21,6 +21,8 @@ public partial class SettingsWindow : Window
 
     /// <summary>Action invoked when the user clicks "Clear saved token".</summary>
     private readonly Action? _clearTokenAction;
+    private readonly Func<string, string, CancellationToken, Task<string>>? _loginFunc;
+    private readonly Func<CancellationToken, Task<string>>? _getLoginStatusFunc;
 
     public string OutputDirectory { get; private set; }
     public string UiLanguage { get; private set; }
@@ -37,11 +39,14 @@ public partial class SettingsWindow : Window
         string currentGoogleClientSecret = "",
         string currentGoogleDriveFolderPath = "Meeting_Auto_Sync",
         Action? clearTokenAction = null,
-        Func<CancellationToken, Task<string>>? getLoginStatusFunc = null)
+        Func<CancellationToken, Task<string>>? getLoginStatusFunc = null,
+        Func<string, string, CancellationToken, Task<string>>? loginFunc = null)
     {
         InitializeComponent();
 
         _clearTokenAction = clearTokenAction;
+        _loginFunc = loginFunc;
+        _getLoginStatusFunc = getLoginStatusFunc;
 
         // Fetch login status asynchronously
         if (getLoginStatusFunc != null)
@@ -133,6 +138,97 @@ public partial class SettingsWindow : Window
             global::MeetingRecorder.Resources.Settings,
             MessageBoxButton.OK,
             MessageBoxImage.Information);
+    }
+
+    private async void Login_Click(object sender, RoutedEventArgs e)
+    {
+        if (_loginFunc == null) return;
+
+        string clientId = ClientIdTextBox.Text.Trim();
+        string clientSecret = ClientSecretPasswordBox.Password;
+
+        SetUiControlsEnabled(false);
+        StatusValueTextBlock.Text = global::MeetingRecorder.Resources.GoogleDriveSigningIn;
+        StatusValueTextBlock.Foreground = System.Windows.Media.Brushes.Orange;
+
+        try
+        {
+            var status = await _loginFunc(clientId, clientSecret, CancellationToken.None);
+            
+            StatusValueTextBlock.Text = status;
+            StatusValueTextBlock.Foreground = System.Windows.Media.Brushes.Green;
+
+            System.Windows.MessageBox.Show(
+                this,
+                global::MeetingRecorder.Resources.GoogleDriveLoginSuccess,
+                global::MeetingRecorder.Resources.Settings,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (OperationCanceledException)
+        {
+            await RefreshLoginStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error during Google Drive login: {ex.Message}");
+            System.Windows.MessageBox.Show(
+                this,
+                string.Format(global::MeetingRecorder.Resources.GoogleDriveLoginFailed, ex.Message),
+                global::MeetingRecorder.Resources.Settings,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            await RefreshLoginStatusAsync();
+        }
+        finally
+        {
+            SetUiControlsEnabled(true);
+        }
+    }
+
+    private void SetUiControlsEnabled(bool enabled)
+    {
+        LoginButton.IsEnabled = enabled;
+        ClearTokenButton.IsEnabled = enabled;
+        ClientIdTextBox.IsEnabled = enabled;
+        ClientSecretPasswordBox.IsEnabled = enabled;
+        DriveFolderPathTextBox.IsEnabled = enabled;
+        GoogleDriveEnabledCheckBox.IsEnabled = enabled;
+        LanguageComboBox.IsEnabled = enabled;
+        OutputDirectoryTextBox.IsEnabled = enabled;
+        CancelButton.IsEnabled = enabled;
+        SaveButton.IsEnabled = enabled;
+    }
+
+    private async Task RefreshLoginStatusAsync()
+    {
+        try
+        {
+            if (_getLoginStatusFunc != null)
+            {
+                var status = await _getLoginStatusFunc(CancellationToken.None);
+                StatusValueTextBlock.Text = status;
+                if (status == global::MeetingRecorder.Resources.GoogleDriveNotSignedIn)
+                {
+                    StatusValueTextBlock.Foreground = System.Windows.Media.Brushes.Gray;
+                }
+                else
+                {
+                    StatusValueTextBlock.Foreground = System.Windows.Media.Brushes.Green;
+                }
+            }
+            else
+            {
+                StatusValueTextBlock.Text = global::MeetingRecorder.Resources.GoogleDriveNotSignedIn;
+                StatusValueTextBlock.Foreground = System.Windows.Media.Brushes.Gray;
+            }
+        }
+        catch
+        {
+            StatusValueTextBlock.Text = global::MeetingRecorder.Resources.GoogleDriveNotSignedIn;
+            StatusValueTextBlock.Foreground = System.Windows.Media.Brushes.Gray;
+        }
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)

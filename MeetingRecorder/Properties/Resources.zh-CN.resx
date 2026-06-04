@@ -176,4 +176,16 @@
   <data name="GoogleDriveSignedInAs" xml:space="preserve">
 	<value>已登录：{0}</value>
   </data>
+  <data name="GoogleDriveSignInButton" xml:space="preserve">
+	<value>登录</value>
+  </data>
+  <data name="GoogleDriveSigningIn" xml:space="preserve">
+	<value>正在登录...</value>
+  </data>
+  <data name="GoogleDriveLoginSuccess" xml:space="preserve">
+	<value>成功登录 Google Drive。</value>
+  </data>
+  <data name="GoogleDriveLoginFailed" xml:space="preserve">
+	<value>登录 Google Drive 失败：{0}</value>
+  </data>
 </root>

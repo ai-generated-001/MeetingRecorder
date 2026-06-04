@@ -156,6 +156,14 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
                     return await syncService.GetAccountStatusStringAsync(ct);
                 }
                 return Resources.GoogleDriveNotSignedIn;
+            },
+            loginFunc: async (clientId, clientSecret, ct) =>
+            {
+                if (_cloudSyncService is GoogleDriveSyncService syncService)
+                {
+                    return await syncService.LoginAsync(clientId, clientSecret, ct);
+                }
+                return Resources.GoogleDriveNotSignedIn;
             })
         {
             Owner = System.Windows.Application.Current?.MainWindow

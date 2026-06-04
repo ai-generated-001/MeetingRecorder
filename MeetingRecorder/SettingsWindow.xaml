@@ -368,12 +368,12 @@
                                     </StackPanel>
 
                                     <!-- Client ID -->
-                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>
-                                    <TextBox x:Name="ClientIdTextBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client ID from Google Cloud Console"/>
+                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
+                                    <TextBox x:Name="ClientIdTextBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client ID from Google Cloud Console" Visibility="Collapsed"/>
 
                                     <!-- Client Secret -->
-                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>
-                                    <PasswordBox x:Name="ClientSecretPasswordBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client Secret from Google Cloud Console"/>
+                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
+                                    <PasswordBox x:Name="ClientSecretPasswordBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client Secret from Google Cloud Console" Visibility="Collapsed"/>
 
                                     <!-- Drive folder path -->
                                     <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>
@@ -393,8 +393,11 @@
                                         </TextBlock>
                                     </Grid>
 
-                                    <!-- Clear token -->
-                                    <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Padding="12,6" Click="ClearToken_Click"/>
+                                    <!-- Action buttons -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                                        <Button x:Name="LoginButton" Content="{x:Static properties:Resources.GoogleDriveSignInButton}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" Padding="12,6" Click="Login_Click"/>
+                                        <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" Padding="12,6" Click="ClearToken_Click"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -406,8 +409,8 @@
 
                 <!-- Dialog buttons -->
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="{x:Static properties:Resources.Cancel}" Width="90" Margin="0,0,8,0" IsCancel="True"/>
-                    <Button Content="{x:Static properties:Resources.Save}" Style="{StaticResource PrimaryButtonStyle}" Width="90" IsDefault="True" Click="Save_Click"/>
+                    <Button x:Name="CancelButton" Content="{x:Static properties:Resources.Cancel}" Width="90" Margin="0,0,8,0" IsCancel="True"/>
+                    <Button x:Name="SaveButton" Content="{x:Static properties:Resources.Save}" Style="{StaticResource PrimaryButtonStyle}" Width="90" IsDefault="True" Click="Save_Click"/>
                 </StackPanel>
             </Grid>
         </Border>

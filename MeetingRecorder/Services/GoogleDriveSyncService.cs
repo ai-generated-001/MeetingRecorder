@@ -179,16 +179,13 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
 
     private ClientSecrets ResolveClientSecrets()
     {
-        // Prefer user-supplied BYOK credentials.
-        if (!string.IsNullOrWhiteSpace(_settings.GoogleClientId) &&
-            !string.IsNullOrWhiteSpace(_settings.GoogleClientSecret))
-        {
-            return new ClientSecrets
-            {
-                ClientId = _settings.GoogleClientId,
-                ClientSecret = _settings.GoogleClientSecret
-            };
-        }
+        return ResolveClientSecretsInternal(_settings.GoogleClientId, _settings.GoogleClientSecret);
+    }
+
+    private ClientSecrets ResolveClientSecretsInternal(string clientId, string clientSecret)
+    {
+        // NOTE: Custom user-supplied BYOK credentials are temporarily disabled.
+        // Always use the build-time injected client ID and secret.
 
         // Fall back to the build-time injected client ID and secret.
         var assembly = Assembly.GetExecutingAssembly();
@@ -205,9 +202,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
             };
         }
 
-        throw new InvalidOperationException(
-            "No Google OAuth credentials found. " +
-            "Please supply a Client ID and Client Secret in Settings.");
+        throw new InvalidOperationException("No Google OAuth credentials found.");
     }
 
     private async Task<string> GetOrCreateFolderIdAsync(DriveService service, CancellationToken cancellationToken)
@@ -397,6 +392,56 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
                 return global::MeetingRecorder.Resources.GoogleDriveSignedIn;
             }
             return global::MeetingRecorder.Resources.GoogleDriveNotSignedIn;
+        }
+    }
+
+    /// <summary>
+    /// Force a manual login using either user-supplied OAuth credentials or default injected credentials.
+    /// Returns the updated account status string upon successful login.
+    /// </summary>
+    public async Task<string> LoginAsync(string clientId, string clientSecret, CancellationToken cancellationToken)
+    {
+        await _authSemaphore.WaitAsync(cancellationToken);
+        try
+        {
+            // Clear any active DriveService so we force re-authentication
+            _driveService?.Dispose();
+            _driveService = null;
+            _targetFolderId = null;
+
+            ClientSecrets secrets = ResolveClientSecretsInternal(clientId, clientSecret);
+
+            var tokenFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.json");
+            var dpapiStore = new DpapiFileDataStore(tokenFolderPath);
+
+            // This will open a browser window for Google authentication.
+            var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                secrets,
+                new[] { DriveService.Scope.DriveFile },
+                "user",
+                cancellationToken,
+                dpapiStore);
+
+            _driveService = new DriveService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "MeetingRecorder"
+            });
+
+            // Fetch user info to verify credentials and update status
+            var aboutRequest = _driveService.About.Get();
+            aboutRequest.Fields = "user(emailAddress)";
+            var about = await aboutRequest.ExecuteAsync(cancellationToken);
+            if (about?.User?.EmailAddress != null)
+            {
+                return string.Format(global::MeetingRecorder.Resources.GoogleDriveSignedInAs, about.User.EmailAddress);
+            }
+
+            return global::MeetingRecorder.Resources.GoogleDriveSignedIn;
+        }
+        finally
+        {
+            _authSemaphore.Release();
         }
     }
 

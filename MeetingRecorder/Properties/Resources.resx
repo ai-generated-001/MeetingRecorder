@@ -176,4 +176,16 @@
   <data name="GoogleDriveSignedInAs" xml:space="preserve">
 	<value>Signed in as {0}</value>
   </data>
+  <data name="GoogleDriveSignInButton" xml:space="preserve">
+	<value>Sign in</value>
+  </data>
+  <data name="GoogleDriveSigningIn" xml:space="preserve">
+	<value>Signing in...</value>
+  </data>
+  <data name="GoogleDriveLoginSuccess" xml:space="preserve">
+	<value>Successfully signed in to Google Drive.</value>
+  </data>
+  <data name="GoogleDriveLoginFailed" xml:space="preserve">
+	<value>Failed to sign in to Google Drive: {0}</value>
+  </data>
 </root>
