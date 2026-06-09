@@ -15,12 +15,7 @@ public class SessionCoordinatorTests
         var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
         var settings = new AppSettings();
         var fileIOService = new Mock<IFileIOService>();
-        var noteWriterService = new Mock<INoteWriterService>();
         var cloudSyncService = new Mock<ICloudSyncService>();
-
-        fileIOService
-            .Setup(x => x.AppendAllTextAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<System.Threading.CancellationToken>()))
-            .Returns(System.Threading.Tasks.Task.CompletedTask);
 
         using var coordinator = new SessionCoordinator(
             monitor.Object, 
@@ -28,7 +23,6 @@ public class SessionCoordinatorTests
             TimeSpan.FromSeconds(5),
             settings,
             fileIOService.Object,
-            noteWriterService.Object,
             cloudSyncService.Object);
 
         RecordingRequestedEventArgs? requestedMeeting = null;
@@ -49,12 +43,7 @@ public class SessionCoordinatorTests
         var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
         var settings = new AppSettings();
         var fileIOService = new Mock<IFileIOService>();
-        var noteWriterService = new Mock<INoteWriterService>();
         var cloudSyncService = new Mock<ICloudSyncService>();
-
-        fileIOService
-            .Setup(x => x.AppendAllTextAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<System.Threading.CancellationToken>()))
-            .Returns(System.Threading.Tasks.Task.CompletedTask);
 
         using var coordinator = new SessionCoordinator(
             monitor.Object, 
@@ -62,7 +51,6 @@ public class SessionCoordinatorTests
             TimeSpan.FromSeconds(5),
             settings,
             fileIOService.Object,
-            noteWriterService.Object,
             cloudSyncService.Object);
 
         var stopEvents = 0;

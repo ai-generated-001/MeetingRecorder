@@ -110,7 +110,6 @@ public partial class App : Application
         services.AddSingleton<IGlobalHotkeyService>(_ => new GlobalHotkeyService(IntPtr.Zero));
         services.AddSingleton<IAudioSessionMonitor, AudioSessionDetector>();
         services.AddSingleton<IAudioRecorder, WasapiRecorder>();
-        services.AddSingleton<INoteWriterService, NoteWriterService>();
         services.AddSingleton<ICloudSyncService>(sp =>
             new GoogleDriveSyncService(sp.GetRequiredService<AppSettings>()));
         services.AddSingleton<SessionCoordinator>(sp =>
@@ -120,7 +119,6 @@ public partial class App : Application
                 TimeSpan.FromSeconds(sp.GetRequiredService<AppSettings>().DebounceSeconds),
                 sp.GetRequiredService<AppSettings>(),
                 sp.GetRequiredService<IFileIOService>(),
-                sp.GetRequiredService<INoteWriterService>(),
                 sp.GetRequiredService<ICloudSyncService>()));
 
         services.AddSingleton<MainViewModel>();

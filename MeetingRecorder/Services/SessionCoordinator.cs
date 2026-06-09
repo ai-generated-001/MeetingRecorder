@@ -12,11 +12,9 @@ public sealed class SessionCoordinator : IDisposable
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly AppSettings _settings;
     private readonly IFileIOService _fileIOService;
-    private readonly INoteWriterService _noteWriterService;
     private readonly ICloudSyncService _cloudSyncService;
 
     private string? _currentAudioPath;
-    private string? _currentNotesPath;
     private DateTime _recordingStartTime;
     private MeetingDetectedEventArgs? _currentMeeting;
 
@@ -32,14 +30,12 @@ public sealed class SessionCoordinator : IDisposable
         TimeSpan debounceDuration,
         AppSettings settings,
         IFileIOService fileIOService,
-        INoteWriterService noteWriterService,
         ICloudSyncService cloudSyncService)
     {
         _audioSessionMonitor = audioSessionMonitor;
         _dateTimeProvider = dateTimeProvider;
         _settings = settings;
         _fileIOService = fileIOService;
-        _noteWriterService = noteWriterService;
         _cloudSyncService = cloudSyncService;
 
         _audioSessionMonitor.MeetingStarted += OnMeetingStarted;
@@ -114,10 +110,7 @@ public sealed class SessionCoordinator : IDisposable
             : $"{titlePrefix}_{baseName}.{ext}";
         _currentAudioPath = Path.Combine(_settings.OutputDirectory, fileName);
 
-        string notesFileName = string.IsNullOrWhiteSpace(titlePrefix)
-            ? $"{baseName}.md"
-            : $"{titlePrefix}_{baseName}.md";
-        _currentNotesPath = Path.Combine(_settings.OutputDirectory, notesFileName);
+
 
         // Guarantee the output directory exists before the recorder opens the audio file.
         // This handles paths typed manually in Settings that may not yet exist on disk.
@@ -138,48 +131,11 @@ public sealed class SessionCoordinator : IDisposable
 
         RecordingStopped?.Invoke(this, EventArgs.Empty);
 
-        if (_currentNotesPath != null && _currentMeeting != null)
-        {
-            try
-            {
-                var endTime = _dateTimeProvider.Now;
-                var duration = endTime - _recordingStartTime;
-
-                var builder = new StringBuilder();
-                builder.AppendLine($"# Meeting Notes: {_currentMeeting.WindowTitle ?? _currentMeeting.ProcessName}");
-                builder.AppendLine();
-                builder.AppendLine("**Session Info:**");
-                builder.AppendLine($"- **Date:** {_recordingStartTime:yyyy-MM-dd}");
-                builder.AppendLine($"- **Start Time:** {_recordingStartTime:HH:mm:ss}");
-                builder.AppendLine($"- **End Time:** {endTime:HH:mm:ss}");
-                builder.AppendLine($"- **Duration:** {duration:hh\\:mm\\:ss}");
-                if (_currentAudioPath != null)
-                {
-                    builder.AppendLine($"- **Audio File:** {Path.GetFileName(_currentAudioPath)}");
-                }
-                builder.AppendLine();
-                builder.AppendLine("**Timeline:**");
-                builder.AppendLine(_noteWriterService.BuildMarkdownNote(_recordingStartTime, _recordingStartTime, "Meeting recording started."));
-                builder.AppendLine(_noteWriterService.BuildMarkdownNote(_recordingStartTime, endTime, "Meeting recording ended."));
-
-                _fileIOService.EnsureDirectory(_settings.OutputDirectory);
-                _fileIOService.AppendAllTextAsync(_currentNotesPath, builder.ToString()).GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to write notes file: {ex}");
-            }
-        }
-
         if (_settings.GoogleDriveEnabled)
         {
             if (_currentAudioPath != null)
             {
                 _cloudSyncService.EnqueueUpload(_currentAudioPath);
-            }
-            if (_currentNotesPath != null)
-            {
-                _cloudSyncService.EnqueueUpload(_currentNotesPath);
             }
         }
 

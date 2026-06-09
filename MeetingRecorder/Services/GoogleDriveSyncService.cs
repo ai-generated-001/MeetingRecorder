@@ -20,6 +20,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
     private readonly Channel<string> _uploadChannel;
     private readonly CancellationTokenSource _cts;
     private readonly SemaphoreSlim _authSemaphore = new(1, 1);
+    private readonly SemaphoreSlim _folderSemaphore = new(1, 1);
     private DriveService? _driveService;
     private string? _targetFolderId;
 
@@ -207,51 +208,59 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
 
     private async Task<string> GetOrCreateFolderIdAsync(DriveService service, CancellationToken cancellationToken)
     {
-        if (_targetFolderId != null)
+        await _folderSemaphore.WaitAsync(cancellationToken);
+        try
         {
-            try
+            if (_targetFolderId != null)
             {
-                var getRequest = service.Files.Get(_targetFolderId);
-                getRequest.Fields = "id, trashed";
-                var folderFile = await getRequest.ExecuteAsync(cancellationToken);
-                if (folderFile != null && folderFile.Trashed != true)
+                try
                 {
-                    return _targetFolderId;
+                    var getRequest = service.Files.Get(_targetFolderId);
+                    getRequest.Fields = "id, trashed";
+                    var folderFile = await getRequest.ExecuteAsync(cancellationToken);
+                    if (folderFile != null && folderFile.Trashed != true)
+                    {
+                        return _targetFolderId;
+                    }
                 }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Cached target folder ID {_targetFolderId} no longer valid or trashed: {ex.Message}");
+                }
+                _targetFolderId = null;
             }
-            catch (Exception ex)
+
+            // Support nested paths like "Work/Meetings" — walk or create each segment.
+            var rawPath = string.IsNullOrWhiteSpace(_settings.GoogleDriveFolderPath)
+                ? "Meeting_Auto_Sync"
+                : _settings.GoogleDriveFolderPath.Trim();
+
+            var segments = rawPath.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (segments.Length == 0) segments = new[] { "Meeting_Auto_Sync" };
+
+            string? parentId = null; // null means root ("My Drive")
+            var resolvedSegments = new List<string>();
+            foreach (var segment in segments)
             {
-                System.Diagnostics.Debug.WriteLine($"Cached target folder ID {_targetFolderId} no longer valid or trashed: {ex.Message}");
+                var (folderId, resolvedName) = await GetOrCreateSingleFolderAsync(service, segment, parentId, cancellationToken);
+                parentId = folderId;
+                resolvedSegments.Add(resolvedName);
             }
-            _targetFolderId = null;
+
+            var resolvedPath = string.Join("/", resolvedSegments);
+            if (_settings.GoogleDriveFolderPath != resolvedPath)
+            {
+                _settings.GoogleDriveFolderPath = resolvedPath;
+                MeetingRecorder.App.SaveSettings(_settings);
+            }
+
+            _targetFolderId = parentId!;
+            return _targetFolderId;
         }
-
-        // Support nested paths like "Work/Meetings" — walk or create each segment.
-        var rawPath = string.IsNullOrWhiteSpace(_settings.GoogleDriveFolderPath)
-            ? "Meeting_Auto_Sync"
-            : _settings.GoogleDriveFolderPath.Trim();
-
-        var segments = rawPath.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (segments.Length == 0) segments = new[] { "Meeting_Auto_Sync" };
-
-        string? parentId = null; // null means root ("My Drive")
-        var resolvedSegments = new List<string>();
-        foreach (var segment in segments)
+        finally
         {
-            var (folderId, resolvedName) = await GetOrCreateSingleFolderAsync(service, segment, parentId, cancellationToken);
-            parentId = folderId;
-            resolvedSegments.Add(resolvedName);
+            _folderSemaphore.Release();
         }
-
-        var resolvedPath = string.Join("/", resolvedSegments);
-        if (_settings.GoogleDriveFolderPath != resolvedPath)
-        {
-            _settings.GoogleDriveFolderPath = resolvedPath;
-            MeetingRecorder.App.SaveSettings(_settings);
-        }
-
-        _targetFolderId = parentId!;
-        return _targetFolderId;
     }
 
     private static string EscapeQueryString(string value)
@@ -274,7 +283,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
             var parentClause = parentId == null
                 ? "'root' in parents"
                 : $"'{parentId}' in parents";
-            listRequest.Q = $"mimeType = 'application/vnd.google-apps.folder' and {parentClause} and trashed = false";
+            listRequest.Q = $"mimeType = 'application/vnd.google-apps.folder' and {parentClause} and name = '{EscapeQueryString(folderName)}' and trashed = false";
             listRequest.Fields = "nextPageToken, files(id, name)";
             listRequest.PageToken = pageToken;
             listRequest.PageSize = 100;
@@ -451,5 +460,6 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
         _cts.Dispose();
         _driveService?.Dispose();
         _authSemaphore.Dispose();
+        _folderSemaphore.Dispose();
     }
 }
