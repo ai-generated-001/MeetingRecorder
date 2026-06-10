@@ -211,21 +211,26 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
         await _folderSemaphore.WaitAsync(cancellationToken);
         try
         {
-            if (_targetFolderId != null)
+            // Try the in-memory cache first, then fall back to the persisted ID from settings.
+            var candidateId = _targetFolderId
+                ?? (string.IsNullOrWhiteSpace(_settings.GoogleDriveFolderId) ? null : _settings.GoogleDriveFolderId);
+
+            if (candidateId != null)
             {
                 try
                 {
-                    var getRequest = service.Files.Get(_targetFolderId);
+                    var getRequest = service.Files.Get(candidateId);
                     getRequest.Fields = "id, trashed";
                     var folderFile = await getRequest.ExecuteAsync(cancellationToken);
                     if (folderFile != null && folderFile.Trashed != true)
                     {
+                        _targetFolderId = candidateId;
                         return _targetFolderId;
                     }
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Cached target folder ID {_targetFolderId} no longer valid or trashed: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Cached target folder ID {candidateId} no longer valid or trashed: {ex.Message}");
                 }
                 _targetFolderId = null;
             }
@@ -247,14 +252,27 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
                 resolvedSegments.Add(resolvedName);
             }
 
+            _targetFolderId = parentId!;
+
+            // Persist the resolved folder ID and path so subsequent app restarts
+            // can skip the files.list query and avoid creating duplicates.
+            bool settingsChanged = false;
             var resolvedPath = string.Join("/", resolvedSegments);
             if (_settings.GoogleDriveFolderPath != resolvedPath)
             {
                 _settings.GoogleDriveFolderPath = resolvedPath;
+                settingsChanged = true;
+            }
+            if (_settings.GoogleDriveFolderId != _targetFolderId)
+            {
+                _settings.GoogleDriveFolderId = _targetFolderId;
+                settingsChanged = true;
+            }
+            if (settingsChanged)
+            {
                 MeetingRecorder.App.SaveSettings(_settings);
             }
 
-            _targetFolderId = parentId!;
             return _targetFolderId;
         }
         finally
@@ -284,7 +302,11 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
                 ? "'root' in parents"
                 : $"'{parentId}' in parents";
             listRequest.Q = $"mimeType = 'application/vnd.google-apps.folder' and {parentClause} and name = '{EscapeQueryString(folderName)}' and trashed = false";
-            listRequest.Fields = "nextPageToken, files(id, name)";
+            listRequest.Fields = "nextPageToken, files(id, name, createdTime)";
+            listRequest.Spaces = "drive";
+            // Return oldest first so we consistently pick the original folder
+            // if duplicates were previously created.
+            listRequest.OrderBy = "createdTime";
             listRequest.PageToken = pageToken;
             listRequest.PageSize = 100;
 
@@ -296,7 +318,13 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
             pageToken = response.NextPageToken;
         } while (pageToken != null);
 
+        // The Drive API query is case-insensitive, so we must do an exact
+        // case-sensitive match client-side to avoid picking a wrong folder.
+        // Fall back to case-insensitive match if no exact match is found,
+        // since the user likely intended the existing folder.
         var existingFolder = folders.FirstOrDefault(f =>
+            string.Equals(f.Name, folderName, StringComparison.Ordinal))
+            ?? folders.FirstOrDefault(f =>
             string.Equals(f.Name, folderName, StringComparison.OrdinalIgnoreCase));
 
         if (existingFolder != null)

@@ -44,6 +44,14 @@ public class AppSettings
     /// Defaults to "Meeting_Auto_Sync" (root-level folder).
     /// </summary>
     public string GoogleDriveFolderPath { get; set; } = "Meeting_Auto_Sync";
+
+    /// <summary>
+    /// Cached Google Drive folder ID for the resolved <see cref="GoogleDriveFolderPath"/>.
+    /// Persisted to avoid re-querying on every app restart, which can cause
+    /// duplicate folders due to Drive API eventual consistency.
+    /// Automatically cleared when the folder path changes.
+    /// </summary>
+    public string GoogleDriveFolderId { get; set; } = "";
 }
 
 public enum OutputFormat

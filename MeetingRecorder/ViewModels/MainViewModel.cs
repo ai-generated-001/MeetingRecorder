@@ -189,6 +189,9 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
 
             if (credentialsChanged)
             {
+                // Clear the persisted folder ID so the next upload re-resolves
+                // the folder path from scratch instead of using a stale cached ID.
+                _settings.GoogleDriveFolderId = "";
                 (_cloudSyncService as GoogleDriveSyncService)?.ResetCredentials();
             }
 
@@ -260,6 +263,11 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
                 catch { /* best-effort */ }
             }
         }
+
+        // Clear the persisted folder ID since the user may sign in with
+        // a different account whose Drive has different folder IDs.
+        _settings.GoogleDriveFolderId = "";
+        App.SaveSettings(_settings);
 
         // Also reset the in-memory DriveService so the next upload re-authenticates.
         (_cloudSyncService as GoogleDriveSyncService)?.ResetCredentials();
