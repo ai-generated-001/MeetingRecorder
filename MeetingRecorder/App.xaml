@@ -9,7 +9,8 @@
         <converters:EnumToBoolConverter x:Key="EnumToBoolConverter" />
 
         <tb:TaskbarIcon x:Key="NotifyIcon"
-                        ToolTipText="{Binding StatusText}">
+                        ToolTipText="{Binding StatusText}"
+                        TrayMouseDoubleClick="TrayIcon_TrayMouseDoubleClick">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}">
                     <MenuItem Header="{Binding ShowStatusWindowText}" Click="Show_Click" />

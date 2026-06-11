@@ -4,9 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MeetingRecorder.Models;
 using MeetingRecorder.Services;
 
@@ -19,7 +20,7 @@ public enum AppStatus
     Recording
 }
 
-public class MainViewModel : INotifyPropertyChanged, IDisposable
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly AppSettings _settings;
     private readonly IAudioRecorder _recorder;
@@ -27,45 +28,21 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
     private readonly IFileIOService _fileIOService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ICloudSyncService _cloudSyncService;
+    private readonly IServiceProvider _serviceProvider;
+
+    [ObservableProperty]
     private AppStatus _status = AppStatus.Idle;
+
+    [ObservableProperty]
     private string _statusText = Resources.Idle;
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    public AppStatus Status
+    partial void OnStatusChanged(AppStatus value)
     {
-        get => _status;
-        private set
-        {
-            if (_status != value)
-            {
-                _status = value;
-                OnPropertyChanged();
-                UpdateStatusText();
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
+        UpdateStatusText();
+        StartMonitoringCommand.NotifyCanExecuteChanged();
+        StopMonitoringCommand.NotifyCanExecuteChanged();
+        StopRecordingCommand.NotifyCanExecuteChanged();
     }
-
-    public string StatusText
-    {
-        get => _statusText;
-        private set
-        {
-            if (_statusText != value)
-            {
-                _statusText = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    public ICommand OpenFolderCommand { get; }
-    public ICommand OpenSettingsCommand { get; }
-    public ICommand StartMonitoringCommand { get; }
-    public ICommand StopMonitoringCommand { get; }
-    public ICommand StopRecordingCommand { get; }
-    public ICommand ExitCommand { get; }
 
     public OutputFormat OutputFormat
     {
@@ -100,7 +77,8 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         SessionCoordinator sessionCoordinator,
         IFileIOService fileIOService,
         IDateTimeProvider dateTimeProvider,
-        ICloudSyncService cloudSyncService)
+        ICloudSyncService cloudSyncService,
+        IServiceProvider serviceProvider)
     {
         _settings = settings;
         _recorder = recorder;
@@ -108,17 +86,11 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         _fileIOService = fileIOService;
         _dateTimeProvider = dateTimeProvider;
         _cloudSyncService = cloudSyncService;
+        _serviceProvider = serviceProvider;
 
         _sessionCoordinator.RecordingRequested += OnRecordingRequested;
         _sessionCoordinator.RecordingStopped += OnRecordingStopped;
         _sessionCoordinator.StateChanged += OnStateChanged;
-
-        OpenFolderCommand = new RelayCommand(_ => OpenRecordingsFolder());
-        OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
-        StartMonitoringCommand = new RelayCommand(_ => StartMonitoring(), _ => Status == AppStatus.Idle);
-        StopMonitoringCommand = new RelayCommand(_ => StopMonitoring(), _ => Status != AppStatus.Idle);
-        StopRecordingCommand = new RelayCommand(_ => _sessionCoordinator.StopRecordingManually(), _ => Status == AppStatus.Recording);
-        ExitCommand = new RelayCommand(_ => System.Windows.Application.Current.Shutdown());
 
         if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
         {
@@ -129,76 +101,53 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         StartMonitoring();
     }
 
+    [RelayCommand]
+    private void OpenFolder()
+    {
+        _fileIOService.EnsureDirectory(_settings.OutputDirectory);
+        Process.Start("explorer.exe", _settings.OutputDirectory);
+    }
+
+    [RelayCommand]
+    private void OpenSettings()
+    {
+        var settingsWindow = _serviceProvider.GetRequiredService<SettingsWindow>();
+        settingsWindow.Owner = System.Windows.Application.Current?.MainWindow;
+
+        if (settingsWindow.ShowDialog() == true)
+        {
+            UpdateLanguage();
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanStartMonitoring))]
     private void StartMonitoring()
     {
         _sessionCoordinator.Start();
     }
 
+    private bool CanStartMonitoring() => Status == AppStatus.Idle;
+
+    [RelayCommand(CanExecute = nameof(CanStopMonitoring))]
     private void StopMonitoring()
     {
         _sessionCoordinator.Stop();
     }
 
-    private void OpenSettings()
+    private bool CanStopMonitoring() => Status != AppStatus.Idle;
+
+    [RelayCommand(CanExecute = nameof(CanStopRecording))]
+    private void StopRecording()
     {
-        var settingsWindow = new SettingsWindow(
-            _settings.OutputDirectory,
-            _settings.UiLanguage,
-            _settings.GoogleDriveEnabled,
-            _settings.GoogleClientId,
-            _settings.GoogleClientSecret,
-            _settings.GoogleDriveFolderPath,
-            clearTokenAction: ClearGoogleToken,
-            getLoginStatusFunc: async (ct) =>
-            {
-                if (_cloudSyncService is GoogleDriveSyncService syncService)
-                {
-                    return await syncService.GetAccountStatusStringAsync(ct);
-                }
-                return Resources.GoogleDriveNotSignedIn;
-            },
-            loginFunc: async (clientId, clientSecret, ct) =>
-            {
-                if (_cloudSyncService is GoogleDriveSyncService syncService)
-                {
-                    return await syncService.LoginAsync(clientId, clientSecret, ct);
-                }
-                return Resources.GoogleDriveNotSignedIn;
-            })
-        {
-            Owner = System.Windows.Application.Current?.MainWindow
-        };
+        _sessionCoordinator.StopRecordingManually();
+    }
 
-        if (settingsWindow.ShowDialog() == true)
-        {
-            _settings.OutputDirectory = settingsWindow.OutputDirectory;
-            _settings.UiLanguage = settingsWindow.UiLanguage;
+    private bool CanStopRecording() => Status == AppStatus.Recording;
 
-            // If the user changed the enabled flag, credentials, or target folder,
-            // reset the cached drive service so the next upload re-authenticates / re-resolves.
-            bool credentialsChanged =
-                _settings.GoogleDriveEnabled != settingsWindow.GoogleDriveEnabled ||
-                _settings.GoogleClientId != settingsWindow.GoogleClientId ||
-                _settings.GoogleClientSecret != settingsWindow.GoogleClientSecret ||
-                _settings.GoogleDriveFolderPath != settingsWindow.GoogleDriveFolderPath;
-
-            _settings.GoogleDriveEnabled = settingsWindow.GoogleDriveEnabled;
-            _settings.GoogleClientId = settingsWindow.GoogleClientId;
-            _settings.GoogleClientSecret = settingsWindow.GoogleClientSecret;
-            _settings.GoogleDriveFolderPath = settingsWindow.GoogleDriveFolderPath;
-
-            if (credentialsChanged)
-            {
-                // Clear the persisted folder ID so the next upload re-resolves
-                // the folder path from scratch instead of using a stale cached ID.
-                _settings.GoogleDriveFolderId = "";
-                (_cloudSyncService as GoogleDriveSyncService)?.ResetCredentials();
-            }
-
-            App.ApplyUiLanguage(_settings.UiLanguage);
-            UpdateLanguage();
-            App.SaveSettings(_settings);
-        }
+    [RelayCommand]
+    private void Exit()
+    {
+        System.Windows.Application.Current.Shutdown();
     }
 
     public void UpdateLanguage()
@@ -251,64 +200,10 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
         };
     }
 
-    private void ClearGoogleToken()
-    {
-        // Wipe every encrypted token file in the token.json folder.
-        var tokenDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.json");
-        if (Directory.Exists(tokenDir))
-        {
-            foreach (var file in Directory.GetFiles(tokenDir, "dpapi_*.dat"))
-            {
-                try { File.Delete(file); }
-                catch { /* best-effort */ }
-            }
-        }
-
-        // Clear the persisted folder ID since the user may sign in with
-        // a different account whose Drive has different folder IDs.
-        _settings.GoogleDriveFolderId = "";
-        App.SaveSettings(_settings);
-
-        // Also reset the in-memory DriveService so the next upload re-authenticates.
-        (_cloudSyncService as GoogleDriveSyncService)?.ResetCredentials();
-    }
-
-    private void OpenRecordingsFolder()
-    {
-        _fileIOService.EnsureDirectory(_settings.OutputDirectory);
-        Process.Start("explorer.exe", _settings.OutputDirectory);
-    }
-
-    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
     public void Dispose()
     {
         _sessionCoordinator.RecordingRequested -= OnRecordingRequested;
         _sessionCoordinator.RecordingStopped -= OnRecordingStopped;
         _sessionCoordinator.StateChanged -= OnStateChanged;
     }
-}
-
-public class RelayCommand : ICommand
-{
-    private readonly Action<object?> _execute;
-    private readonly Func<object?, bool>? _canExecute;
-
-    public event EventHandler? CanExecuteChanged
-    {
-        add => CommandManager.RequerySuggested += value;
-        remove => CommandManager.RequerySuggested -= value;
-    }
-
-    public RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null)
-    {
-        _execute = execute;
-        _canExecute = canExecute;
-    }
-
-    public bool CanExecute(object? parameter) => _canExecute?.Invoke(parameter) ?? true;
-    public void Execute(object? parameter) => _execute(parameter);
 }

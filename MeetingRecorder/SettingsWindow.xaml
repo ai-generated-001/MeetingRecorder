@@ -307,7 +307,7 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="20">
+    <Grid Margin="20" IsEnabled="{Binding IsUiEnabled}">
         <Border Background="White" CornerRadius="12" Padding="20" BorderBrush="#FFE4E8EF" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
@@ -336,13 +336,13 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="OutputDirectoryTextBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Button Grid.Column="1" Content="{x:Static properties:Resources.Browse}" Width="90" Click="Browse_Click"/>
+                            <TextBox x:Name="OutputDirectoryTextBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0" Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button Grid.Column="1" Content="{x:Static properties:Resources.Browse}" Width="90" Command="{Binding BrowseCommand}"/>
                         </Grid>
 
                         <!-- UI language -->
                         <TextBlock Text="{x:Static properties:Resources.UiLanguageLabel}" Margin="0,0,0,6" FontSize="12" Foreground="#FF4B5563" FontWeight="Medium"/>
-                        <ComboBox x:Name="LanguageComboBox" Margin="0,0,0,20" DisplayMemberPath="DisplayName" SelectedValuePath="Code" HorizontalAlignment="Stretch"/>
+                        <ComboBox x:Name="LanguageComboBox" Margin="0,0,0,20" ItemsSource="{Binding SupportedLanguages}" SelectedValue="{Binding UiLanguage}" DisplayMemberPath="DisplayName" SelectedValuePath="Code" HorizontalAlignment="Stretch"/>
 
                         <!-- Google Drive BYOK section Card -->
                         <Border BorderBrush="#FFE5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,10" Background="#FFF9FAFB">
@@ -351,7 +351,7 @@
                                 <TextBlock Text="Sync recordings to your Google Drive automatically using your credentials." Margin="0,0,0,12" FontSize="12" Foreground="#FF6B7280" TextWrapping="Wrap"/>
 
                                 <!-- Enable toggle -->
-                                <CheckBox x:Name="GoogleDriveEnabledCheckBox" Content="{x:Static properties:Resources.GoogleDriveEnabledLabel}" Margin="0,0,0,12" FontWeight="Medium"/>
+                                <CheckBox x:Name="GoogleDriveEnabledCheckBox" Content="{x:Static properties:Resources.GoogleDriveEnabledLabel}" Margin="0,0,0,12" IsChecked="{Binding GoogleDriveEnabled}" FontWeight="Medium"/>
 
                                 <!-- Detail fields — greyed out when sync is disabled -->
                                 <StackPanel IsEnabled="{Binding IsChecked, ElementName=GoogleDriveEnabledCheckBox}">
@@ -363,13 +363,13 @@
                                         <TextBlock Text="{x:Static properties:Resources.GoogleDriveStatusLabel}" Foreground="#FF4B5563" Margin="0,0,8,0" FontWeight="Medium"/>
                                         <!-- Colored status badge -->
                                         <Border CornerRadius="4" Padding="8,3" Background="#FFF3F4F6" VerticalAlignment="Center">
-                                            <TextBlock x:Name="StatusValueTextBlock" Text="{x:Static properties:Resources.GoogleDriveStatusChecking}" FontWeight="SemiBold" FontSize="11" Foreground="#FF6B7280"/>
+                                            <TextBlock x:Name="StatusValueTextBlock" Text="{Binding GoogleDriveStatus}" Foreground="{Binding GoogleDriveStatusForeground}" FontWeight="SemiBold" FontSize="11"/>
                                         </Border>
                                     </StackPanel>
 
                                     <!-- Client ID -->
                                     <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
-                                    <TextBox x:Name="ClientIdTextBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client ID from Google Cloud Console" Visibility="Collapsed"/>
+                                    <TextBox x:Name="ClientIdTextBox" Margin="0,0,0,12" Text="{Binding GoogleClientId, UpdateSourceTrigger=PropertyChanged}" ToolTip="OAuth 2.0 Client ID from Google Cloud Console" Visibility="Collapsed"/>
 
                                     <!-- Client Secret -->
                                     <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
@@ -378,7 +378,7 @@
                                     <!-- Drive folder path -->
                                     <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>
                                     <Grid Margin="0,0,0,16">
-                                        <TextBox x:Name="DriveFolderPathTextBox" ToolTip="Folder path in Google Drive. Use / to separate nested folders."/>
+                                        <TextBox x:Name="DriveFolderPathTextBox" Text="{Binding GoogleDriveFolderPath, UpdateSourceTrigger=PropertyChanged}" ToolTip="Folder path in Google Drive. Use / to separate nested folders."/>
                                         <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathPlaceholder}" Foreground="#FFA0AEC0" FontSize="12" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
@@ -395,8 +395,8 @@
 
                                     <!-- Action buttons -->
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
-                                        <Button x:Name="LoginButton" Content="{x:Static properties:Resources.GoogleDriveSignInButton}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" Padding="12,6" Click="Login_Click"/>
-                                        <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" Padding="12,6" Click="ClearToken_Click"/>
+                                        <Button x:Name="LoginButton" Content="{x:Static properties:Resources.GoogleDriveSignInButton}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" Padding="12,6" Command="{Binding LoginCommand}" CommandParameter="{Binding ElementName=ClientSecretPasswordBox}"/>
+                                        <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" Padding="12,6" Command="{Binding ClearTokenCommand}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </StackPanel>
@@ -410,7 +410,7 @@
                 <!-- Dialog buttons -->
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button x:Name="CancelButton" Content="{x:Static properties:Resources.Cancel}" Width="90" Margin="0,0,8,0" IsCancel="True"/>
-                    <Button x:Name="SaveButton" Content="{x:Static properties:Resources.Save}" Style="{StaticResource PrimaryButtonStyle}" Width="90" IsDefault="True" Click="Save_Click"/>
+                    <Button x:Name="SaveButton" Content="{x:Static properties:Resources.Save}" Style="{StaticResource PrimaryButtonStyle}" Width="90" IsDefault="True" Command="{Binding SaveCommand}" CommandParameter="{Binding ElementName=ClientSecretPasswordBox}"/>
                 </StackPanel>
             </Grid>
         </Border>

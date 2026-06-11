@@ -6,7 +6,7 @@ MeetingRecorder is a lightweight WPF desktop app that runs primarily from the sy
 ### Tech Stack
 - **Framework:** .NET 10
 - **Language:** C# 14
-- **UI Framework:** WPF + MVVM
+- **UI Framework:** WPF + MVVM (CommunityToolkit.Mvvm)
 - **Audio Library:** NAudio (WASAPI + LAME)
 - **DI Container:** Microsoft.Extensions.DependencyInjection
 - **Target OS:** Windows 10/11
@@ -14,7 +14,7 @@ MeetingRecorder is a lightweight WPF desktop app that runs primarily from the sy
 ## 2. Architecture and Design Approach
 The implementation follows an **MVVM + service-layer** design with event-driven coordination.
 
-- **UI Layer:** `MainWindow` + `MainViewModel` expose status and commands.
+- **UI Layer:** `MainWindow` + `MainViewModel` and `SettingsWindow` + `SettingsViewModel` expose status and commands.
 - **Coordination Layer:** `SessionCoordinator` manages app session state transitions.
 - **Infrastructure Layer:** Audio session monitoring, recording, filesystem, and platform services are injected as interfaces.
 - **Composition Root:** `App.xaml.cs` wires all dependencies as singletons/transients and initializes tray behavior.
@@ -65,6 +65,11 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
    - Supports manual user authentication ("Sign in" button in the settings window) allowing immediate login testing with default (built-in) credentials (custom BYOK credentials are temporarily disabled).
    - Automatically finds or creates a target folder named `"Meeting_Auto_Sync"` and uploads files asynchronously.
 
+8. **SettingsViewModel**
+   - Bridges settings configuration state with `SettingsWindow`.
+   - Provides commands for directory browsing, token clearing, and manual Google Drive OAuth sign-in.
+   - Saves settings on request and handles language transitions at runtime.
+
 ## 4. State and Event Flow
 1. App startup configures DI and creates `MainViewModel`.
 2. `MainViewModel` starts `SessionCoordinator`, moving state to `Detecting`.
@@ -108,7 +113,8 @@ Folder existence checks are case-insensitive. If a user specifies a target folde
     │   ├── DpapiFileDataStore.cs
     │   └── RecordingRequestedEventArgs.cs
     ├── ViewModels/
-    │   └── MainViewModel.cs
+    │   ├── MainViewModel.cs
+    │   └── SettingsViewModel.cs
     ├── MainWindow.xaml
     ├── SettingsWindow.xaml
     ├── App.xaml.cs

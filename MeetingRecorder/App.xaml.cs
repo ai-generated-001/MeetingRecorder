@@ -54,7 +54,7 @@ public partial class App : Application
         ShowMainWindow();
     }
 
-    private static readonly string SettingsFilePath = Path.Combine(
+    public static string SettingsFilePath { get; set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "MeetingRecorder",
         "settings.json");
@@ -123,11 +123,18 @@ public partial class App : Application
 
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
+        services.AddTransient<SettingsViewModel>();
+        services.AddTransient<SettingsWindow>();
 
         _serviceProvider = services.BuildServiceProvider();
     }
 
     private void Show_Click(object sender, RoutedEventArgs e)
+    {
+        ShowMainWindow();
+    }
+
+    private void TrayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
     {
         ShowMainWindow();
     }
