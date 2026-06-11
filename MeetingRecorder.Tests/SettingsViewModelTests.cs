@@ -16,11 +16,14 @@ public class SettingsViewModelTests : IDisposable
     private readonly AppSettings _settings;
     private readonly Mock<ICloudSyncService> _cloudSyncMock;
     private readonly string _tempSettingsPath;
+    private readonly string _tempTokenPath;
 
     public SettingsViewModelTests()
     {
         _tempSettingsPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".json");
         App.SettingsFilePath = _tempSettingsPath;
+        _tempTokenPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + "_token");
+        App.TokenFolderPath = _tempTokenPath;
 
         _settings = new AppSettings
         {
@@ -42,6 +45,10 @@ public class SettingsViewModelTests : IDisposable
             if (File.Exists(_tempSettingsPath))
             {
                 File.Delete(_tempSettingsPath);
+            }
+            if (Directory.Exists(_tempTokenPath))
+            {
+                Directory.Delete(_tempTokenPath, true);
             }
         }
         catch { /* best effort */ }

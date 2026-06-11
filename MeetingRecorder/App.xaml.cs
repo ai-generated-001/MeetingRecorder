@@ -59,6 +59,11 @@ public partial class App : Application
         "MeetingRecorder",
         "settings.json");
 
+    public static string TokenFolderPath { get; set; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "MeetingRecorder",
+        "token.json");
+
     private static AppSettings LoadSettings()
     {
         try

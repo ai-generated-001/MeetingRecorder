@@ -154,7 +154,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
 
             ClientSecrets secrets = ResolveClientSecrets();
 
-            var tokenFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.json");
+            var tokenFolderPath = MeetingRecorder.App.TokenFolderPath;
             var dpapiStore = new DpapiFileDataStore(tokenFolderPath);
 
             var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
@@ -356,7 +356,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
     {
         try
         {
-            var tokenFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.json");
+            var tokenFolderPath = MeetingRecorder.App.TokenFolderPath;
             var tokenFilePath = Path.Combine(tokenFolderPath, "dpapi_user.dat");
             if (!File.Exists(tokenFilePath))
             {
@@ -422,7 +422,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
         {
             System.Diagnostics.Debug.WriteLine($"Failed to get detailed account status: {ex.Message}");
             // Double check if token file exists, as a safety fallback
-            var tokenFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.json");
+            var tokenFolderPath = MeetingRecorder.App.TokenFolderPath;
             var tokenFilePath = Path.Combine(tokenFolderPath, "dpapi_user.dat");
             if (File.Exists(tokenFilePath))
             {
@@ -448,7 +448,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
 
             ClientSecrets secrets = ResolveClientSecretsInternal(clientId, clientSecret);
 
-            var tokenFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.json");
+            var tokenFolderPath = MeetingRecorder.App.TokenFolderPath;
             var dpapiStore = new DpapiFileDataStore(tokenFolderPath);
 
             // This will open a browser window for Google authentication.

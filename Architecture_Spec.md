@@ -61,7 +61,7 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 
 7. **GoogleDriveSyncService (`ICloudSyncService`)**
    - Implements a thread-safe, non-blocking background queue using `System.Threading.Channels.Channel<string>`.
-   - Authenticates silently to Google Drive using `GoogleWebAuthorizationBroker` with access tokens securely encrypted locally using Windows DPAPI (`DpapiFileDataStore`).
+   - Authenticates silently to Google Drive using `GoogleWebAuthorizationBroker` with access tokens securely encrypted locally using Windows DPAPI (`DpapiFileDataStore`) under the local application data directory (`%LocalAppData%\MeetingRecorder\token.json`).
    - Supports manual user authentication ("Sign in" button in the settings window) allowing immediate login testing with default (built-in) credentials (custom BYOK credentials are temporarily disabled).
    - Automatically finds or creates a target folder named `"Meeting_Auto_Sync"` and uploads files asynchronously.
 

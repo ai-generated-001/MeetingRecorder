@@ -125,7 +125,7 @@ public partial class SettingsViewModel : ObservableObject
     private void ClearToken()
     {
         // Wipe every encrypted token file in the token.json folder.
-        var tokenDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.json");
+        var tokenDir = App.TokenFolderPath;
         if (Directory.Exists(tokenDir))
         {
             foreach (var file in Directory.GetFiles(tokenDir, "dpapi_*.dat"))

@@ -57,7 +57,7 @@ Recording settings and the process whitelist can be found in `MeetingRecorder/Mo
 
 The application features automated Google Drive synchronization. At the end of every meeting, the audio recording and generated markdown notes file are uploaded in the background to a folder named `"Meeting_Auto_Sync"` in the user's Google Drive. 
 
-For safety, the authentication tokens are encrypted locally on your machine using Windows Data Protection API (DPAPI) and saved under `token.json/`.
+For safety, the authentication tokens are encrypted locally on your machine using Windows Data Protection API (DPAPI) and saved under `token.json/` inside the Local AppData directory (`%LocalAppData%\MeetingRecorder\token.json`).
 
 To enable this feature, the application requires a Google Cloud project client ID and client secret. This can be configured in two ways:
 
