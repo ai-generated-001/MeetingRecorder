@@ -60,7 +60,10 @@ public sealed class SessionCoordinator : IDisposable
             _audioSessionMonitor.StopMonitoring();
         }
 
-        if (State == SessionState.Recording)
+        // Also handle Saving: if OnMeetingEnded is already in-flight on the
+        // background thread, its guard (State != Recording) will reject the call,
+        // but we still need to ensure we land on Idle when done.
+        if (State is SessionState.Recording or SessionState.Saving)
         {
             OnMeetingEnded(this, EventArgs.Empty);
         }

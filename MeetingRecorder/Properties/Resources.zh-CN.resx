@@ -188,4 +188,10 @@
   <data name="GoogleDriveLoginFailed" xml:space="preserve">
 	<value>登录 Google Drive 失败：{0}</value>
   </data>
+  <data name="UploadFailed" xml:space="preserve">
+	<value>上传失败：{0}</value>
+  </data>
+  <data name="UploadedToCloud" xml:space="preserve">
+	<value>已保存并上传至 Drive ✓</value>
+  </data>
 </root>

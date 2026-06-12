@@ -36,8 +36,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _statusText = Resources.Idle;
 
+    // Transient override: set by upload callbacks; cleared on the next state change.
+    private string? _uploadStatusText;
+
     partial void OnStatusChanged(AppStatus value)
     {
+        _uploadStatusText = null;   // clear transient upload message on state change
         UpdateStatusText();
         StartMonitoringCommand.NotifyCanExecuteChanged();
         StopMonitoringCommand.NotifyCanExecuteChanged();
@@ -91,6 +95,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _sessionCoordinator.RecordingRequested += OnRecordingRequested;
         _sessionCoordinator.RecordingStopped += OnRecordingStopped;
         _sessionCoordinator.StateChanged += OnStateChanged;
+        _cloudSyncService.UploadFailed += OnUploadFailed;
 
         if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
         {
@@ -184,13 +189,32 @@ public partial class MainViewModel : ObservableObject, IDisposable
             SessionState.Idle => AppStatus.Idle,
             SessionState.Detecting => AppStatus.Detecting,
             SessionState.Recording => AppStatus.Recording,
-            SessionState.Saving => AppStatus.Idle,
+            SessionState.Saving => AppStatus.Detecting,
             _ => AppStatus.Idle
         };
     }
 
+    /// <summary>
+    /// Called on the thread-pool when an upload permanently fails after all retries.
+    /// Marshals to the UI thread and shows a transient error in the status area.
+    /// </summary>
+    private void OnUploadFailed(object? sender, string errorMessage)
+    {
+        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        {
+            _uploadStatusText = string.Format(Resources.UploadFailed, errorMessage);
+            UpdateStatusText();
+        });
+    }
+
     private void UpdateStatusText()
     {
+        if (_uploadStatusText is not null)
+        {
+            StatusText = _uploadStatusText;
+            return;
+        }
+
         StatusText = Status switch
         {
             AppStatus.Idle => Resources.Idle,
@@ -205,5 +229,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _sessionCoordinator.RecordingRequested -= OnRecordingRequested;
         _sessionCoordinator.RecordingStopped -= OnRecordingStopped;
         _sessionCoordinator.StateChanged -= OnStateChanged;
+        _cloudSyncService.UploadFailed -= OnUploadFailed;
     }
 }

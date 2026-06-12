@@ -284,5 +284,17 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("GoogleDriveLoginFailed", resourceCulture);
             }
         }
+
+        public static string UploadFailed {
+            get {
+                return ResourceManager.GetString("UploadFailed", resourceCulture);
+            }
+        }
+
+        public static string UploadedToCloud {
+            get {
+                return ResourceManager.GetString("UploadedToCloud", resourceCulture);
+            }
+        }
     }
 }

@@ -368,12 +368,12 @@
                                     </StackPanel>
 
                                     <!-- Client ID -->
-                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
-                                    <TextBox x:Name="ClientIdTextBox" Margin="0,0,0,12" Text="{Binding GoogleClientId, UpdateSourceTrigger=PropertyChanged}" ToolTip="OAuth 2.0 Client ID from Google Cloud Console" Visibility="Collapsed"/>
+                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>
+                                    <TextBox x:Name="ClientIdTextBox" Margin="0,0,0,12" Text="{Binding GoogleClientId, UpdateSourceTrigger=PropertyChanged}" ToolTip="OAuth 2.0 Client ID from Google Cloud Console"/>
 
                                     <!-- Client Secret -->
-                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
-                                    <PasswordBox x:Name="ClientSecretPasswordBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client Secret from Google Cloud Console" Visibility="Collapsed"/>
+                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>
+                                    <PasswordBox x:Name="ClientSecretPasswordBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client Secret from Google Cloud Console"/>
 
                                     <!-- Drive folder path -->
                                     <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathLabel}" Margin="0,0,0,4" Foreground="#FF4B5563" FontSize="12" FontWeight="Medium"/>

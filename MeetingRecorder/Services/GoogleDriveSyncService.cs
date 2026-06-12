@@ -24,6 +24,9 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
     private DriveService? _driveService;
     private string? _targetFolderId;
 
+    /// <inheritdoc />
+    public event EventHandler<string>? UploadFailed;
+
     public GoogleDriveSyncService(AppSettings settings)
     {
         _settings = settings;
@@ -81,9 +84,15 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
 
                     await UploadFileWithRetryAsync(filePath, cancellationToken);
                 }
+                catch (OperationCanceledException)
+                {
+                    // Cancellation is expected on app shutdown — do not report as a failure.
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Failed to upload file '{filePath}': {ex}");
+                    UploadFailed?.Invoke(this, ex.Message);
                 }
             }
         }
@@ -157,12 +166,36 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
             var tokenFolderPath = MeetingRecorder.App.TokenFolderPath;
             var dpapiStore = new DpapiFileDataStore(tokenFolderPath);
 
-            var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                secrets,
-                new[] { DriveService.Scope.DriveFile },
-                "user",
-                cancellationToken,
-                dpapiStore);
+            // Use non-interactive auth: load the DPAPI-encrypted token that was stored
+            // when the user explicitly clicked "Sign in" in Settings. Never open a
+            // browser from this background thread — that silently hangs or fails.
+            var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+            {
+                ClientSecrets = secrets,
+                DataStore = dpapiStore,
+                Scopes = new[] { DriveService.Scope.DriveFile }
+            });
+
+            var token = await flow.LoadTokenAsync("user", cancellationToken);
+            if (token == null)
+            {
+                throw new InvalidOperationException(
+                    "Not signed in to Google Drive. Please sign in from Settings.");
+            }
+
+            // Re-use the credential for auto-refresh during Drive API calls.
+            // The flow instance is intentionally not disposed here — the UserCredential
+            // holds a reference to it and needs it alive for future token refreshes.
+            var credential = new UserCredential(flow, "user", token);
+            if (credential.Token.IsStale)
+            {
+                bool refreshed = await credential.RefreshTokenAsync(cancellationToken);
+                if (!refreshed)
+                {
+                    throw new InvalidOperationException(
+                        "Google Drive session expired. Please re-sign in from Settings.");
+                }
+            }
 
             _driveService = new DriveService(new BaseClientService.Initializer
             {
@@ -185,8 +218,15 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
 
     private ClientSecrets ResolveClientSecretsInternal(string clientId, string clientSecret)
     {
-        // NOTE: Custom user-supplied BYOK credentials are temporarily disabled.
-        // Always use the build-time injected client ID and secret.
+        // Prefer custom user-supplied BYOK credentials if provided.
+        if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
+        {
+            return new ClientSecrets
+            {
+                ClientId = clientId,
+                ClientSecret = clientSecret
+            };
+        }
 
         // Fall back to the build-time injected client ID and secret.
         var assembly = Assembly.GetExecutingAssembly();
@@ -203,7 +243,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
             };
         }
 
-        throw new InvalidOperationException("No Google OAuth credentials found.");
+        throw new InvalidOperationException("No Google OAuth credentials found. Please enter your Client ID and Secret in Settings.");
     }
 
     private async Task<string> GetOrCreateFolderIdAsync(DriveService service, CancellationToken cancellationToken)

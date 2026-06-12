@@ -10,7 +10,7 @@ namespace MeetingRecorder.Tests;
 public class GoogleDriveSyncServiceTests
 {
     [Fact]
-    public void ResolveClientSecrets_WhenSettingsHaveCredentials_IgnoresSettingsAndFallsBackToAssemblyMetadataOrThrows()
+    public void ResolveClientSecrets_WhenSettingsHaveCredentials_UsesSettingsCredentials()
     {
         var settings = new AppSettings
         {
@@ -22,21 +22,12 @@ public class GoogleDriveSyncServiceTests
         var method = typeof(GoogleDriveSyncService).GetMethod("ResolveClientSecrets", BindingFlags.NonPublic | BindingFlags.Instance);
         method.Should().NotBeNull();
 
-        try
-        {
-            var result = method!.Invoke(service, null);
-            if (result != null)
-            {
-                var secrets = result as Google.Apis.Auth.OAuth2.ClientSecrets;
-                secrets.Should().NotBeNull();
-                secrets!.ClientId.Should().NotBe("UserClientId");
-                secrets.ClientSecret.Should().NotBe("UserClientSecret");
-            }
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is InvalidOperationException)
-        {
-            ex.InnerException.Message.Should().Contain("No Google OAuth credentials found");
-        }
+        var result = method!.Invoke(service, null);
+        result.Should().NotBeNull();
+        var secrets = result as Google.Apis.Auth.OAuth2.ClientSecrets;
+        secrets.Should().NotBeNull();
+        secrets!.ClientId.Should().Be("UserClientId");
+        secrets.ClientSecret.Should().Be("UserClientSecret");
     }
 
     [Fact]
