@@ -296,5 +296,23 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("UploadedToCloud", resourceCulture);
             }
         }
+
+        public static string UploadToDrive {
+            get {
+                return ResourceManager.GetString("UploadToDrive", resourceCulture);
+            }
+        }
+
+        public static string UploadingFile {
+            get {
+                return ResourceManager.GetString("UploadingFile", resourceCulture);
+            }
+        }
+
+        public static string UploadSucceeded {
+            get {
+                return ResourceManager.GetString("UploadSucceeded", resourceCulture);
+            }
+        }
     }
 }

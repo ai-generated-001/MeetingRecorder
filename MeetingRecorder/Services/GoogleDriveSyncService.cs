@@ -27,6 +27,9 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
     /// <inheritdoc />
     public event EventHandler<string>? UploadFailed;
 
+    /// <inheritdoc />
+    public event EventHandler<string>? UploadCompleted;
+
     public GoogleDriveSyncService(AppSettings settings)
     {
         _settings = settings;
@@ -83,6 +86,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
                     }
 
                     await UploadFileWithRetryAsync(filePath, cancellationToken);
+                    UploadCompleted?.Invoke(this, filePath);
                 }
                 catch (OperationCanceledException)
                 {

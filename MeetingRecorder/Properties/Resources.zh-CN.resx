@@ -194,4 +194,13 @@
   <data name="UploadedToCloud" xml:space="preserve">
 	<value>已保存并上传至 Drive ✓</value>
   </data>
+  <data name="UploadToDrive" xml:space="preserve">
+    <value>上传到 Google Drive</value>
+  </data>
+  <data name="UploadingFile" xml:space="preserve">
+    <value>正在上传 {0}...</value>
+  </data>
+  <data name="UploadSucceeded" xml:space="preserve">
+    <value>成功上传 {0} ✓</value>
+  </data>
 </root>

@@ -194,4 +194,13 @@
   <data name="UploadedToCloud" xml:space="preserve">
 	<value>Saved and uploaded to Drive ✓</value>
   </data>
+  <data name="UploadToDrive" xml:space="preserve">
+    <value>Upload to Drive</value>
+  </data>
+  <data name="UploadingFile" xml:space="preserve">
+    <value>Uploading {0}...</value>
+  </data>
+  <data name="UploadSucceeded" xml:space="preserve">
+    <value>Uploaded {0} successfully ✓</value>
+  </data>
 </root>

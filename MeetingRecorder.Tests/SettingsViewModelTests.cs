@@ -11,6 +11,7 @@ using Xunit;
 
 namespace MeetingRecorder.Tests;
 
+[Collection("Sequential")]
 public class SettingsViewModelTests : IDisposable
 {
     private readonly AppSettings _settings;

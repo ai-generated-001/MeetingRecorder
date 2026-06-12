@@ -12,4 +12,10 @@ public interface ICloudSyncService
     /// The event argument is a short, user-readable error message.
     /// </summary>
     event EventHandler<string>? UploadFailed;
+
+    /// <summary>
+    /// Raised on the thread-pool when a file is successfully uploaded.
+    /// The event argument is the absolute path to the uploaded file.
+    /// </summary>
+    event EventHandler<string>? UploadCompleted;
 }

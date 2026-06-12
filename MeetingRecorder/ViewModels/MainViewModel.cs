@@ -74,6 +74,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string StopRecordingText => Resources.StopRecording;
     public string OpenFolderText => Resources.OpenFolder;
     public string ShowStatusWindowText => Resources.ShowStatusWindow;
+    public string UploadToDriveText => Resources.UploadToDrive;
 
     public MainViewModel(
         AppSettings settings,
@@ -96,6 +97,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _sessionCoordinator.RecordingStopped += OnRecordingStopped;
         _sessionCoordinator.StateChanged += OnStateChanged;
         _cloudSyncService.UploadFailed += OnUploadFailed;
+        _cloudSyncService.UploadCompleted += OnUploadCompleted;
 
         if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
         {
@@ -169,6 +171,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(StopRecordingText));
         OnPropertyChanged(nameof(OpenFolderText));
         OnPropertyChanged(nameof(ShowStatusWindowText));
+        OnPropertyChanged(nameof(UploadToDriveText));
         UpdateStatusText();
     }
 
@@ -194,6 +197,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
         };
     }
 
+    [RelayCommand]
+    private void ManualUpload()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = Resources.UploadToDrive,
+            InitialDirectory = Directory.Exists(_settings.OutputDirectory)
+                ? _settings.OutputDirectory
+                : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            Filter = "Audio Files (*.mp3;*.wav)|*.mp3;*.wav|All Files (*.*)|*.*",
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
+        {
+            var filePath = dialog.FileName;
+            _uploadStatusText = string.Format(Resources.UploadingFile, Path.GetFileName(filePath));
+            UpdateStatusText();
+            _cloudSyncService.EnqueueUpload(filePath);
+        }
+    }
+
     /// <summary>
     /// Called on the thread-pool when an upload permanently fails after all retries.
     /// Marshals to the UI thread and shows a transient error in the status area.
@@ -203,6 +228,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
         System.Windows.Application.Current?.Dispatcher.Invoke(() =>
         {
             _uploadStatusText = string.Format(Resources.UploadFailed, errorMessage);
+            UpdateStatusText();
+        });
+    }
+
+    /// <summary>
+    /// Called on the thread-pool when an upload completes successfully.
+    /// Marshals to the UI thread and shows a transient success message.
+    /// </summary>
+    private void OnUploadCompleted(object? sender, string filePath)
+    {
+        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        {
+            _uploadStatusText = string.Format(Resources.UploadSucceeded, Path.GetFileName(filePath));
             UpdateStatusText();
         });
     }
@@ -230,5 +268,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _sessionCoordinator.RecordingStopped -= OnRecordingStopped;
         _sessionCoordinator.StateChanged -= OnStateChanged;
         _cloudSyncService.UploadFailed -= OnUploadFailed;
+        _cloudSyncService.UploadCompleted -= OnUploadCompleted;
     }
 }
