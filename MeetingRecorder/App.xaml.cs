@@ -17,6 +17,7 @@ namespace MeetingRecorder;
 
 public partial class App : Application
 {
+    private static Mutex? _mutex;
     private TaskbarIcon? _notifyIcon;
     private ServiceProvider? _serviceProvider;
 
@@ -35,6 +36,20 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        const string appName = "MeetingRecorderUniqueMutexName_f197da08";
+        _mutex = new Mutex(true, appName, out bool createdNew);
+
+        if (!createdNew)
+        {
+            System.Windows.MessageBox.Show(
+                "Meeting Recorder is already running.",
+                "Meeting Recorder",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            Shutdown();
+            return;
+        }
+
         ConfigureServices();
 
         var settings = _serviceProvider!.GetRequiredService<AppSettings>();
@@ -172,6 +187,13 @@ public partial class App : Application
         Microsoft.Win32.SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         _notifyIcon?.Dispose();
         _serviceProvider?.Dispose();
+        try
+        {
+            _mutex?.ReleaseMutex();
+        }
+        catch (ObjectDisposedException) { }
+        catch (ApplicationException) { } // Mutex not owned by calling thread
+        _mutex?.Dispose();
         base.OnExit(e);
     }
 

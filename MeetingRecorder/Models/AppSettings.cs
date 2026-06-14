@@ -14,7 +14,7 @@ public class AppSettings
         System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments),
         "MeetingRecordings");
 
-    public int DebounceSeconds { get; set; } = 5;
+    public int DebounceSeconds { get; set; } = 20;
 
     public OutputFormat OutputFormat { get; set; } = OutputFormat.Mp3;
 

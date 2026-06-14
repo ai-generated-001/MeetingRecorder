@@ -19,4 +19,12 @@ public sealed class FileIOService : IFileIOService
     {
         return File.AppendAllTextAsync(filePath, content, Encoding.UTF8, cancellationToken);
     }
+
+    public void DeleteFile(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
+    }
 }

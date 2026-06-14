@@ -134,11 +134,36 @@ public sealed class SessionCoordinator : IDisposable
 
         RecordingStopped?.Invoke(this, EventArgs.Empty);
 
-        if (_settings.GoogleDriveEnabled)
+        var duration = _dateTimeProvider.Now - _recordingStartTime;
+        var activeDuration = duration;
+        if (sender != this)
+        {
+            activeDuration -= TimeSpan.FromSeconds(_settings.DebounceSeconds);
+        }
+
+        if (activeDuration < TimeSpan.FromSeconds(10))
         {
             if (_currentAudioPath != null)
             {
-                _cloudSyncService.EnqueueUpload(_currentAudioPath);
+                try
+                {
+                    _fileIOService.DeleteFile(_currentAudioPath);
+                    System.Diagnostics.Debug.WriteLine($"Discarded short recording (active duration: {activeDuration.TotalSeconds:F1}s): {_currentAudioPath}");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to delete short recording file '{_currentAudioPath}': {ex.Message}");
+                }
+            }
+        }
+        else
+        {
+            if (_settings.GoogleDriveEnabled)
+            {
+                if (_currentAudioPath != null)
+                {
+                    _cloudSyncService.EnqueueUpload(_currentAudioPath);
+                }
             }
         }
 
