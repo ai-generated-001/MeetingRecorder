@@ -140,4 +140,38 @@ public class MainViewModelTests
             vm.StatusText.Should().Be(expectedStatus);
         }
     }
+
+    [Fact]
+    public void StopRecordingCommand_CanExecute_UpdatesCorrectlyOnStateChanged()
+    {
+        // Arrange
+        _monitorMock.SetupGet(m => m.IsMonitoring).Returns(true);
+
+        using var vm = new MainViewModel(
+            _settings,
+            _recorderMock.Object,
+            _sessionCoordinator,
+            _fileIOServiceMock.Object,
+            _dateTimeProviderMock.Object,
+            _cloudSyncMock.Object,
+            _serviceProviderMock.Object);
+
+        // Act & Assert 1: Initially we are idle/detecting, so can't stop recording
+        vm.StopRecordingCommand.CanExecute(null).Should().BeFalse();
+
+        // Start monitoring, then simulate a meeting started
+        _sessionCoordinator.Start();
+        _monitorMock.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "Sprint Review"));
+
+        // Status should be Recording, StopRecordingCommand should be executable
+        vm.Status.Should().Be(AppStatus.Recording);
+        vm.StopRecordingCommand.CanExecute(null).Should().BeTrue();
+
+        // Simulate meeting ended
+        _monitorMock.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
+
+        // Status should be Detecting, StopRecordingCommand should be non-executable
+        vm.Status.Should().Be(AppStatus.Detecting);
+        vm.StopRecordingCommand.CanExecute(null).Should().BeFalse();
+    }
 }

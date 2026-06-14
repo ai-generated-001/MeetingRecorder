@@ -199,16 +199,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _recorder.Stop();
     }
 
+    private void ExecuteOnUIThread(Action action)
+    {
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            dispatcher.Invoke(action);
+        }
+        else
+        {
+            action();
+        }
+    }
+
     private void OnStateChanged(object? sender, SessionStateChangedEventArgs e)
     {
-        Status = e.NewState switch
+        ExecuteOnUIThread(() =>
         {
-            SessionState.Idle => AppStatus.Idle,
-            SessionState.Detecting => AppStatus.Detecting,
-            SessionState.Recording => AppStatus.Recording,
-            SessionState.Saving => AppStatus.Detecting,
-            _ => AppStatus.Idle
-        };
+            Status = e.NewState switch
+            {
+                SessionState.Idle => AppStatus.Idle,
+                SessionState.Detecting => AppStatus.Detecting,
+                SessionState.Recording => AppStatus.Recording,
+                SessionState.Saving => AppStatus.Detecting,
+                _ => AppStatus.Idle
+            };
+        });
     }
 
     [RelayCommand]
@@ -240,7 +255,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnUploadFailed(object? sender, string errorMessage)
     {
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        ExecuteOnUIThread(() =>
         {
             _uploadCategory = StatusMessageCategory.UploadError;
             _uploadStatusText = string.Format(Resources.UploadFailed, errorMessage);
@@ -254,7 +269,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnUploadCompleted(object? sender, string filePath)
     {
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        ExecuteOnUIThread(() =>
         {
             _uploadCategory = StatusMessageCategory.UploadSuccess;
             _uploadStatusText = string.Format(Resources.UploadSucceeded, Path.GetFileName(filePath));
