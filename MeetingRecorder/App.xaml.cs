@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 using H.NotifyIcon;
@@ -38,6 +39,9 @@ public partial class App : Application
 
         var settings = _serviceProvider!.GetRequiredService<AppSettings>();
         ApplyUiLanguage(settings.UiLanguage);
+        ApplyTheme(settings.Theme);
+
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
 
         base.OnStartup(e);
 
@@ -165,8 +169,72 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         _notifyIcon?.Dispose();
         _serviceProvider?.Dispose();
         base.OnExit(e);
+    }
+
+    private void OnUserPreferenceChanged(object sender, Microsoft.Win32.UserPreferenceChangedEventArgs e)
+    {
+        if (e.Category == Microsoft.Win32.UserPreferenceCategory.General)
+        {
+            var settings = _serviceProvider?.GetService<AppSettings>();
+            if (settings != null && settings.Theme == "System")
+            {
+                Dispatcher.Invoke(() => ApplyTheme("System"));
+            }
+        }
+    }
+
+    private static bool IsSystemDarkTheme()
+    {
+        try
+        {
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            if (key?.GetValue("AppsUseLightTheme") is int value)
+            {
+                return value == 0;
+            }
+        }
+        catch
+        {
+            // Fallback to light
+        }
+        return false;
+    }
+
+    internal static void ApplyTheme(string themeName)
+    {
+        string actualTheme = themeName;
+        if (actualTheme == "System" || string.IsNullOrEmpty(actualTheme))
+        {
+            actualTheme = IsSystemDarkTheme() ? "Dark" : "Light";
+        }
+
+        var app = (App)Application.Current;
+        if (app == null)
+        {
+            return;
+        }
+        var existingThemes = app.Resources.MergedDictionaries
+            .Where(d => d.Source != null && (d.Source.OriginalString.Contains("LightTheme.xaml") || d.Source.OriginalString.Contains("DarkTheme.xaml")))
+            .ToList();
+
+        foreach (var dict in existingThemes)
+        {
+            app.Resources.MergedDictionaries.Remove(dict);
+        }
+
+        var uri = new Uri($"/Themes/{actualTheme}Theme.xaml", UriKind.Relative);
+        try
+        {
+            var dict = new ResourceDictionary { Source = uri };
+            app.Resources.MergedDictionaries.Add(dict);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load theme {actualTheme}: {ex.Message}");
+        }
     }
 }

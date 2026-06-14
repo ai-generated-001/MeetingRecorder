@@ -20,6 +20,16 @@ public enum AppStatus
     Recording
 }
 
+public enum StatusMessageCategory
+{
+    Idle,
+    Detecting,
+    Recording,
+    Uploading,
+    UploadSuccess,
+    UploadError
+}
+
 public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly AppSettings _settings;
@@ -36,8 +46,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _statusText = Resources.Idle;
 
+    [ObservableProperty]
+    private StatusMessageCategory _statusCategory = StatusMessageCategory.Idle;
+
     // Transient override: set by upload callbacks; cleared on the next state change.
     private string? _uploadStatusText;
+    private StatusMessageCategory _uploadCategory;
 
     partial void OnStatusChanged(AppStatus value)
     {
@@ -213,6 +227,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
         {
             var filePath = dialog.FileName;
+            _uploadCategory = StatusMessageCategory.Uploading;
             _uploadStatusText = string.Format(Resources.UploadingFile, Path.GetFileName(filePath));
             UpdateStatusText();
             _cloudSyncService.EnqueueUpload(filePath);
@@ -227,6 +242,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         System.Windows.Application.Current?.Dispatcher.Invoke(() =>
         {
+            _uploadCategory = StatusMessageCategory.UploadError;
             _uploadStatusText = string.Format(Resources.UploadFailed, errorMessage);
             UpdateStatusText();
         });
@@ -240,6 +256,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         System.Windows.Application.Current?.Dispatcher.Invoke(() =>
         {
+            _uploadCategory = StatusMessageCategory.UploadSuccess;
             _uploadStatusText = string.Format(Resources.UploadSucceeded, Path.GetFileName(filePath));
             UpdateStatusText();
         });
@@ -250,6 +267,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_uploadStatusText is not null)
         {
             StatusText = _uploadStatusText;
+            StatusCategory = _uploadCategory;
             return;
         }
 
@@ -259,6 +277,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
             AppStatus.Detecting => Resources.StatusDetecting,
             AppStatus.Recording => Resources.Recording,
             _ => Resources.StatusUnknown
+        };
+
+        StatusCategory = Status switch
+        {
+            AppStatus.Idle => StatusMessageCategory.Idle,
+            AppStatus.Detecting => StatusMessageCategory.Detecting,
+            AppStatus.Recording => StatusMessageCategory.Recording,
+            _ => StatusMessageCategory.Idle
         };
     }
 

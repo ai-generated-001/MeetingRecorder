@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Window and general elements -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FF111827"/>
+    <SolidColorBrush x:Key="WindowBorderBrush" Color="#FF374151"/>
+    <SolidColorBrush x:Key="WindowForegroundBrush" Color="#FFF9FAFB"/>
+    
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FF1F2937"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#FF374151"/>
+    
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFF9FAFB"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF9CA3AF"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#FF6B7280"/>
+    <SolidColorBrush x:Key="SeparatorBrush" Color="#FF374151"/>
+
+    <!-- Common Controls (TextBox, PasswordBox, ComboBox, CheckBox, RadioButton) -->
+    <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#FF111827"/>
+    <SolidColorBrush x:Key="ControlBorderBrush" Color="#FF374151"/>
+    <SolidColorBrush x:Key="ControlForegroundBrush" Color="#FFF9FAFB"/>
+    <SolidColorBrush x:Key="ControlMouseOverBorderBrush" Color="#FF4B5563"/>
+    <SolidColorBrush x:Key="ControlFocusedBorderBrush" Color="#FF3B82F6"/>
+    <SolidColorBrush x:Key="ControlDisabledBackgroundBrush" Color="#FF111827"/>
+    <SolidColorBrush x:Key="ControlDisabledBorderBrush" Color="#FF374151"/>
+    <SolidColorBrush x:Key="ControlDisabledForegroundBrush" Color="#FF4B5563"/>
+
+    <!-- Selection States -->
+    <SolidColorBrush x:Key="SelectionBackgroundBrush" Color="#FF1E3A8A"/>
+    <SolidColorBrush x:Key="SelectionForegroundBrush" Color="#FF93C5FD"/>
+
+    <!-- Base Button -->
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#FF1F2937"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#FF374151"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#FFF9FAFB"/>
+    <SolidColorBrush x:Key="ButtonMouseOverBackgroundBrush" Color="#FF374151"/>
+    <SolidColorBrush x:Key="ButtonMouseOverBorderBrush" Color="#FF4B5563"/>
+    <SolidColorBrush x:Key="ButtonPressedBackgroundBrush" Color="#FF4B5563"/>
+
+    <!-- Primary Button -->
+    <SolidColorBrush x:Key="PrimaryButtonBackgroundBrush" Color="#FF3B82F6"/>
+    <SolidColorBrush x:Key="PrimaryButtonBorderBrush" Color="#FF3B82F6"/>
+    <SolidColorBrush x:Key="PrimaryButtonForegroundBrush" Color="White"/>
+    <SolidColorBrush x:Key="PrimaryButtonMouseOverBackgroundBrush" Color="#FF2563EB"/>
+    <SolidColorBrush x:Key="PrimaryButtonMouseOverBorderBrush" Color="#FF2563EB"/>
+    <SolidColorBrush x:Key="PrimaryButtonPressedBackgroundBrush" Color="#FF1D4ED8"/>
+    <SolidColorBrush x:Key="PrimaryButtonPressedBorderBrush" Color="#FF1D4ED8"/>
+    <SolidColorBrush x:Key="PrimaryButtonDisabledBackgroundBrush" Color="#FF1E3A8A"/>
+    <SolidColorBrush x:Key="PrimaryButtonDisabledBorderBrush" Color="#FF1E3A8A"/>
+
+    <!-- Danger Button -->
+    <SolidColorBrush x:Key="DangerButtonBackgroundBrush" Color="#FF7F1D1D"/>
+    <SolidColorBrush x:Key="DangerButtonBorderBrush" Color="#FFB91C1C"/>
+    <SolidColorBrush x:Key="DangerButtonForegroundBrush" Color="#FFFEE2E2"/>
+    <SolidColorBrush x:Key="DangerButtonMouseOverBackgroundBrush" Color="#FF991B1B"/>
+    <SolidColorBrush x:Key="DangerButtonMouseOverBorderBrush" Color="#FFEF4444"/>
+    <SolidColorBrush x:Key="DangerButtonMouseOverForegroundBrush" Color="White"/>
+    <SolidColorBrush x:Key="DangerButtonPressedBackgroundBrush" Color="#FFB91C1C"/>
+    <SolidColorBrush x:Key="DangerButtonPressedBorderBrush" Color="#FFDC2626"/>
+
+    <!-- Google Drive BYOK section specifically (in Settings) -->
+    <SolidColorBrush x:Key="DriveCardBackgroundBrush" Color="#FF111827"/>
+    <SolidColorBrush x:Key="DriveCardBorderBrush" Color="#FF374151"/>
+    <SolidColorBrush x:Key="DriveStatusBadgeBackgroundBrush" Color="#FF374151"/>
+
+    <!-- Status Category Foreground Colors -->
+    <SolidColorBrush x:Key="StatusIdleBrush" Color="#FF9CA3AF"/>
+    <SolidColorBrush x:Key="StatusDetectingBrush" Color="#FF34D399"/>
+    <SolidColorBrush x:Key="StatusRecordingBrush" Color="#FFFCA5A5"/>
+    <SolidColorBrush x:Key="StatusUploadingBrush" Color="#FFFBBF24"/>
+    <SolidColorBrush x:Key="StatusUploadSuccessBrush" Color="#FF60A5FA"/>
+    <SolidColorBrush x:Key="StatusUploadErrorBrush" Color="#FFFCA5A5"/>
+
+    <!-- Glowing Status Badge Fill Colors -->
+    <SolidColorBrush x:Key="BadgeIdleBrush" Color="#FF6B7280"/>
+    <SolidColorBrush x:Key="BadgeDetectingBrush" Color="#FF059669"/>
+    <SolidColorBrush x:Key="BadgeRecordingBrush" Color="#FFEF4444"/>
+    <SolidColorBrush x:Key="BadgeUploadingBrush" Color="#FFD97706"/>
+    <SolidColorBrush x:Key="BadgeUploadSuccessBrush" Color="#FF2563EB"/>
+    <SolidColorBrush x:Key="BadgeUploadErrorBrush" Color="#FFEF4444"/>
+
+    <!-- ScrollBar styling brushes -->
+    <SolidColorBrush x:Key="ScrollBarTrackBackgroundBrush" Color="Transparent"/>
+    <SolidColorBrush x:Key="ScrollBarThumbBackgroundBrush" Color="#FF4B5563"/>
+    <SolidColorBrush x:Key="ScrollBarThumbMouseOverBrush" Color="#FF6B7280"/>
+</ResourceDictionary>

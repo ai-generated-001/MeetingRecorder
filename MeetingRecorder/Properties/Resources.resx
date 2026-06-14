@@ -203,4 +203,16 @@
   <data name="UploadSucceeded" xml:space="preserve">
     <value>Uploaded {0} successfully ✓</value>
   </data>
+  <data name="ThemeLabel" xml:space="preserve">
+    <value>UI Theme</value>
+  </data>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>System default</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
 </root>

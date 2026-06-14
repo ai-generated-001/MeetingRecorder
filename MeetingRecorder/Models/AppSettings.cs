@@ -52,6 +52,11 @@ public class AppSettings
     /// Automatically cleared when the folder path changes.
     /// </summary>
     public string GoogleDriveFolderId { get; set; } = "";
+
+    /// <summary>
+    /// UI theme mode: "Light", "Dark", or "System".
+    /// </summary>
+    public string Theme { get; set; } = "System";
 }
 
 public enum OutputFormat

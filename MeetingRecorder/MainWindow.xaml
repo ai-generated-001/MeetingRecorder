@@ -10,19 +10,19 @@
         MinHeight="450" 
         MinWidth="560"
         WindowStartupLocation="CenterScreen"
-        Background="#FFF6F8FB"
+        Background="{DynamicResource WindowBackgroundBrush}"
         Icon="Resources/icon.ico"
         FontFamily="Segoe UI"
         FontSize="13"
-        Foreground="#FF374151">
+        Foreground="{DynamicResource WindowForegroundBrush}">
 
     <Window.Resources>
         <!-- Base Button Style -->
         <Style TargetType="Button">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FFD1D5DB"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#FF374151"/>
+            <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
             <Setter Property="Padding" Value="14,7"/>
             <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -34,16 +34,16 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFF9FAFB"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#FF9CA3AF"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ButtonMouseOverBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource ButtonMouseOverBorderBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFE5E7EB"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Background" Value="#FFF3F4F6"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#FFE5E7EB"/>
-                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ControlDisabledBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -53,9 +53,9 @@
 
         <!-- Primary Button Style -->
         <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#FF2563EB"/>
-            <Setter Property="BorderBrush" Value="#FF2563EB"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource PrimaryButtonBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryButtonBorderBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryButtonForegroundBrush}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -65,17 +65,17 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FF1D4ED8"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#FF1D4ED8"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PrimaryButtonMouseOverBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PrimaryButtonMouseOverBorderBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FF1E40AF"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#FF1E40AF"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PrimaryButtonPressedBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PrimaryButtonPressedBorderBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Background" Value="#FF93C5FD"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#FF93C5FD"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PrimaryButtonDisabledBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PrimaryButtonDisabledBorderBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryButtonForegroundBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -85,9 +85,9 @@
 
         <!-- Danger Button Style -->
         <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#FFFEE2E2"/>
-            <Setter Property="BorderBrush" Value="#FFFCA5A5"/>
-            <Setter Property="Foreground" Value="#FF991B1B"/>
+            <Setter Property="Background" Value="{DynamicResource DangerButtonBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerButtonBorderBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource DangerButtonForegroundBrush}"/>
             <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -97,18 +97,18 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFFEE2E2"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#FFEF4444"/>
-                                <Setter Property="Foreground" Value="#FFB91C1C"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource DangerButtonBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource DangerButtonMouseOverBorderBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource DangerButtonMouseOverForegroundBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFFECACA"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#FFDC2626"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource DangerButtonPressedBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource DangerButtonPressedBorderBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Background" Value="#FFF9FAFB"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#FFE5E7EB"/>
-                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ControlDisabledBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -118,7 +118,7 @@
 
         <!-- RadioButton Style -->
         <Style TargetType="RadioButton">
-            <Setter Property="Foreground" Value="#FF374151"/>
+            <Setter Property="Foreground" Value="{DynamicResource WindowForegroundBrush}"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Padding" Value="8,0,0,0"/>
             <Setter Property="Template">
@@ -130,25 +130,25 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid x:Name="radioGrid" Height="18" Width="18" VerticalAlignment="Center">
-                                <Border x:Name="radioBorder" BorderBrush="#FFD1D5DB" BorderThickness="1.5" Background="White" CornerRadius="9"/>
-                                <Ellipse x:Name="radioGlyph" Fill="#FF2563EB" Width="8" Height="8" Visibility="Collapsed"/>
+                                <Border x:Name="radioBorder" BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1.5" Background="{DynamicResource ControlBackgroundBrush}" CornerRadius="9"/>
+                                <Ellipse x:Name="radioGlyph" Fill="{DynamicResource PrimaryButtonBackgroundBrush}" Width="8" Height="8" Visibility="Collapsed"/>
                             </Grid>
                             <ContentPresenter x:Name="contentPresenter" Grid.Column="1" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="true">
-                                <Setter TargetName="radioBorder" Property="BorderBrush" Value="#FF2563EB"/>
-                                <Setter TargetName="radioBorder" Property="Background" Value="#FFEBF5FF"/>
+                                <Setter TargetName="radioBorder" Property="BorderBrush" Value="{DynamicResource ControlFocusedBorderBrush}"/>
+                                <Setter TargetName="radioBorder" Property="Background" Value="{DynamicResource SelectionBackgroundBrush}"/>
                                 <Setter TargetName="radioGlyph" Property="Visibility" Value="Visible"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="true">
-                                <Setter TargetName="radioBorder" Property="BorderBrush" Value="#FF93C5FD"/>
+                                <Setter TargetName="radioBorder" Property="BorderBrush" Value="{DynamicResource ControlMouseOverBorderBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="false">
-                                <Setter TargetName="radioBorder" Property="Background" Value="#FFF3F4F6"/>
-                                <Setter TargetName="radioBorder" Property="BorderBrush" Value="#FFE5E7EB"/>
-                                <Setter TargetName="radioGlyph" Property="Fill" Value="#FF9CA3AF"/>
-                                <Setter Property="Foreground" Value="#FF9CA3AF"/>
+                                <Setter TargetName="radioBorder" Property="Background" Value="{DynamicResource ControlDisabledBackgroundBrush}"/>
+                                <Setter TargetName="radioBorder" Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}"/>
+                                <Setter TargetName="radioGlyph" Property="Fill" Value="{DynamicResource ControlDisabledForegroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -158,7 +158,7 @@
     </Window.Resources>
 
     <Grid Margin="20">
-        <Border Background="White" CornerRadius="12" Padding="20" BorderBrush="#FFE4E8EF" BorderThickness="1">
+        <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
                     <!-- Title & description -->
@@ -174,11 +174,11 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Text="{Binding HeaderTitle}" FontSize="20" FontWeight="Bold" Foreground="#FF1F2937"/>
-                <TextBlock Grid.Row="1" Margin="0,6,0,16" Text="{Binding AppDescription}" TextWrapping="Wrap" Foreground="#FF6B7280" FontSize="12"/>
+                <TextBlock Grid.Row="0" Text="{Binding HeaderTitle}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Grid.Row="1" Margin="0,6,0,16" Text="{Binding AppDescription}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
 
                 <!-- Status Card -->
-                <Border Grid.Row="2" Background="#FFF9FAFB" BorderBrush="#FFE5E7EB" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,16">
+                <Border Grid.Row="2" Background="{DynamicResource DriveCardBackgroundBrush}" BorderBrush="{DynamicResource DriveCardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,16">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -186,14 +186,26 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel>
-                            <TextBlock Text="{Binding StatusLabel}" FontWeight="SemiBold" Foreground="#FF374151" FontSize="12"/>
+                            <TextBlock Text="{Binding StatusLabel}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
                             <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="Bold" Margin="0,4,0,0">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="#FF1D4ED8"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource StatusIdleBrush}"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Status}" Value="{x:Static viewmodels:AppStatus.Recording}">
-                                                <Setter Property="Foreground" Value="#FFB91C1C"/>
+                                            <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.Detecting}">
+                                                <Setter Property="Foreground" Value="{DynamicResource StatusDetectingBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.Recording}">
+                                                <Setter Property="Foreground" Value="{DynamicResource StatusRecordingBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.Uploading}">
+                                                <Setter Property="Foreground" Value="{DynamicResource StatusUploadingBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.UploadSuccess}">
+                                                <Setter Property="Foreground" Value="{DynamicResource StatusUploadSuccessBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.UploadError}">
+                                                <Setter Property="Foreground" Value="{DynamicResource StatusUploadErrorBrush}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -205,10 +217,33 @@
                         <Ellipse Grid.Column="1" Width="12" Height="12" VerticalAlignment="Center" Margin="10,0,0,0">
                             <Ellipse.Style>
                                 <Style TargetType="Ellipse">
-                                    <Setter Property="Fill" Value="#FF2563EB"/>
+                                    <Setter Property="Fill" Value="{DynamicResource BadgeIdleBrush}"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static viewmodels:AppStatus.Recording}">
-                                            <Setter Property="Fill" Value="#FFDC2626"/>
+                                        <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.Detecting}">
+                                            <Setter Property="Fill" Value="{DynamicResource BadgeDetectingBrush}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.Recording}">
+                                            <Setter Property="Fill" Value="{DynamicResource BadgeRecordingBrush}"/>
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard Name="PulsingBadge">
+                                                    <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                         From="1.0" To="0.3" Duration="0:0:0.7"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions>
+                                                <StopStoryboard BeginStoryboardName="PulsingBadge"/>
+                                            </DataTrigger.ExitActions>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.Uploading}">
+                                            <Setter Property="Fill" Value="{DynamicResource BadgeUploadingBrush}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.UploadSuccess}">
+                                            <Setter Property="Fill" Value="{DynamicResource BadgeUploadSuccessBrush}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusCategory}" Value="{x:Static viewmodels:StatusMessageCategory.UploadError}">
+                                            <Setter Property="Fill" Value="{DynamicResource BadgeUploadErrorBrush}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -225,7 +260,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding OutputFormatLabel}" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="#FF4B5563" FontWeight="Medium"/>
+                        <TextBlock Text="{Binding OutputFormatLabel}" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
                         <RadioButton Content="MP3" VerticalAlignment="Center" Margin="0,0,16,0"
                                      IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Mp3}}"/>
                         <RadioButton Content="WAV" VerticalAlignment="Center"
@@ -236,7 +271,7 @@
                 </Grid>
 
                 <!-- Separator -->
-                <Border Grid.Row="4" BorderBrush="#FFE5E7EB" BorderThickness="0,1,0,0" Margin="0,4,0,16" SnapsToDevicePixels="True"/>
+                <Border Grid.Row="4" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,16" SnapsToDevicePixels="True"/>
 
                 <!-- Action buttons -->
                 <Grid Grid.Row="5">

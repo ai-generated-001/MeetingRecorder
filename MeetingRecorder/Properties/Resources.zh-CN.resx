@@ -203,4 +203,16 @@
   <data name="UploadSucceeded" xml:space="preserve">
     <value>成功上传 {0} ✓</value>
   </data>
+  <data name="ThemeLabel" xml:space="preserve">
+    <value>界面主题</value>
+  </data>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>系统默认</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>浅色</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>深色</value>
+  </data>
 </root>

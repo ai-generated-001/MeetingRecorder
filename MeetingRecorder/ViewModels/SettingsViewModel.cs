@@ -26,6 +26,9 @@ public partial class SettingsViewModel : ObservableObject
     private string _uiLanguage = "";
 
     [ObservableProperty]
+    private string _selectedTheme = "System";
+
+    [ObservableProperty]
     private bool _googleDriveEnabled;
 
     [ObservableProperty]
@@ -49,11 +52,21 @@ public partial class SettingsViewModel : ObservableObject
     public event EventHandler<bool>? RequestClose;
 
     public record LanguageItem(string DisplayName, string Code);
+    public record ThemeItem(string DisplayName, string Code);
 
     public List<LanguageItem> SupportedLanguages { get; } =
     [
         new("English", ""),
         new("中文 (简体)", "zh-CN"),
+    ];
+
+    public string ThemeLabel => Resources.ThemeLabel;
+
+    public List<ThemeItem> SupportedThemes =>
+    [
+        new(Resources.ThemeSystem, "System"),
+        new(Resources.ThemeLight, "Light"),
+        new(Resources.ThemeDark, "Dark")
     ];
 
     public SettingsViewModel(AppSettings settings, ICloudSyncService cloudSyncService)
@@ -66,6 +79,7 @@ public partial class SettingsViewModel : ObservableObject
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "MeetingRecordings")
             : _settings.OutputDirectory;
         UiLanguage = _settings.UiLanguage ?? "";
+        SelectedTheme = _settings.Theme ?? "System";
         GoogleDriveEnabled = _settings.GoogleDriveEnabled;
         GoogleClientId = _settings.GoogleClientId ?? "";
         GoogleClientSecret = _settings.GoogleClientSecret ?? "";
@@ -254,6 +268,7 @@ public partial class SettingsViewModel : ObservableObject
 
         _settings.OutputDirectory = selected;
         _settings.UiLanguage = UiLanguage;
+        _settings.Theme = SelectedTheme;
         _settings.GoogleDriveEnabled = GoogleDriveEnabled;
         _settings.GoogleClientId = GoogleClientId;
         _settings.GoogleClientSecret = clientSecret;
@@ -268,6 +283,7 @@ public partial class SettingsViewModel : ObservableObject
         }
 
         App.ApplyUiLanguage(_settings.UiLanguage);
+        App.ApplyTheme(_settings.Theme);
         App.SaveSettings(_settings);
 
         RequestClose?.Invoke(this, true);
