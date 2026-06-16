@@ -215,4 +215,7 @@
   <data name="ThemeDark" xml:space="preserve">
     <value>Dark</value>
   </data>
+  <data name="StartWithWindowsLabel" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
 </root>

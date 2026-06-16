@@ -338,5 +338,11 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("ThemeDark", resourceCulture);
             }
         }
+
+        public static string StartWithWindowsLabel {
+            get {
+                return ResourceManager.GetString("StartWithWindowsLabel", resourceCulture);
+            }
+        }
     }
 }

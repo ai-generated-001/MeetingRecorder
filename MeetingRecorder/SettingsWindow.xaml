@@ -463,6 +463,9 @@
                         <TextBlock Text="{Binding ThemeLabel}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
                         <ComboBox x:Name="ThemeComboBox" Margin="0,0,0,20" ItemsSource="{Binding SupportedThemes}" SelectedValue="{Binding SelectedTheme}" DisplayMemberPath="DisplayName" SelectedValuePath="Code" HorizontalAlignment="Stretch"/>
 
+                        <!-- Start with Windows -->
+                        <CheckBox x:Name="StartWithWindowsCheckBox" Content="{x:Static properties:Resources.StartWithWindowsLabel}" Margin="0,0,0,20" IsChecked="{Binding StartWithWindows}" FontWeight="Medium"/>
+
                         <!-- Google Drive BYOK section Card -->
                         <Border BorderBrush="{DynamicResource DriveCardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,10" Background="{DynamicResource DriveCardBackgroundBrush}">
                             <StackPanel>

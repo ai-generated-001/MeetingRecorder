@@ -20,12 +20,14 @@ public class SettingsPersistenceTests
             GoogleDriveFolderPath = "Resolved/Work/Meetings",
             UiLanguage = "zh-CN",
             OutputFormat = OutputFormat.Wav,
-            DebounceSeconds = 12
+            DebounceSeconds = 12,
+            StartWithWindows = true
         };
 
         var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
         json.Should().Contain("TestClientId");
         json.Should().Contain("Resolved/Work/Meetings");
+        json.Should().Contain("StartWithWindows");
 
         var deserialized = JsonSerializer.Deserialize<AppSettings>(json);
         deserialized.Should().NotBeNull();
@@ -36,5 +38,6 @@ public class SettingsPersistenceTests
         deserialized.UiLanguage.Should().Be("zh-CN");
         deserialized.OutputFormat.Should().Be(OutputFormat.Wav);
         deserialized.DebounceSeconds.Should().Be(12);
+        deserialized.StartWithWindows.Should().BeTrue();
     }
 }

@@ -89,6 +89,7 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 - `GoogleDriveEnabled` (enable/disable sync)
 - `GoogleClientId` & `GoogleClientSecret` (optional custom API keys — temporarily disabled, built-in credentials are used instead)
 - `GoogleDriveFolderPath` (remote upload directory)
+- `StartWithWindows` (enable/disable auto-start with Windows via HKCU Registry Run key)
 
 ### Persistence
 Settings are automatically saved as JSON in the local application data directory (`%LocalAppData%\MeetingRecorder\settings.json`) whenever they are updated from the UI or Settings Window. On application startup, settings are loaded from this file or default settings are created if it does not exist.

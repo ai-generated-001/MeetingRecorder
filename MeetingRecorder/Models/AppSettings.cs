@@ -57,7 +57,13 @@ public class AppSettings
     /// UI theme mode: "Light", "Dark", or "System".
     /// </summary>
     public string Theme { get; set; } = "System";
+
+    /// <summary>
+    /// When true, the application is configured to start automatically on Windows startup.
+    /// </summary>
+    public bool StartWithWindows { get; set; } = false;
 }
+
 
 public enum OutputFormat
 {

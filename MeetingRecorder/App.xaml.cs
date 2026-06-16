@@ -55,6 +55,7 @@ public partial class App : Application
         var settings = _serviceProvider!.GetRequiredService<AppSettings>();
         ApplyUiLanguage(settings.UiLanguage);
         ApplyTheme(settings.Theme);
+        ApplyStartupSetting(settings.StartWithWindows);
 
         Microsoft.Win32.SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
 
@@ -257,6 +258,38 @@ public partial class App : Application
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load theme {actualTheme}: {ex.Message}");
+        }
+    }
+
+    internal static void ApplyStartupSetting(bool startWithWindows)
+    {
+        try
+        {
+            string? exePath = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(exePath))
+            {
+                return;
+            }
+
+            const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+            const string AppName = "MeetingRecorder";
+
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(StartupRegistryKey, true);
+            if (key != null)
+            {
+                if (startWithWindows)
+                {
+                    key.SetValue(AppName, $"\"{exePath}\"");
+                }
+                else
+                {
+                    key.DeleteValue(AppName, false);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to set startup registry key: {ex.Message}");
         }
     }
 }

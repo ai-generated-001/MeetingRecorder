@@ -32,6 +32,9 @@ public partial class SettingsViewModel : ObservableObject
     private bool _googleDriveEnabled;
 
     [ObservableProperty]
+    private bool _startWithWindows;
+
+    [ObservableProperty]
     private string _googleClientId = "";
 
     [ObservableProperty]
@@ -86,6 +89,7 @@ public partial class SettingsViewModel : ObservableObject
         GoogleDriveFolderPath = string.IsNullOrWhiteSpace(_settings.GoogleDriveFolderPath)
             ? "Meeting_Auto_Sync"
             : _settings.GoogleDriveFolderPath;
+        StartWithWindows = _settings.StartWithWindows;
 
         // Asynchronously load the initial status
         _ = LoadStatusAsync();
@@ -276,6 +280,8 @@ public partial class SettingsViewModel : ObservableObject
             ? "Meeting_Auto_Sync"
             : GoogleDriveFolderPath.Trim();
 
+        _settings.StartWithWindows = StartWithWindows;
+
         if (credentialsChanged)
         {
             _settings.GoogleDriveFolderId = "";
@@ -284,6 +290,7 @@ public partial class SettingsViewModel : ObservableObject
 
         App.ApplyUiLanguage(_settings.UiLanguage);
         App.ApplyTheme(_settings.Theme);
+        App.ApplyStartupSetting(_settings.StartWithWindows);
         App.SaveSettings(_settings);
 
         RequestClose?.Invoke(this, true);

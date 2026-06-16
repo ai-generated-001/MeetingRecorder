@@ -215,4 +215,7 @@
   <data name="ThemeDark" xml:space="preserve">
     <value>深色</value>
   </data>
+  <data name="StartWithWindowsLabel" xml:space="preserve">
+    <value>开机自启动</value>
+  </data>
 </root>
