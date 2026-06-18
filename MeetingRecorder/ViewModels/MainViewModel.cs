@@ -279,7 +279,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void UpdateStatusText()
     {
-        if (_uploadStatusText is not null)
+        if (_uploadStatusText is not null && Status != AppStatus.Recording)
         {
             StatusText = _uploadStatusText;
             StatusCategory = _uploadCategory;

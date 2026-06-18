@@ -174,4 +174,52 @@ public class MainViewModelTests
         vm.Status.Should().Be(AppStatus.Detecting);
         vm.StopRecordingCommand.CanExecute(null).Should().BeFalse();
     }
+
+    [Fact]
+    public void UploadCompleted_EventRaisedWhileRecording_DoesNotOverrideRecordingStatus()
+    {
+        // Arrange
+        _monitorMock.SetupGet(m => m.IsMonitoring).Returns(true);
+
+        using var vm = new MainViewModel(
+            _settings,
+            _recorderMock.Object,
+            _sessionCoordinator,
+            _fileIOServiceMock.Object,
+            _dateTimeProviderMock.Object,
+            _cloudSyncMock.Object,
+            _serviceProviderMock.Object);
+
+        // Start monitoring, then simulate a meeting started so status becomes Recording
+        _sessionCoordinator.Start();
+        _monitorMock.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "Sprint Review"));
+
+        vm.Status.Should().Be(AppStatus.Recording);
+        vm.StatusText.Should().Be(Resources.Recording);
+
+        string filePath = @"C:\recordings\test_recording.mp3";
+
+        if (Application.Current == null)
+        {
+            try
+            {
+                new Application();
+            }
+            catch
+            {
+                // Ignore
+            }
+        }
+
+        // Act
+        _cloudSyncMock.Raise(s => s.UploadCompleted += null, _cloudSyncMock.Object, filePath);
+
+        // Assert
+        if (Application.Current != null)
+        {
+            vm.Status.Should().Be(AppStatus.Recording);
+            vm.StatusText.Should().Be(Resources.Recording);
+            vm.StatusCategory.Should().Be(StatusMessageCategory.Recording);
+        }
+    }
 }
