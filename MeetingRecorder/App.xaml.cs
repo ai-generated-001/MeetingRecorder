@@ -71,7 +71,11 @@ public partial class App : Application
 
         _notifyIcon.ForceCreate();
 
-        ShowMainWindow();
+        bool isAutostart = e.Args.Contains("--autostart", StringComparer.OrdinalIgnoreCase);
+        if (!isAutostart)
+        {
+            ShowMainWindow();
+        }
     }
 
     public static string SettingsFilePath { get; set; } = Path.Combine(
@@ -179,6 +183,11 @@ public partial class App : Application
         mainWindow.Left = workArea.Right - mainWindow.Width - margin;
         mainWindow.Top = workArea.Bottom - mainWindow.Height - margin;
 
+        if (mainWindow.WindowState == WindowState.Minimized)
+        {
+            mainWindow.WindowState = WindowState.Normal;
+        }
+
         mainWindow.Show();
         mainWindow.Activate();
     }
@@ -279,7 +288,7 @@ public partial class App : Application
             {
                 if (startWithWindows)
                 {
-                    key.SetValue(AppName, $"\"{exePath}\"");
+                    key.SetValue(AppName, $"\"{exePath}\" --autostart");
                 }
                 else
                 {
