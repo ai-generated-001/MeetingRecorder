@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using NAudio.CoreAudioApi;
@@ -25,6 +26,71 @@ public class AudioSessionDetector : IAudioSessionMonitor
     public bool IsMonitoring { get; private set; }
     public event EventHandler<MeetingDetectedEventArgs>? MeetingStarted;
     public event EventHandler? MeetingEnded;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PROCESS_BASIC_INFORMATION
+    {
+        public IntPtr Reserved1;
+        public IntPtr PebBaseAddress;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+        public IntPtr[] Reserved2;
+        public IntPtr UniqueProcessId;
+        public IntPtr InheritedFromUniqueProcessId;
+    }
+
+    [DllImport("ntdll.dll", SetLastError = true)]
+    private static extern int NtQueryInformationProcess(
+        IntPtr processHandle,
+        int processInformationClass,
+        ref PROCESS_BASIC_INFORMATION processInformation,
+        int processInformationLength,
+        out int returnLength);
+
+    private static int GetParentProcessId(IntPtr handle)
+    {
+        var pbi = new PROCESS_BASIC_INFORMATION();
+        int status = NtQueryInformationProcess(handle, 0, ref pbi, Marshal.SizeOf(pbi), out _);
+        if (status == 0)
+        {
+            return pbi.InheritedFromUniqueProcessId.ToInt32();
+        }
+        return 0;
+    }
+
+    private bool IsProcessOrAncestorWhitelisted(int processId, out string matchedName)
+    {
+        matchedName = "";
+        int currentPid = processId;
+        int depth = 0;
+
+        while (currentPid != 0 && depth < 5)
+        {
+            try
+            {
+                using var proc = Process.GetProcessById(currentPid);
+                string procName = proc.ProcessName;
+                if (_whitelistedProcesses.Contains(procName))
+                {
+                    matchedName = procName;
+                    return true;
+                }
+
+                if (procName.Equals("explorer", StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+
+                currentPid = GetParentProcessId(proc.Handle);
+                depth++;
+            }
+            catch
+            {
+                break;
+            }
+        }
+
+        return false;
+    }
 
     public AudioSessionDetector(AppSettings settings)
     {
@@ -146,64 +212,91 @@ public class AudioSessionDetector : IAudioSessionMonitor
 
     private MeetingDetectedEventArgs? FindActiveMeeting()
     {
-        using var device = _deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
-        var sessionManager = device.AudioSessionManager;
-        var sessions = sessionManager.Sessions;
+        var rolesToCheck = new[] { Role.Communications, Role.Console };
+        var checkedDeviceIds = new HashSet<string>();
 
-        MeetingDetectedEventArgs? result = null;
-
-        for (int i = 0; i < sessions.Count; i++)
+        foreach (var role in rolesToCheck)
         {
-            var session = sessions[i];
             try
             {
-                if (result == null && session.State == AudioSessionState.AudioSessionStateActive)
+                using var device = _deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, role);
+                if (device == null || !checkedDeviceIds.Add(device.ID))
                 {
-                    uint processId = session.GetProcessID;
-                    if (processId != 0)
-                    {
-                        try
-                        {
-                            using var process = Process.GetProcessById((int)processId);
-                            string processName = process.ProcessName;
+                    continue;
+                }
 
-                            if (_whitelistedProcesses.Contains(processName))
+                var sessionManager = device.AudioSessionManager;
+                if (sessionManager == null)
+                {
+                    continue;
+                }
+
+                var sessions = sessionManager.Sessions;
+                if (sessions == null)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < sessions.Count; i++)
+                {
+                    var session = sessions[i];
+                    try
+                    {
+                        if (session.State == AudioSessionState.AudioSessionStateActive)
+                        {
+                            uint processId = session.GetProcessID;
+                            if (processId != 0)
                             {
-                                string? windowTitle = process.MainWindowTitle;
-                                if (string.IsNullOrWhiteSpace(windowTitle) && processName.Equals("ms-teams_modulehost", StringComparison.OrdinalIgnoreCase))
+                                if (IsProcessOrAncestorWhitelisted((int)processId, out string matchedName))
                                 {
+                                    string? windowTitle = null;
                                     try
                                     {
-                                        var mainTeams = Process.GetProcessesByName("ms-teams")
-                                            .FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.MainWindowTitle));
-                                        if (mainTeams != null)
-                                        {
-                                            windowTitle = mainTeams.MainWindowTitle;
-                                        }
+                                        using var process = Process.GetProcessById((int)processId);
+                                        windowTitle = process.MainWindowTitle;
                                     }
                                     catch
                                     {
                                         // Ignore process access errors
                                     }
-                                }
 
-                                result = new MeetingDetectedEventArgs(processName, windowTitle);
+                                    if (string.IsNullOrWhiteSpace(windowTitle) && 
+                                        (matchedName.Equals("ms-teams_modulehost", StringComparison.OrdinalIgnoreCase) || 
+                                         matchedName.Equals("ms-teams", StringComparison.OrdinalIgnoreCase)))
+                                    {
+                                        try
+                                        {
+                                            var mainTeams = Process.GetProcessesByName("ms-teams")
+                                                .FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.MainWindowTitle));
+                                            if (mainTeams != null)
+                                            {
+                                                windowTitle = mainTeams.MainWindowTitle;
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            // Ignore process access errors
+                                        }
+                                    }
+
+                                    return new MeetingDetectedEventArgs(matchedName, windowTitle);
+                                }
                             }
                         }
-                        catch
-                        {
-                            // Process might have exited
-                        }
+                    }
+                    finally
+                    {
+                        session.Dispose();
                     }
                 }
             }
-            finally
+            catch (Exception ex)
             {
-                session.Dispose();
+                Debug.WriteLine($"Error finding active audio meeting for role {role}: {ex.Message}");
             }
         }
 
-        return result;
+        return null;
     }
 
     public void Dispose()
