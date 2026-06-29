@@ -155,6 +155,10 @@ public partial class App : Application
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<SettingsWindow>();
 
+        services.AddSingleton<IUpdateService, GitHubUpdateService>();
+        services.AddTransient<UpdateViewModel>();
+        services.AddTransient<UpdateWindow>();
+
         _serviceProvider = services.BuildServiceProvider();
     }
 

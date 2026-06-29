@@ -218,4 +218,52 @@
   <data name="StartWithWindowsLabel" xml:space="preserve">
     <value>Start with Windows</value>
   </data>
+  <data name="AutoCheckUpdatesLabel" xml:space="preserve">
+    <value>Check for updates on startup</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Check for Updates</value>
+  </data>
+  <data name="UpdateAvailableTitle" xml:space="preserve">
+    <value>Software Update</value>
+  </data>
+  <data name="UpdateAvailableHeader" xml:space="preserve">
+    <value>New Update Available</value>
+  </data>
+  <data name="UpdateAvailableDescription" xml:space="preserve">
+    <value>A new version of Meeting Recorder is available. Would you like to install it now?</value>
+  </data>
+  <data name="CurrentVersionLabel" xml:space="preserve">
+    <value>Current Version:</value>
+  </data>
+  <data name="NewVersionLabel" xml:space="preserve">
+    <value>New Version:</value>
+  </data>
+  <data name="UpdateNow" xml:space="preserve">
+    <value>Update Now</value>
+  </data>
+  <data name="Later" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="SkipVersion" xml:space="preserve">
+    <value>Skip This Version</value>
+  </data>
+  <data name="DownloadingUpdate" xml:space="preserve">
+    <value>Downloading update ({0}%)...</value>
+  </data>
+  <data name="ExtractingUpdate" xml:space="preserve">
+    <value>Extracting update...</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>Update failed: {0}</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>Your app is up to date.</value>
+  </data>
+  <data name="CheckingForUpdates" xml:space="preserve">
+    <value>Checking for updates...</value>
+  </data>
+  <data name="ReleaseNotesLabel" xml:space="preserve">
+    <value>Release Notes:</value>
+  </data>
 </root>

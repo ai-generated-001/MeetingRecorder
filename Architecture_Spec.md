@@ -70,6 +70,10 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
    - Provides commands for directory browsing, token clearing, and manual Google Drive OAuth sign-in.
    - Saves settings on request and handles language transitions at runtime.
 
+9. **GitHubUpdateService (`IUpdateService`)**
+   - Checks for updates from GitHub releases, compares versions, and downloads/extracts updates.
+   - Spawns a background self-replacing batch script to perform file copying and app restart upon update completion.
+
 ## 4. State and Event Flow
 1. App startup configures DI and creates `MainViewModel`.
 2. `MainViewModel` starts `SessionCoordinator`, moving state to `Detecting`.
@@ -90,6 +94,8 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 - `GoogleClientId` & `GoogleClientSecret` (optional custom API keys — temporarily disabled, built-in credentials are used instead)
 - `GoogleDriveFolderPath` (remote upload directory)
 - `StartWithWindows` (enable/disable auto-start with Windows via HKCU Registry Run key)
+- `AutoCheckUpdates` (enable/disable automatic checking for updates on startup)
+- `SkippedVersion` (version string the user decided to skip prompting)
 
 ### Persistence
 Settings are automatically saved as JSON in the local application data directory (`%LocalAppData%\MeetingRecorder\settings.json`) whenever they are updated from the UI or Settings Window. On application startup, settings are loaded from this file or default settings are created if it does not exist.
@@ -112,12 +118,17 @@ Folder existence checks are case-insensitive. If a user specifies a target folde
     │   ├── ICloudSyncService.cs
     │   ├── GoogleDriveSyncService.cs
     │   ├── DpapiFileDataStore.cs
-    │   └── RecordingRequestedEventArgs.cs
+    │   ├── RecordingRequestedEventArgs.cs
+    │   ├── IUpdateService.cs
+    │   ├── UpdateInfo.cs
+    │   └── GitHubUpdateService.cs
     ├── ViewModels/
     │   ├── MainViewModel.cs
-    │   └── SettingsViewModel.cs
+    │   ├── SettingsViewModel.cs
+    │   └── UpdateViewModel.cs
     ├── MainWindow.xaml
     ├── SettingsWindow.xaml
+    ├── UpdateWindow.xaml
     ├── App.xaml.cs
     └── credentials.json (Embedded Resource)
 

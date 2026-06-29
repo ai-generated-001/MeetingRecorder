@@ -344,5 +344,101 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("StartWithWindowsLabel", resourceCulture);
             }
         }
+
+        public static string AutoCheckUpdatesLabel {
+            get {
+                return ResourceManager.GetString("AutoCheckUpdatesLabel", resourceCulture);
+            }
+        }
+
+        public static string CheckForUpdates {
+            get {
+                return ResourceManager.GetString("CheckForUpdates", resourceCulture);
+            }
+        }
+
+        public static string UpdateAvailableTitle {
+            get {
+                return ResourceManager.GetString("UpdateAvailableTitle", resourceCulture);
+            }
+        }
+
+        public static string UpdateAvailableHeader {
+            get {
+                return ResourceManager.GetString("UpdateAvailableHeader", resourceCulture);
+            }
+        }
+
+        public static string UpdateAvailableDescription {
+            get {
+                return ResourceManager.GetString("UpdateAvailableDescription", resourceCulture);
+            }
+        }
+
+        public static string CurrentVersionLabel {
+            get {
+                return ResourceManager.GetString("CurrentVersionLabel", resourceCulture);
+            }
+        }
+
+        public static string NewVersionLabel {
+            get {
+                return ResourceManager.GetString("NewVersionLabel", resourceCulture);
+            }
+        }
+
+        public static string UpdateNow {
+            get {
+                return ResourceManager.GetString("UpdateNow", resourceCulture);
+            }
+        }
+
+        public static string Later {
+            get {
+                return ResourceManager.GetString("Later", resourceCulture);
+            }
+        }
+
+        public static string SkipVersion {
+            get {
+                return ResourceManager.GetString("SkipVersion", resourceCulture);
+            }
+        }
+
+        public static string DownloadingUpdate {
+            get {
+                return ResourceManager.GetString("DownloadingUpdate", resourceCulture);
+            }
+        }
+
+        public static string ExtractingUpdate {
+            get {
+                return ResourceManager.GetString("ExtractingUpdate", resourceCulture);
+            }
+        }
+
+        public static string UpdateFailed {
+            get {
+                return ResourceManager.GetString("UpdateFailed", resourceCulture);
+            }
+        }
+
+        public static string UpToDate {
+            get {
+                return ResourceManager.GetString("UpToDate", resourceCulture);
+            }
+        }
+
+        public static string CheckingForUpdates {
+            get {
+                return ResourceManager.GetString("CheckingForUpdates", resourceCulture);
+            }
+        }
+
+        public static string ReleaseNotesLabel {
+            get {
+                return ResourceManager.GetString("ReleaseNotesLabel", resourceCulture);
+            }
+        }
     }
 }

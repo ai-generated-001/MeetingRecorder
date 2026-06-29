@@ -15,6 +15,12 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
+    protected override void OnContentRendered(System.EventArgs e)
+    {
+        base.OnContentRendered(e);
+        _viewModel.OnWindowLoaded();
+    }
+
     protected override void OnClosing(CancelEventArgs e)
     {
         // Instead of closing, just hide the window

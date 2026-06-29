@@ -303,6 +303,47 @@ public partial class MainViewModel : ObservableObject, IDisposable
         };
     }
 
+    private bool _hasCheckedUpdates;
+
+    public void OnWindowLoaded()
+    {
+        if (!_hasCheckedUpdates)
+        {
+            _hasCheckedUpdates = true;
+            if (_settings.AutoCheckUpdates)
+            {
+                _ = CheckForUpdatesOnStartupAsync();
+            }
+        }
+    }
+
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+        try
+        {
+            var updateService = _serviceProvider.GetRequiredService<IUpdateService>();
+            var updateInfo = await updateService.CheckForUpdatesAsync(CancellationToken.None);
+            if (updateInfo != null)
+            {
+                if (updateInfo.Version != _settings.SkippedVersion)
+                {
+                    ExecuteOnUIThread(() =>
+                    {
+                        var updateWindow = _serviceProvider.GetRequiredService<UpdateWindow>();
+                        updateWindow.Owner = System.Windows.Application.Current.MainWindow;
+                        var vm = (UpdateViewModel)updateWindow.DataContext;
+                        vm.Initialize(updateInfo);
+                        updateWindow.ShowDialog();
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to check for updates on startup: {ex.Message}");
+        }
+    }
+
     public void Dispose()
     {
         _sessionCoordinator.RecordingRequested -= OnRecordingRequested;

@@ -16,6 +16,8 @@ public class SettingsViewModelTests : IDisposable
 {
     private readonly AppSettings _settings;
     private readonly Mock<ICloudSyncService> _cloudSyncMock;
+    private readonly Mock<IServiceProvider> _serviceProviderMock;
+    private readonly Mock<IUpdateService> _updateServiceMock;
     private readonly string _tempSettingsPath;
     private readonly string _tempTokenPath;
 
@@ -38,6 +40,8 @@ public class SettingsViewModelTests : IDisposable
             StartWithWindows = true
         };
         _cloudSyncMock = new Mock<ICloudSyncService>();
+        _serviceProviderMock = new Mock<IServiceProvider>();
+        _updateServiceMock = new Mock<IUpdateService>();
     }
 
     public void Dispose()
@@ -60,7 +64,11 @@ public class SettingsViewModelTests : IDisposable
     public void Constructor_ShouldInitializePropertiesFromSettings()
     {
         // Act
-        var vm = new SettingsViewModel(_settings, _cloudSyncMock.Object);
+        var vm = new SettingsViewModel(
+            _settings,
+            _cloudSyncMock.Object,
+            _serviceProviderMock.Object,
+            _updateServiceMock.Object);
 
         // Assert
         vm.OutputDirectory.Should().Be("Initial/Directory");
@@ -76,7 +84,11 @@ public class SettingsViewModelTests : IDisposable
     public void SaveCommand_ShouldUpdateSettingsAndRaiseRequestClose()
     {
         // Arrange
-        var vm = new SettingsViewModel(_settings, _cloudSyncMock.Object);
+        var vm = new SettingsViewModel(
+            _settings,
+            _cloudSyncMock.Object,
+            _serviceProviderMock.Object,
+            _updateServiceMock.Object);
         vm.OutputDirectory = "New/Directory";
         vm.UiLanguage = "en-US";
         vm.GoogleDriveEnabled = false;
@@ -100,7 +112,11 @@ public class SettingsViewModelTests : IDisposable
     public void SaveCommand_WithCredentialsChanged_ShouldResetPersistedFolderId()
     {
         // Arrange
-        var vm = new SettingsViewModel(_settings, _cloudSyncMock.Object);
+        var vm = new SettingsViewModel(
+            _settings,
+            _cloudSyncMock.Object,
+            _serviceProviderMock.Object,
+            _updateServiceMock.Object);
         vm.GoogleDriveFolderPath = "ChangedFolder"; // Triggers credential change detection
 
         bool? requestCloseResult = null;

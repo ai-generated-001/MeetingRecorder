@@ -18,6 +18,15 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly AppSettings _settings;
     private readonly ICloudSyncService _cloudSyncService;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IUpdateService _updateService;
+
+    [ObservableProperty]
+    private bool _autoCheckUpdates;
+
+    [ObservableProperty]
+    private string _updateStatusText = "";
+
 
     [ObservableProperty]
     private string _outputDirectory = "";
@@ -72,10 +81,16 @@ public partial class SettingsViewModel : ObservableObject
         new(Resources.ThemeDark, "Dark")
     ];
 
-    public SettingsViewModel(AppSettings settings, ICloudSyncService cloudSyncService)
+    public SettingsViewModel(
+        AppSettings settings,
+        ICloudSyncService cloudSyncService,
+        IServiceProvider serviceProvider,
+        IUpdateService updateService)
     {
         _settings = settings;
         _cloudSyncService = cloudSyncService;
+        _serviceProvider = serviceProvider;
+        _updateService = updateService;
 
         // Initialize from settings
         OutputDirectory = string.IsNullOrWhiteSpace(_settings.OutputDirectory)
@@ -90,6 +105,10 @@ public partial class SettingsViewModel : ObservableObject
             ? "Meeting_Auto_Sync"
             : _settings.GoogleDriveFolderPath;
         StartWithWindows = _settings.StartWithWindows;
+        AutoCheckUpdates = _settings.AutoCheckUpdates;
+
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        UpdateStatusText = string.Format("Version: {0}", version?.ToString() ?? "1.0.0.0");
 
         // Asynchronously load the initial status
         _ = LoadStatusAsync();
@@ -247,6 +266,45 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        UpdateStatusText = Resources.CheckingForUpdates;
+        try
+        {
+            var updateInfo = await _updateService.CheckForUpdatesAsync(CancellationToken.None);
+            if (updateInfo != null)
+            {
+                UpdateStatusText = string.Format("New version available: v{0}", updateInfo.Version);
+
+                // Find active window for ownership
+                Window? activeWindow = null;
+                foreach (Window window in System.Windows.Application.Current.Windows)
+                {
+                    if (window.IsActive)
+                    {
+                        activeWindow = window;
+                        break;
+                    }
+                }
+
+                var updateWindow = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<UpdateWindow>(_serviceProvider);
+                updateWindow.Owner = activeWindow ?? System.Windows.Application.Current.MainWindow;
+                var vm = (UpdateViewModel)updateWindow.DataContext;
+                vm.Initialize(updateInfo);
+                updateWindow.ShowDialog();
+            }
+            else
+            {
+                UpdateStatusText = Resources.UpToDate;
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatusText = string.Format(Resources.UpdateFailed, ex.Message);
+        }
+    }
+
+    [RelayCommand]
     private void Save(object? parameter)
     {
         var passwordBox = parameter as System.Windows.Controls.PasswordBox;
@@ -281,6 +339,7 @@ public partial class SettingsViewModel : ObservableObject
             : GoogleDriveFolderPath.Trim();
 
         _settings.StartWithWindows = StartWithWindows;
+        _settings.AutoCheckUpdates = AutoCheckUpdates;
 
         if (credentialsChanged)
         {

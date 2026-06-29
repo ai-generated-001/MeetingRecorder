@@ -62,6 +62,16 @@ public class AppSettings
     /// When true, the application is configured to start automatically on Windows startup.
     /// </summary>
     public bool StartWithWindows { get; set; } = false;
+
+    /// <summary>
+    /// When true, the app automatically checks for updates from GitHub releases on startup.
+    /// </summary>
+    public bool AutoCheckUpdates { get; set; } = true;
+
+    /// <summary>
+    /// The tag version that the user has chosen to skip prompting.
+    /// </summary>
+    public string SkippedVersion { get; set; } = "";
 }
 
 

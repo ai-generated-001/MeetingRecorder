@@ -218,4 +218,52 @@
   <data name="StartWithWindowsLabel" xml:space="preserve">
     <value>开机自启动</value>
   </data>
+  <data name="AutoCheckUpdatesLabel" xml:space="preserve">
+    <value>启动时检查更新</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>检查更新</value>
+  </data>
+  <data name="UpdateAvailableTitle" xml:space="preserve">
+    <value>软件更新</value>
+  </data>
+  <data name="UpdateAvailableHeader" xml:space="preserve">
+    <value>检测到新版本</value>
+  </data>
+  <data name="UpdateAvailableDescription" xml:space="preserve">
+    <value>会议录制器有新版本可用，您想现在安装吗？</value>
+  </data>
+  <data name="CurrentVersionLabel" xml:space="preserve">
+    <value>当前版本：</value>
+  </data>
+  <data name="NewVersionLabel" xml:space="preserve">
+    <value>新版本：</value>
+  </data>
+  <data name="UpdateNow" xml:space="preserve">
+    <value>立即更新</value>
+  </data>
+  <data name="Later" xml:space="preserve">
+    <value>稍后</value>
+  </data>
+  <data name="SkipVersion" xml:space="preserve">
+    <value>跳过此版本</value>
+  </data>
+  <data name="DownloadingUpdate" xml:space="preserve">
+    <value>正在下载更新 ({0}%)...</value>
+  </data>
+  <data name="ExtractingUpdate" xml:space="preserve">
+    <value>正在解压更新...</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>更新失败：{0}</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>当前已是最新版本。</value>
+  </data>
+  <data name="CheckingForUpdates" xml:space="preserve">
+    <value>正在检查更新...</value>
+  </data>
+  <data name="ReleaseNotesLabel" xml:space="preserve">
+    <value>更新日志：</value>
+  </data>
 </root>

@@ -466,6 +466,21 @@
                         <!-- Start with Windows -->
                         <CheckBox x:Name="StartWithWindowsCheckBox" Content="{x:Static properties:Resources.StartWithWindowsLabel}" Margin="0,0,0,20" IsChecked="{Binding StartWithWindows}" FontWeight="Medium"/>
 
+                        <!-- Check for Updates on Startup -->
+                        <CheckBox x:Name="AutoCheckUpdatesCheckBox" Content="{x:Static properties:Resources.AutoCheckUpdatesLabel}" Margin="0,0,0,16" IsChecked="{Binding AutoCheckUpdates}" FontWeight="Medium"/>
+
+                        <!-- Manual Check for Updates -->
+                        <Grid Margin="0,0,0,20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding UpdateStatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="{x:Static properties:Resources.CheckForUpdates}" Width="150" Command="{Binding CheckForUpdatesCommand}"/>
+                        </Grid>
+
                         <!-- Google Drive BYOK section Card -->
                         <Border BorderBrush="{DynamicResource DriveCardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,10" Background="{DynamicResource DriveCardBackgroundBrush}">
                             <StackPanel>
