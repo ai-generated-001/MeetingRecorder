@@ -266,4 +266,13 @@
   <data name="ReleaseNotesLabel" xml:space="preserve">
     <value>Release Notes:</value>
   </data>
+  <data name="OrganizeFilesButton" xml:space="preserve">
+    <value>Organize Files</value>
+  </data>
+  <data name="OrganizeSuccess" xml:space="preserve">
+    <value>Successfully organized {0} file(s) into monthly folders.</value>
+  </data>
+  <data name="OrganizeFailed" xml:space="preserve">
+    <value>Failed to organize files: {0}</value>
+  </data>
 </root>

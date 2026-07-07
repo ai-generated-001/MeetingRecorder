@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MeetingRecorder.Services;
 
@@ -18,4 +20,11 @@ public interface ICloudSyncService
     /// The event argument is the absolute path to the uploaded file.
     /// </summary>
     event EventHandler<string>? UploadCompleted;
+
+    /// <summary>
+    /// Organizes existing files directly under the user-selected folder in cloud storage
+    /// into monthly subfolders (named YYYYMM) based on their creation/upload time.
+    /// Returns the number of files moved.
+    /// </summary>
+    Task<int> OrganizeExistingFilesAsync(CancellationToken cancellationToken);
 }

@@ -112,12 +112,26 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
             try
             {
                 var service = await GetDriveServiceAsync(cancellationToken);
-                var folderId = await GetOrCreateFolderIdAsync(service, cancellationToken);
+                var parentFolderId = await GetOrCreateFolderIdAsync(service, cancellationToken);
+
+                DateTime fileTime;
+                try
+                {
+                    fileTime = File.Exists(filePath) ? File.GetLastWriteTime(filePath) : DateTime.Now;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to get file write time for '{filePath}': {ex.Message}");
+                    fileTime = DateTime.Now;
+                }
+
+                string monthFolderName = fileTime.ToString("yyyyMM");
+                var (targetFolderId, _) = await GetOrCreateSingleFolderAsync(service, monthFolderName, parentFolderId, cancellationToken);
 
                 var fileMetadata = new Google.Apis.Drive.v3.Data.File
                 {
                     Name = Path.GetFileName(filePath),
-                    Parents = new List<string> { folderId }
+                    Parents = new List<string> { targetFolderId }
                 };
 
                 string mimeType = Path.GetExtension(filePath).ToLowerInvariant() switch
@@ -524,6 +538,63 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
         {
             _authSemaphore.Release();
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<int> OrganizeExistingFilesAsync(CancellationToken cancellationToken)
+    {
+        var service = await GetDriveServiceAsync(cancellationToken);
+        var parentFolderId = await GetOrCreateFolderIdAsync(service, cancellationToken);
+
+        var filesToMove = new List<Google.Apis.Drive.v3.Data.File>();
+        string? pageToken = null;
+        do
+        {
+            var listRequest = service.Files.List();
+            listRequest.Q = $"'{parentFolderId}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false";
+            listRequest.Fields = "nextPageToken, files(id, name, createdTime, parents)";
+            listRequest.Spaces = "drive";
+            listRequest.PageToken = pageToken;
+            listRequest.PageSize = 100;
+
+            var response = await listRequest.ExecuteAsync(cancellationToken);
+            if (response.Files != null)
+            {
+                filesToMove.AddRange(response.Files);
+            }
+            pageToken = response.NextPageToken;
+        } while (pageToken != null);
+
+        int movedCount = 0;
+        foreach (var file in filesToMove)
+        {
+            if (string.IsNullOrEmpty(file.Id)) continue;
+
+            DateTime fileTime = file.CreatedTimeDateTimeOffset?.DateTime ?? DateTime.Now;
+            string monthFolderName = fileTime.ToString("yyyyMM");
+
+            // Get or create the subfolder under parentFolderId
+            var (targetFolderId, _) = await GetOrCreateSingleFolderAsync(service, monthFolderName, parentFolderId, cancellationToken);
+
+            if (targetFolderId != parentFolderId)
+            {
+                var updateRequest = service.Files.Update(new Google.Apis.Drive.v3.Data.File(), file.Id);
+                updateRequest.AddParents = targetFolderId;
+                if (file.Parents != null && file.Parents.Count > 0)
+                {
+                    updateRequest.RemoveParents = string.Join(",", file.Parents);
+                }
+                else
+                {
+                    updateRequest.RemoveParents = parentFolderId;
+                }
+                updateRequest.Fields = "id, parents";
+                await updateRequest.ExecuteAsync(cancellationToken);
+                movedCount++;
+            }
+        }
+
+        return movedCount;
     }
 
     public void Dispose()

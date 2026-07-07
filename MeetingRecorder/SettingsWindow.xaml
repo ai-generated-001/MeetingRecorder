@@ -533,7 +533,8 @@
                                     <!-- Action buttons -->
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
                                         <Button x:Name="LoginButton" Content="{x:Static properties:Resources.GoogleDriveSignInButton}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" Padding="12,6" Command="{Binding LoginCommand}" CommandParameter="{Binding ElementName=ClientSecretPasswordBox}"/>
-                                        <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" Padding="12,6" Command="{Binding ClearTokenCommand}"/>
+                                        <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" Margin="0,0,8,0" Padding="12,6" Command="{Binding ClearTokenCommand}"/>
+                                        <Button x:Name="OrganizeButton" Content="{x:Static properties:Resources.OrganizeFilesButton}" Style="{StaticResource PrimaryButtonStyle}" Padding="12,6" Command="{Binding OrganizeFilesCommand}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </StackPanel>

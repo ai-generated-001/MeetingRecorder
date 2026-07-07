@@ -440,5 +440,23 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("ReleaseNotesLabel", resourceCulture);
             }
         }
+
+        public static string OrganizeFilesButton {
+            get {
+                return ResourceManager.GetString("OrganizeFilesButton", resourceCulture);
+            }
+        }
+
+        public static string OrganizeSuccess {
+            get {
+                return ResourceManager.GetString("OrganizeSuccess", resourceCulture);
+            }
+        }
+
+        public static string OrganizeFailed {
+            get {
+                return ResourceManager.GetString("OrganizeFailed", resourceCulture);
+            }
+        }
     }
 }

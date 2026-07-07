@@ -354,4 +354,39 @@ public partial class SettingsViewModel : ObservableObject
 
         RequestClose?.Invoke(this, true);
     }
+
+    [RelayCommand]
+    private async Task OrganizeFilesAsync()
+    {
+        if (_cloudSyncService is not GoogleDriveSyncService syncService)
+        {
+            return;
+        }
+
+        IsUiEnabled = false;
+        try
+        {
+            int count = await syncService.OrganizeExistingFilesAsync(CancellationToken.None);
+            System.Windows.MessageBox.Show(
+                System.Windows.Application.Current.MainWindow,
+                string.Format(Resources.OrganizeSuccess, count),
+                Resources.Settings,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error organizing files: {ex.Message}");
+            System.Windows.MessageBox.Show(
+                System.Windows.Application.Current.MainWindow,
+                string.Format(Resources.OrganizeFailed, ex.Message),
+                Resources.Settings,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        finally
+        {
+            IsUiEnabled = true;
+        }
+    }
 }

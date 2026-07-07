@@ -266,4 +266,13 @@
   <data name="ReleaseNotesLabel" xml:space="preserve">
     <value>更新日志：</value>
   </data>
+  <data name="OrganizeFilesButton" xml:space="preserve">
+    <value>整理文件</value>
+  </data>
+  <data name="OrganizeSuccess" xml:space="preserve">
+    <value>成功将 {0} 个文件整理到按月分类的文件夹中。</value>
+  </data>
+  <data name="OrganizeFailed" xml:space="preserve">
+    <value>整理文件失败: {0}</value>
+  </data>
 </root>
