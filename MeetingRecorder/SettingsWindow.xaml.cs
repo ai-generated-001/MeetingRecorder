@@ -20,5 +20,10 @@ public partial class SettingsWindow : Window
             this.DialogResult = dialogResult;
             this.Close();
         };
+
+        this.Closed += (sender, e) =>
+        {
+            viewModel.Cleanup();
+        };
     }
 }

@@ -49,6 +49,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private StatusMessageCategory _statusCategory = StatusMessageCategory.Idle;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowOrganizeProgress))]
+    private bool _isOrganizing;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowOrganizeProgress))]
+    private string _organizeStatusText = "";
+
+    [ObservableProperty]
+    private int _organizeProgressValue;
+
+    public bool ShowOrganizeProgress => IsOrganizing || !string.IsNullOrWhiteSpace(OrganizeStatusText);
+
     // Transient override: set by upload callbacks; cleared on the next state change.
     private string? _uploadStatusText;
     private StatusMessageCategory _uploadCategory;
@@ -112,6 +125,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _sessionCoordinator.StateChanged += OnStateChanged;
         _cloudSyncService.UploadFailed += OnUploadFailed;
         _cloudSyncService.UploadCompleted += OnUploadCompleted;
+        _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
+
+        IsOrganizing = _cloudSyncService.IsOrganizing;
+        OrganizeStatusText = _cloudSyncService.OrganizeStatusText;
+        OrganizeProgressValue = _cloudSyncService.OrganizeProgressValue;
 
         if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
         {
@@ -344,6 +362,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void OnOrganizeProgressChanged(object? sender, OrganizeProgressEventArgs e)
+    {
+        ExecuteOnUIThread(() =>
+        {
+            IsOrganizing = e.IsOrganizing;
+            OrganizeStatusText = e.StatusText;
+            OrganizeProgressValue = e.ProgressValue;
+        });
+    }
+
     public void Dispose()
     {
         _sessionCoordinator.RecordingRequested -= OnRecordingRequested;
@@ -351,5 +379,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _sessionCoordinator.StateChanged -= OnStateChanged;
         _cloudSyncService.UploadFailed -= OnUploadFailed;
         _cloudSyncService.UploadCompleted -= OnUploadCompleted;
+        _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
     }
 }

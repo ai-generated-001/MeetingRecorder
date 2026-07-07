@@ -540,61 +540,116 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
         }
     }
 
-    /// <inheritdoc />
-    public async Task<int> OrganizeExistingFilesAsync(CancellationToken cancellationToken)
+    public bool IsOrganizing { get; private set; }
+    public string OrganizeStatusText { get; private set; } = "";
+    public int OrganizeProgressValue { get; private set; }
+
+    public event EventHandler<OrganizeProgressEventArgs>? OrganizeProgressChanged;
+
+    private void ReportProgress(bool isOrganizing, string statusText, int progressValue)
     {
-        var service = await GetDriveServiceAsync(cancellationToken);
-        var parentFolderId = await GetOrCreateFolderIdAsync(service, cancellationToken);
+        IsOrganizing = isOrganizing;
+        OrganizeStatusText = statusText;
+        OrganizeProgressValue = progressValue;
+        OrganizeProgressChanged?.Invoke(this, new OrganizeProgressEventArgs(isOrganizing, statusText, progressValue));
+    }
 
-        var filesToMove = new List<Google.Apis.Drive.v3.Data.File>();
-        string? pageToken = null;
-        do
+    /// <inheritdoc />
+    public void StartOrganizeExistingFiles()
+    {
+        if (IsOrganizing) return;
+
+        // Start background organization task
+        _ = Task.Run(async () =>
         {
-            var listRequest = service.Files.List();
-            listRequest.Q = $"'{parentFolderId}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false";
-            listRequest.Fields = "nextPageToken, files(id, name, createdTime, parents)";
-            listRequest.Spaces = "drive";
-            listRequest.PageToken = pageToken;
-            listRequest.PageSize = 100;
-
-            var response = await listRequest.ExecuteAsync(cancellationToken);
-            if (response.Files != null)
+            try
             {
-                filesToMove.AddRange(response.Files);
+                ReportProgress(true, "Connecting to Google Drive...", 0);
+                var service = await GetDriveServiceAsync(_cts.Token);
+                var parentFolderId = await GetOrCreateFolderIdAsync(service, _cts.Token);
+
+                ReportProgress(true, "Listing files...", 10);
+                var filesToMove = new List<Google.Apis.Drive.v3.Data.File>();
+                string? pageToken = null;
+                do
+                {
+                    var listRequest = service.Files.List();
+                    listRequest.Q = $"'{parentFolderId}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false";
+                    listRequest.Fields = "nextPageToken, files(id, name, createdTime, parents, createdTimeDateTimeOffset)";
+                    listRequest.Spaces = "drive";
+                    listRequest.PageToken = pageToken;
+                    listRequest.PageSize = 100;
+
+                    var response = await listRequest.ExecuteAsync(_cts.Token);
+                    if (response.Files != null)
+                    {
+                        filesToMove.AddRange(response.Files);
+                    }
+                    pageToken = response.NextPageToken;
+                } while (pageToken != null && !_cts.Token.IsCancellationRequested);
+
+                if (_cts.Token.IsCancellationRequested)
+                {
+                    ReportProgress(false, "Cancelled", 0);
+                    return;
+                }
+
+                int total = filesToMove.Count;
+                if (total == 0)
+                {
+                    ReportProgress(false, "No files found directly under the sync folder to organize.", 100);
+                    _ = Task.Delay(5000).ContinueWith(_ => { if (!IsOrganizing) ReportProgress(false, "", 0); });
+                    return;
+                }
+
+                int movedCount = 0;
+                for (int i = 0; i < total; i++)
+                {
+                    if (_cts.Token.IsCancellationRequested)
+                    {
+                        ReportProgress(false, "Cancelled", 0);
+                        return;
+                    }
+
+                    var file = filesToMove[i];
+                    if (string.IsNullOrEmpty(file.Id)) continue;
+
+                    DateTime fileTime = file.CreatedTimeDateTimeOffset?.DateTime ?? DateTime.Now;
+                    string monthFolderName = fileTime.ToString("yyyyMM");
+
+                    ReportProgress(true, $"Organizing '{file.Name}' ({movedCount + 1}/{total})...", (int)(10 + (double)i / total * 90));
+
+                    // Get or create the subfolder under parentFolderId
+                    var (targetFolderId, _) = await GetOrCreateSingleFolderAsync(service, monthFolderName, parentFolderId, _cts.Token);
+
+                    if (targetFolderId != parentFolderId)
+                    {
+                        var updateRequest = service.Files.Update(new Google.Apis.Drive.v3.Data.File(), file.Id);
+                        updateRequest.AddParents = targetFolderId;
+                        if (file.Parents != null && file.Parents.Count > 0)
+                        {
+                            updateRequest.RemoveParents = string.Join(",", file.Parents);
+                        }
+                        else
+                        {
+                            updateRequest.RemoveParents = parentFolderId;
+                        }
+                        updateRequest.Fields = "id, parents";
+                        await updateRequest.ExecuteAsync(_cts.Token);
+                        movedCount++;
+                    }
+                }
+
+                ReportProgress(false, string.Format(global::MeetingRecorder.Resources.OrganizeSuccess, movedCount), 100);
+                _ = Task.Delay(5000).ContinueWith(_ => { if (!IsOrganizing) ReportProgress(false, "", 0); });
             }
-            pageToken = response.NextPageToken;
-        } while (pageToken != null);
-
-        int movedCount = 0;
-        foreach (var file in filesToMove)
-        {
-            if (string.IsNullOrEmpty(file.Id)) continue;
-
-            DateTime fileTime = file.CreatedTimeDateTimeOffset?.DateTime ?? DateTime.Now;
-            string monthFolderName = fileTime.ToString("yyyyMM");
-
-            // Get or create the subfolder under parentFolderId
-            var (targetFolderId, _) = await GetOrCreateSingleFolderAsync(service, monthFolderName, parentFolderId, cancellationToken);
-
-            if (targetFolderId != parentFolderId)
+            catch (Exception ex)
             {
-                var updateRequest = service.Files.Update(new Google.Apis.Drive.v3.Data.File(), file.Id);
-                updateRequest.AddParents = targetFolderId;
-                if (file.Parents != null && file.Parents.Count > 0)
-                {
-                    updateRequest.RemoveParents = string.Join(",", file.Parents);
-                }
-                else
-                {
-                    updateRequest.RemoveParents = parentFolderId;
-                }
-                updateRequest.Fields = "id, parents";
-                await updateRequest.ExecuteAsync(cancellationToken);
-                movedCount++;
+                System.Diagnostics.Debug.WriteLine($"Failed to organize files in background: {ex.Message}");
+                ReportProgress(false, string.Format(global::MeetingRecorder.Resources.OrganizeFailed, ex.Message), 0);
+                _ = Task.Delay(5000).ContinueWith(_ => { if (!IsOrganizing) ReportProgress(false, "", 0); });
             }
-        }
-
-        return movedCount;
+        });
     }
 
     public void Dispose()

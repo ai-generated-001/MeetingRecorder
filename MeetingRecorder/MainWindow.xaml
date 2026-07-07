@@ -17,6 +17,7 @@
         Foreground="{DynamicResource WindowForegroundBrush}">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <!-- Base Button Style -->
         <Style TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
@@ -185,7 +186,12 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Grid.Column="0">
                             <TextBlock Text="{Binding StatusLabel}" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
                             <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="Bold" Margin="0,4,0,0">
                                 <TextBlock.Style>
@@ -214,7 +220,7 @@
                         </StackPanel>
 
                         <!-- Glowing status badge -->
-                        <Ellipse Grid.Column="1" Width="12" Height="12" VerticalAlignment="Center" Margin="10,0,0,0">
+                        <Ellipse Grid.Row="0" Grid.Column="1" Width="12" Height="12" VerticalAlignment="Center" Margin="10,0,0,0">
                             <Ellipse.Style>
                                 <Style TargetType="Ellipse">
                                     <Setter Property="Fill" Value="{DynamicResource BadgeIdleBrush}"/>
@@ -249,6 +255,12 @@
                                 </Style>
                             </Ellipse.Style>
                         </Ellipse>
+
+                        <!-- Organizing progress -->
+                        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0" Visibility="{Binding ShowOrganizeProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{Binding OrganizeStatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                            <ProgressBar Value="{Binding OrganizeProgressValue}" Minimum="0" Maximum="100" Height="8"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
 

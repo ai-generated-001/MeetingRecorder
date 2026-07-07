@@ -15,6 +15,7 @@
         Foreground="{DynamicResource WindowForegroundBrush}">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <!-- TextBox Style -->
         <Style TargetType="TextBox">
             <Setter Property="Padding" Value="8,6"/>
@@ -535,6 +536,12 @@
                                         <Button x:Name="LoginButton" Content="{x:Static properties:Resources.GoogleDriveSignInButton}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" Padding="12,6" Command="{Binding LoginCommand}" CommandParameter="{Binding ElementName=ClientSecretPasswordBox}"/>
                                         <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" Margin="0,0,8,0" Padding="12,6" Command="{Binding ClearTokenCommand}"/>
                                         <Button x:Name="OrganizeButton" Content="{x:Static properties:Resources.OrganizeFilesButton}" Style="{StaticResource PrimaryButtonStyle}" Padding="12,6" Command="{Binding OrganizeFilesCommand}"/>
+                                    </StackPanel>
+
+                                    <!-- Progress and Status -->
+                                    <StackPanel Margin="0,12,0,0" Visibility="{Binding ShowOrganizeProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBlock Text="{Binding OrganizeStatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                                        <ProgressBar Value="{Binding OrganizeProgressValue}" Minimum="0" Maximum="100" Height="8"/>
                                     </StackPanel>
                                 </StackPanel>
                             </StackPanel>

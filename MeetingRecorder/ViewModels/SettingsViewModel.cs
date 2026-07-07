@@ -61,6 +61,19 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isUiEnabled = true;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowOrganizeProgress))]
+    private bool _isOrganizing;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowOrganizeProgress))]
+    private string _organizeStatusText = "";
+
+    [ObservableProperty]
+    private int _organizeProgressValue;
+
+    public bool ShowOrganizeProgress => IsOrganizing || !string.IsNullOrWhiteSpace(OrganizeStatusText);
+
     public event EventHandler<bool>? RequestClose;
 
     public record LanguageItem(string DisplayName, string Code);
@@ -112,6 +125,11 @@ public partial class SettingsViewModel : ObservableObject
 
         // Asynchronously load the initial status
         _ = LoadStatusAsync();
+
+        IsOrganizing = _cloudSyncService.IsOrganizing;
+        OrganizeStatusText = _cloudSyncService.OrganizeStatusText;
+        OrganizeProgressValue = _cloudSyncService.OrganizeProgressValue;
+        _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
     }
 
     [RelayCommand]
@@ -355,38 +373,39 @@ public partial class SettingsViewModel : ObservableObject
         RequestClose?.Invoke(this, true);
     }
 
-    [RelayCommand]
-    private async Task OrganizeFilesAsync()
+    [RelayCommand(CanExecute = nameof(CanOrganizeFiles))]
+    private void OrganizeFiles()
     {
-        if (_cloudSyncService is not GoogleDriveSyncService syncService)
-        {
-            return;
-        }
+        _cloudSyncService.StartOrganizeExistingFiles();
+    }
 
-        IsUiEnabled = false;
-        try
+    private bool CanOrganizeFiles() => !IsOrganizing;
+
+    private void OnOrganizeProgressChanged(object? sender, OrganizeProgressEventArgs e)
+    {
+        ExecuteOnUIThread(() =>
         {
-            int count = await syncService.OrganizeExistingFilesAsync(CancellationToken.None);
-            System.Windows.MessageBox.Show(
-                System.Windows.Application.Current.MainWindow,
-                string.Format(Resources.OrganizeSuccess, count),
-                Resources.Settings,
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        catch (Exception ex)
+            IsOrganizing = e.IsOrganizing;
+            OrganizeStatusText = e.StatusText;
+            OrganizeProgressValue = e.ProgressValue;
+            OrganizeFilesCommand.NotifyCanExecuteChanged();
+        });
+    }
+
+    private void ExecuteOnUIThread(Action action)
+    {
+        if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == true)
         {
-            Debug.WriteLine($"Error organizing files: {ex.Message}");
-            System.Windows.MessageBox.Show(
-                System.Windows.Application.Current.MainWindow,
-                string.Format(Resources.OrganizeFailed, ex.Message),
-                Resources.Settings,
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            action();
         }
-        finally
+        else
         {
-            IsUiEnabled = true;
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(action);
         }
+    }
+
+    public void Cleanup()
+    {
+        _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
     }
 }
