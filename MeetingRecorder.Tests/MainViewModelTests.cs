@@ -222,4 +222,35 @@ public class MainViewModelTests
             vm.StatusCategory.Should().Be(StatusMessageCategory.Recording);
         }
     }
+
+    [Fact]
+    public void ToggleMonitoringCommand_TogglesStateCorrectly()
+    {
+        // Arrange
+        using var vm = new MainViewModel(
+            _settings,
+            _recorderMock.Object,
+            _sessionCoordinator,
+            _fileIOServiceMock.Object,
+            _dateTimeProviderMock.Object,
+            _cloudSyncMock.Object,
+            _serviceProviderMock.Object);
+
+        _sessionCoordinator.Stop();
+
+        // Initially we are Idle, so ToggleMonitoring should start monitoring
+        vm.Status.Should().Be(AppStatus.Idle);
+        vm.ToggleMonitoringText.Should().Be(Resources.StartMonitoring);
+
+        // Act & Assert 1: Toggle to Start
+        vm.ToggleMonitoringCommand.Execute(null);
+        vm.Status.Should().Be(AppStatus.Detecting); // Coordinator starts in Detecting
+        vm.ToggleMonitoringText.Should().Be(Resources.StopMonitoring);
+
+        // Act & Assert 2: Toggle to Stop
+        vm.ToggleMonitoringCommand.Execute(null);
+        vm.Status.Should().Be(AppStatus.Idle);
+        vm.ToggleMonitoringText.Should().Be(Resources.StartMonitoring);
+    }
 }
+

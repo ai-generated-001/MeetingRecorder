@@ -138,7 +138,7 @@
 	<value>请选择一个有效的文件夹。</value>
   </data>
   <data name="GoogleDriveSection" xml:space="preserve">
-	<value>Google Drive 同步（可选 — 覆盖内嵌凭据）</value>
+	<value>Google Drive 同步</value>
   </data>
   <data name="GoogleClientIdLabel" xml:space="preserve">
 	<value>客户端 ID</value>

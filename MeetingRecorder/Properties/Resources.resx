@@ -138,7 +138,7 @@
 	<value>Please choose a valid folder.</value>
   </data>
   <data name="GoogleDriveSection" xml:space="preserve">
-	<value>Google Drive sync (optional — overrides embedded credentials)</value>
+	<value>Google Drive Sync</value>
   </data>
   <data name="GoogleClientIdLabel" xml:space="preserve">
 	<value>Client ID</value>

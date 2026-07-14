@@ -73,6 +73,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         StartMonitoringCommand.NotifyCanExecuteChanged();
         StopMonitoringCommand.NotifyCanExecuteChanged();
         StopRecordingCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(ToggleMonitoringText));
     }
 
     public OutputFormat OutputFormat
@@ -98,6 +99,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string OutputFormatLabel => Resources.OutputFormatLabel;
     public string StartMonitoringText => Resources.StartMonitoring;
     public string StopMonitoringText => Resources.StopMonitoring;
+    public string ToggleMonitoringText => Status == AppStatus.Idle ? Resources.StartMonitoring : Resources.StopMonitoring;
     public string StopRecordingText => Resources.StopRecording;
     public string OpenFolderText => Resources.OpenFolder;
     public string ShowStatusWindowText => Resources.ShowStatusWindow;
@@ -175,6 +177,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private bool CanStopMonitoring() => Status != AppStatus.Idle;
 
+    [RelayCommand]
+    private void ToggleMonitoring()
+    {
+        if (Status == AppStatus.Idle)
+        {
+            _sessionCoordinator.Start();
+        }
+        else
+        {
+            _sessionCoordinator.Stop();
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanStopRecording))]
     private void StopRecording()
     {
@@ -200,6 +215,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(OutputFormatLabel));
         OnPropertyChanged(nameof(StartMonitoringText));
         OnPropertyChanged(nameof(StopMonitoringText));
+        OnPropertyChanged(nameof(ToggleMonitoringText));
         OnPropertyChanged(nameof(StopRecordingText));
         OnPropertyChanged(nameof(OpenFolderText));
         OnPropertyChanged(nameof(ShowStatusWindowText));
