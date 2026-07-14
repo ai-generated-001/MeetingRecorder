@@ -275,4 +275,25 @@
   <data name="OrganizeFailed" xml:space="preserve">
     <value>整理文件失败: {0}</value>
   </data>
+  <data name="TabGeneral" xml:space="preserve">
+    <value>常规</value>
+  </data>
+  <data name="TabRecording" xml:space="preserve">
+    <value>录制</value>
+  </data>
+  <data name="TabGoogleDrive" xml:space="preserve">
+    <value>谷歌同步</value>
+  </data>
+  <data name="MinFileSizeLabel" xml:space="preserve">
+    <value>保留录音的最小文件大小 (MB)</value>
+  </data>
+  <data name="MinFileSizeTooltip" xml:space="preserve">
+    <value>小于此阈值的录音文件将被丢弃。</value>
+  </data>
+  <data name="RecordingSettings" xml:space="preserve">
+    <value>录制设置</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>常规设置</value>
+  </data>
 </root>

@@ -16,6 +16,8 @@ public class AppSettings
 
     public int DebounceSeconds { get; set; } = 20;
 
+    public double MinFileSizeMb { get; set; } = 1.0;
+
     public OutputFormat OutputFormat { get; set; } = OutputFormat.Mp3;
 
     public string UiLanguage { get; set; } = "";

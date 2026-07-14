@@ -73,6 +73,7 @@ public class SessionCoordinatorTests
         var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
         var settings = new AppSettings { GoogleDriveEnabled = true, DebounceSeconds = 5 };
         var fileIOService = new Mock<IFileIOService>();
+        fileIOService.Setup(f => f.GetFileSize(It.IsAny<string>())).Returns(2 * 1024 * 1024);
         var cloudSyncService = new Mock<ICloudSyncService>();
 
         using var coordinator = new SessionCoordinator(
@@ -100,6 +101,7 @@ public class SessionCoordinatorTests
         var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
         var settings = new AppSettings { GoogleDriveEnabled = true, DebounceSeconds = 5 };
         var fileIOService = new Mock<IFileIOService>();
+        fileIOService.Setup(f => f.GetFileSize(It.IsAny<string>())).Returns(2 * 1024 * 1024);
         var cloudSyncService = new Mock<ICloudSyncService>();
 
         using var coordinator = new SessionCoordinator(
@@ -168,6 +170,7 @@ public class SessionCoordinatorTests
         var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
         var settings = new AppSettings { DebounceSeconds = 5, GoogleDriveEnabled = true };
         var fileIOService = new Mock<IFileIOService>();
+        fileIOService.Setup(f => f.GetFileSize(It.IsAny<string>())).Returns(2 * 1024 * 1024);
         var cloudSyncService = new Mock<ICloudSyncService>();
 
         using var coordinator = new SessionCoordinator(
@@ -198,6 +201,7 @@ public class SessionCoordinatorTests
         var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
         var settings = new AppSettings { DebounceSeconds = 15, GoogleDriveEnabled = true };
         var fileIOService = new Mock<IFileIOService>();
+        fileIOService.Setup(f => f.GetFileSize(It.IsAny<string>())).Returns(2 * 1024 * 1024);
         var cloudSyncService = new Mock<ICloudSyncService>();
 
         using var coordinator = new SessionCoordinator(
@@ -221,6 +225,72 @@ public class SessionCoordinatorTests
             "manually stopped recording should not subtract debounce and should be kept");
         cloudSyncService.Verify(s => s.EnqueueUpload(It.IsAny<string>()), Times.Once,
             "manually stopped recording should be uploaded");
+    }
+
+    [Fact]
+    public void MeetingEnded_WhenFileSizeBelowThreshold_DeletesFileAndDoesNotUpload()
+    {
+        var monitor = CreateMonitor();
+        var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
+        var settings = new AppSettings { DebounceSeconds = 5, GoogleDriveEnabled = true, MinFileSizeMb = 1.5 };
+        var fileIOService = new Mock<IFileIOService>();
+        var cloudSyncService = new Mock<ICloudSyncService>();
+
+        // Set file size to 1MB (which is below the 1.5MB threshold)
+        fileIOService.Setup(f => f.GetFileSize(It.IsAny<string>())).Returns((long)(1.0 * 1024 * 1024));
+
+        using var coordinator = new SessionCoordinator(
+            monitor.Object,
+            clock,
+            TimeSpan.FromSeconds(5),
+            settings,
+            fileIOService.Object,
+            cloudSyncService.Object);
+
+        coordinator.Start();
+        monitor.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "Size Test"));
+
+        // Advance clock by 20 seconds so duration check passes (active duration: 15s)
+        clock.UtcNow = clock.UtcNow.AddSeconds(20);
+        monitor.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
+
+        fileIOService.Verify(f => f.DeleteFile(It.IsAny<string>()), Times.Once,
+            "recording file below threshold size must be deleted");
+        cloudSyncService.Verify(s => s.EnqueueUpload(It.IsAny<string>()), Times.Never,
+            "recording file below threshold size must not be uploaded");
+    }
+
+    [Fact]
+    public void MeetingEnded_WhenFileSizeAboveThreshold_KeepsFileAndUploads()
+    {
+        var monitor = CreateMonitor();
+        var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
+        var settings = new AppSettings { DebounceSeconds = 5, GoogleDriveEnabled = true, MinFileSizeMb = 1.5 };
+        var fileIOService = new Mock<IFileIOService>();
+        var cloudSyncService = new Mock<ICloudSyncService>();
+
+        // Set file size to 2MB (which is above the 1.5MB threshold)
+        fileIOService.Setup(f => f.GetFileSize(It.IsAny<string>())).Returns((long)(2.0 * 1024 * 1024));
+
+        using var coordinator = new SessionCoordinator(
+            monitor.Object,
+            clock,
+            TimeSpan.FromSeconds(5),
+            settings,
+            fileIOService.Object,
+            cloudSyncService.Object);
+
+        coordinator.Start();
+        monitor.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "Size Test 2"));
+
+        // Advance clock by 20 seconds so duration check passes (active duration: 15s)
+        clock.UtcNow = clock.UtcNow.AddSeconds(20);
+        monitor.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
+
+        fileIOService.Verify(f => f.DeleteFile(It.IsAny<string>()), Times.Never,
+            "recording file above threshold size must not be deleted");
+        cloudSyncService.Verify(s => s.EnqueueUpload(It.IsAny<string>()), Times.Once,
+            "recording file above threshold size must be uploaded");
     }
 
     private static Mock<IAudioSessionMonitor> CreateMonitor()

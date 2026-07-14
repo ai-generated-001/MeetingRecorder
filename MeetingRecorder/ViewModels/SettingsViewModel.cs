@@ -32,6 +32,9 @@ public partial class SettingsViewModel : ObservableObject
     private string _outputDirectory = "";
 
     [ObservableProperty]
+    private double _minFileSizeMb;
+
+    [ObservableProperty]
     private string _uiLanguage = "";
 
     [ObservableProperty]
@@ -119,6 +122,7 @@ public partial class SettingsViewModel : ObservableObject
             : _settings.GoogleDriveFolderPath;
         StartWithWindows = _settings.StartWithWindows;
         AutoCheckUpdates = _settings.AutoCheckUpdates;
+        MinFileSizeMb = _settings.MinFileSizeMb;
 
         var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         UpdateStatusText = string.Format("Version: {0}", version?.ToString() ?? "1.0.0.0");
@@ -358,6 +362,7 @@ public partial class SettingsViewModel : ObservableObject
 
         _settings.StartWithWindows = StartWithWindows;
         _settings.AutoCheckUpdates = AutoCheckUpdates;
+        _settings.MinFileSizeMb = MinFileSizeMb;
 
         if (credentialsChanged)
         {

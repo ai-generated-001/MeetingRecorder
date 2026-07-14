@@ -458,5 +458,47 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("OrganizeFailed", resourceCulture);
             }
         }
+
+        public static string TabGeneral {
+            get {
+                return ResourceManager.GetString("TabGeneral", resourceCulture);
+            }
+        }
+
+        public static string TabRecording {
+            get {
+                return ResourceManager.GetString("TabRecording", resourceCulture);
+            }
+        }
+
+        public static string TabGoogleDrive {
+            get {
+                return ResourceManager.GetString("TabGoogleDrive", resourceCulture);
+            }
+        }
+
+        public static string MinFileSizeLabel {
+            get {
+                return ResourceManager.GetString("MinFileSizeLabel", resourceCulture);
+            }
+        }
+
+        public static string MinFileSizeTooltip {
+            get {
+                return ResourceManager.GetString("MinFileSizeTooltip", resourceCulture);
+            }
+        }
+
+        public static string RecordingSettings {
+            get {
+                return ResourceManager.GetString("RecordingSettings", resourceCulture);
+            }
+        }
+
+        public static string GeneralSettings {
+            get {
+                return ResourceManager.GetString("GeneralSettings", resourceCulture);
+            }
+        }
     }
 }

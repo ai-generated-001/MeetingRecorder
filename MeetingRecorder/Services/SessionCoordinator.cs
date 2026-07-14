@@ -141,18 +141,37 @@ public sealed class SessionCoordinator : IDisposable
             activeDuration -= TimeSpan.FromSeconds(_settings.DebounceSeconds);
         }
 
+        bool discard = false;
+        string? discardReason = null;
+
         if (activeDuration < TimeSpan.FromSeconds(10))
+        {
+            discard = true;
+            discardReason = $"active duration: {activeDuration.TotalSeconds:F1}s";
+        }
+        else if (_currentAudioPath != null)
+        {
+            long fileSize = _fileIOService.GetFileSize(_currentAudioPath);
+            double minSizeBytes = _settings.MinFileSizeMb * 1024 * 1024;
+            if (fileSize < minSizeBytes)
+            {
+                discard = true;
+                discardReason = $"file size: {fileSize / (1024.0 * 1024.0):F2}MB (threshold: {_settings.MinFileSizeMb}MB)";
+            }
+        }
+
+        if (discard)
         {
             if (_currentAudioPath != null)
             {
                 try
                 {
                     _fileIOService.DeleteFile(_currentAudioPath);
-                    System.Diagnostics.Debug.WriteLine($"Discarded short recording (active duration: {activeDuration.TotalSeconds:F1}s): {_currentAudioPath}");
+                    System.Diagnostics.Debug.WriteLine($"Discarded recording ({discardReason}): {_currentAudioPath}");
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Failed to delete short recording file '{_currentAudioPath}': {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Failed to delete discarded recording file '{_currentAudioPath}': {ex.Message}");
                 }
             }
         }

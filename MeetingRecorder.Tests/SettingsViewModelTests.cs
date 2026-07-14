@@ -37,7 +37,8 @@ public class SettingsViewModelTests : IDisposable
             GoogleClientSecret = "ClientSecret",
             GoogleDriveFolderPath = "DriveFolder",
             GoogleDriveFolderId = "FolderId",
-            StartWithWindows = true
+            StartWithWindows = true,
+            MinFileSizeMb = 2.5
         };
         _cloudSyncMock = new Mock<ICloudSyncService>();
         _serviceProviderMock = new Mock<IServiceProvider>();
@@ -78,6 +79,7 @@ public class SettingsViewModelTests : IDisposable
         vm.GoogleClientSecret.Should().Be("ClientSecret");
         vm.GoogleDriveFolderPath.Should().Be("DriveFolder");
         vm.StartWithWindows.Should().BeTrue();
+        vm.MinFileSizeMb.Should().Be(2.5);
     }
 
     [Fact]
@@ -93,6 +95,7 @@ public class SettingsViewModelTests : IDisposable
         vm.UiLanguage = "en-US";
         vm.GoogleDriveEnabled = false;
         vm.StartWithWindows = false;
+        vm.MinFileSizeMb = 5.0;
 
         bool? requestCloseResult = null;
         vm.RequestClose += (sender, result) => requestCloseResult = result;
@@ -105,6 +108,7 @@ public class SettingsViewModelTests : IDisposable
         _settings.UiLanguage.Should().Be("en-US");
         _settings.GoogleDriveEnabled.Should().BeFalse();
         _settings.StartWithWindows.Should().BeFalse();
+        _settings.MinFileSizeMb.Should().Be(5.0);
         requestCloseResult.Should().BeTrue();
     }
 

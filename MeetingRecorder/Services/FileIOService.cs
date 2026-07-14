@@ -27,4 +27,13 @@ public sealed class FileIOService : IFileIOService
             File.Delete(filePath);
         }
     }
+
+    public long GetFileSize(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            return new FileInfo(filePath).Length;
+        }
+        return 0;
+    }
 }

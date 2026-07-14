@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:properties="clr-namespace:MeetingRecorder"
         Title="{x:Static properties:Resources.Settings}"
-        Height="630"
+        Height="580"
         Width="580"
-        MinHeight="630"
+        MinHeight="580"
         MinWidth="580"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
@@ -421,6 +421,91 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <!-- TabItem Style -->
+        <Style TargetType="TabItem">
+            <Setter Property="HeaderTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <ContentPresenter Content="{TemplateBinding Content}"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="Transparent" 
+                                BorderThickness="0,0,0,2" 
+                                SnapsToDevicePixels="True"
+                                Margin="0,0,10,0">
+                            <ContentPresenter x:Name="contentPresenter" 
+                                              ContentSource="Header" 
+                                              HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center" 
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ButtonMouseOverBackgroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource ControlFocusedBorderBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TabControl Style -->
+        <Style TargetType="TabControl">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid KeyboardNavigation.TabNavigation="Local" SnapsToDevicePixels="True">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TabPanel x:Name="headerPanel" 
+                                      Grid.Row="0" 
+                                      IsItemsHost="True" 
+                                      Panel.ZIndex="1" 
+                                      Margin="0,0,0,12"/>
+                            <Border x:Name="contentPanel" 
+                                    Grid.Row="1" 
+                                    Background="{TemplateBinding Background}" 
+                                    BorderBrush="{TemplateBinding BorderBrush}" 
+                                    BorderThickness="{TemplateBinding BorderThickness}" 
+                                    KeyboardNavigation.DirectionalNavigation="Contained" 
+                                    KeyboardNavigation.TabIndex="1" 
+                                    KeyboardNavigation.TabNavigation="Once">
+                                <ContentPresenter x:Name="PART_SelectedContentHost" 
+                                                  ContentSource="SelectedContent" 
+                                                  Margin="{TemplateBinding Padding}" 
+                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="20" IsEnabled="{Binding IsUiEnabled}">
@@ -435,119 +520,165 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Scrollable Content Area -->
-                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
-                    <StackPanel Margin="0,0,8,0">
-                        <!-- Header -->
+                <Grid Grid.Row="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,10">
                         <TextBlock Text="{x:Static properties:Resources.Settings}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Configure recording output, UI language, and cloud sync integration." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,20" TextWrapping="Wrap"/>
+                        <TextBlock Text="Configure recording output, UI language, and cloud sync integration." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
 
-                        <!-- General Settings Section Header -->
-                        <TextBlock Text="General Settings" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
-                        
-                        <!-- Recordings folder -->
-                        <TextBlock Text="{x:Static properties:Resources.RecordingsFolder}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
-                        <Grid Margin="0,0,0,16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="OutputDirectoryTextBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0" Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"/>
-                            <Button Grid.Column="1" Content="{x:Static properties:Resources.Browse}" Width="90" Command="{Binding BrowseCommand}"/>
-                        </Grid>
+                    <!-- Tabbed Settings -->
+                    <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0" Margin="0">
+                        <!-- General Settings Tab -->
+                        <TabItem Header="{x:Static properties:Resources.TabGeneral}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                                <StackPanel Margin="0,10,10,10">
+                                    <TextBlock Text="General Settings" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,14"/>
 
-                        <!-- UI language -->
-                        <TextBlock Text="{x:Static properties:Resources.UiLanguageLabel}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
-                        <ComboBox x:Name="LanguageComboBox" Margin="0,0,0,16" ItemsSource="{Binding SupportedLanguages}" SelectedValue="{Binding UiLanguage}" DisplayMemberPath="DisplayName" SelectedValuePath="Code" HorizontalAlignment="Stretch"/>
+                                    <!-- UI language -->
+                                    <TextBlock Text="{x:Static properties:Resources.UiLanguageLabel}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
+                                    <ComboBox x:Name="LanguageComboBox" Margin="0,0,0,16" ItemsSource="{Binding SupportedLanguages}" SelectedValue="{Binding UiLanguage}" DisplayMemberPath="DisplayName" SelectedValuePath="Code" HorizontalAlignment="Stretch"/>
 
-                        <!-- UI Theme -->
-                        <TextBlock Text="{Binding ThemeLabel}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
-                        <ComboBox x:Name="ThemeComboBox" Margin="0,0,0,20" ItemsSource="{Binding SupportedThemes}" SelectedValue="{Binding SelectedTheme}" DisplayMemberPath="DisplayName" SelectedValuePath="Code" HorizontalAlignment="Stretch"/>
+                                    <!-- UI Theme -->
+                                    <TextBlock Text="{Binding ThemeLabel}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
+                                    <ComboBox x:Name="ThemeComboBox" Margin="0,0,0,20" ItemsSource="{Binding SupportedThemes}" SelectedValue="{Binding SelectedTheme}" DisplayMemberPath="DisplayName" SelectedValuePath="Code" HorizontalAlignment="Stretch"/>
 
-                        <!-- Start with Windows -->
-                        <CheckBox x:Name="StartWithWindowsCheckBox" Content="{x:Static properties:Resources.StartWithWindowsLabel}" Margin="0,0,0,20" IsChecked="{Binding StartWithWindows}" FontWeight="Medium"/>
+                                    <!-- Start with Windows -->
+                                    <CheckBox x:Name="StartWithWindowsCheckBox" Content="{x:Static properties:Resources.StartWithWindowsLabel}" Margin="0,0,0,16" IsChecked="{Binding StartWithWindows}" FontWeight="Medium"/>
 
-                        <!-- Check for Updates on Startup -->
-                        <CheckBox x:Name="AutoCheckUpdatesCheckBox" Content="{x:Static properties:Resources.AutoCheckUpdatesLabel}" Margin="0,0,0,16" IsChecked="{Binding AutoCheckUpdates}" FontWeight="Medium"/>
+                                    <!-- Check for Updates on Startup -->
+                                    <CheckBox x:Name="AutoCheckUpdatesCheckBox" Content="{x:Static properties:Resources.AutoCheckUpdatesLabel}" Margin="0,0,0,16" IsChecked="{Binding AutoCheckUpdates}" FontWeight="Medium"/>
 
-                        <!-- Manual Check for Updates -->
-                        <Grid Margin="0,0,0,20">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding UpdateStatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium" TextWrapping="Wrap"/>
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="{x:Static properties:Resources.CheckForUpdates}" Width="150" Command="{Binding CheckForUpdatesCommand}"/>
-                        </Grid>
-
-                        <!-- Google Drive BYOK section Card -->
-                        <Border BorderBrush="{DynamicResource DriveCardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,10" Background="{DynamicResource DriveCardBackgroundBrush}">
-                            <StackPanel>
-                                <TextBlock Text="{x:Static properties:Resources.GoogleDriveSection}" FontWeight="SemiBold" Margin="0,0,0,4" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="Sync recordings to your Google Drive automatically using your credentials." Margin="0,0,0,12" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-
-                                <!-- Enable toggle -->
-                                <CheckBox x:Name="GoogleDriveEnabledCheckBox" Content="{x:Static properties:Resources.GoogleDriveEnabledLabel}" Margin="0,0,0,12" IsChecked="{Binding GoogleDriveEnabled}" FontWeight="Medium"/>
-
-                                <!-- Detail fields — greyed out when sync is disabled -->
-                                <StackPanel IsEnabled="{Binding IsChecked, ElementName=GoogleDriveEnabledCheckBox}">
                                     <!-- Separator line -->
-                                    <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,12" SnapsToDevicePixels="True"/>
+                                    <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,16" SnapsToDevicePixels="True"/>
 
-                                    <!-- Login Status -->
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
-                                        <TextBlock Text="{x:Static properties:Resources.GoogleDriveStatusLabel}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" FontWeight="Medium"/>
-                                        <!-- Colored status badge -->
-                                        <Border CornerRadius="4" Padding="8,3" Background="{DynamicResource DriveStatusBadgeBackgroundBrush}" VerticalAlignment="Center">
-                                            <TextBlock x:Name="StatusValueTextBlock" Text="{Binding GoogleDriveStatus}" Foreground="{Binding GoogleDriveStatusForeground}" FontWeight="SemiBold" FontSize="11"/>
-                                        </Border>
-                                    </StackPanel>
+                                    <!-- Manual Check for Updates -->
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="{x:Static properties:Resources.CheckForUpdates}" Width="150" Command="{Binding CheckForUpdatesCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
 
-                                    <!-- Client ID -->
-                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
-                                    <TextBox x:Name="ClientIdTextBox" Margin="0,0,0,12" Text="{Binding GoogleClientId, UpdateSourceTrigger=PropertyChanged}" ToolTip="OAuth 2.0 Client ID from Google Cloud Console" Visibility="Collapsed"/>
+                        <!-- Recording Settings Tab -->
+                        <TabItem Header="{x:Static properties:Resources.TabRecording}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                                <StackPanel Margin="0,10,10,10">
+                                    <TextBlock Text="Recording Settings" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,14"/>
 
-                                    <!-- Client Secret -->
-                                    <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
-                                    <PasswordBox x:Name="ClientSecretPasswordBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client Secret from Google Cloud Console" Visibility="Collapsed"/>
-
-                                    <!-- Drive folder path -->
-                                    <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathLabel}" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" FontWeight="Medium"/>
-                                    <Grid Margin="0,0,0,16">
-                                        <TextBox x:Name="DriveFolderPathTextBox" Text="{Binding GoogleDriveFolderPath, UpdateSourceTrigger=PropertyChanged}" ToolTip="Folder path in Google Drive. Use / to separate nested folders."/>
-                                        <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathPlaceholder}" Foreground="{DynamicResource TextMutedBrush}" FontSize="12" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Text, ElementName=DriveFolderPathTextBox}" Value="">
-                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
+                                    <!-- Recordings folder -->
+                                    <TextBlock Text="{x:Static properties:Resources.RecordingsFolder}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
+                                    <Grid Margin="0,0,0,20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="OutputDirectoryTextBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0" Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <Button Grid.Column="1" Content="{x:Static properties:Resources.Browse}" Width="90" Command="{Binding BrowseCommand}"/>
                                     </Grid>
 
-                                    <!-- Action buttons -->
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
-                                        <Button x:Name="LoginButton" Content="{x:Static properties:Resources.GoogleDriveSignInButton}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" Padding="12,6" Command="{Binding LoginCommand}" CommandParameter="{Binding ElementName=ClientSecretPasswordBox}"/>
-                                        <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" Margin="0,0,8,0" Padding="12,6" Command="{Binding ClearTokenCommand}"/>
-                                        <Button x:Name="OrganizeButton" Content="{x:Static properties:Resources.OrganizeFilesButton}" Style="{StaticResource PrimaryButtonStyle}" Padding="12,6" Command="{Binding OrganizeFilesCommand}"/>
-                                    </StackPanel>
-
-                                    <!-- Progress and Status -->
-                                    <StackPanel Margin="0,12,0,0" Visibility="{Binding ShowOrganizeProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                        <TextBlock Text="{Binding OrganizeStatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" TextWrapping="Wrap"/>
-                                        <ProgressBar Value="{Binding OrganizeProgressValue}" Minimum="0" Maximum="100" Height="8"/>
-                                    </StackPanel>
+                                    <!-- Minimum File Size Threshold -->
+                                    <TextBlock Text="{x:Static properties:Resources.MinFileSizeLabel}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="MinFileSizeTextBox" Grid.Column="0" VerticalAlignment="Center" 
+                                                 Text="{Binding MinFileSizeMb, UpdateSourceTrigger=PropertyChanged}" 
+                                                 ToolTip="{x:Static properties:Resources.MinFileSizeTooltip}"/>
+                                        <TextBlock Grid.Column="1" Text="MB" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                                    </Grid>
+                                    <TextBlock Text="{x:Static properties:Resources.MinFileSizeTooltip}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                 </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
+                            </ScrollViewer>
+                        </TabItem>
+
+                        <!-- Google Drive Settings Tab -->
+                        <TabItem Header="{x:Static properties:Resources.TabGoogleDrive}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                                <StackPanel Margin="0,10,10,10">
+                                    <!-- Google Drive BYOK section Card -->
+                                    <Border BorderBrush="{DynamicResource DriveCardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0" Background="{DynamicResource DriveCardBackgroundBrush}">
+                                        <StackPanel>
+                                            <TextBlock Text="{x:Static properties:Resources.GoogleDriveSection}" FontWeight="SemiBold" Margin="0,0,0,4" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Sync recordings to your Google Drive automatically using your credentials." Margin="0,0,0,12" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+
+                                            <!-- Enable toggle -->
+                                            <CheckBox x:Name="GoogleDriveEnabledCheckBox" Content="{x:Static properties:Resources.GoogleDriveEnabledLabel}" Margin="0,0,0,12" IsChecked="{Binding GoogleDriveEnabled}" FontWeight="Medium"/>
+
+                                            <!-- Detail fields — greyed out when sync is disabled -->
+                                            <StackPanel IsEnabled="{Binding IsChecked, ElementName=GoogleDriveEnabledCheckBox}">
+                                                <!-- Separator line -->
+                                                <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,12" SnapsToDevicePixels="True"/>
+
+                                                <!-- Login Status -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
+                                                    <TextBlock Text="{x:Static properties:Resources.GoogleDriveStatusLabel}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" FontWeight="Medium"/>
+                                                    <!-- Colored status badge -->
+                                                    <Border CornerRadius="4" Padding="8,3" Background="{DynamicResource DriveStatusBadgeBackgroundBrush}" VerticalAlignment="Center">
+                                                        <TextBlock x:Name="StatusValueTextBlock" Text="{Binding GoogleDriveStatus}" Foreground="{Binding GoogleDriveStatusForeground}" FontWeight="SemiBold" FontSize="11"/>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <!-- Client ID -->
+                                                <TextBlock Text="{x:Static properties:Resources.GoogleClientIdLabel}" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
+                                                <TextBox x:Name="ClientIdTextBox" Margin="0,0,0,12" Text="{Binding GoogleClientId, UpdateSourceTrigger=PropertyChanged}" ToolTip="OAuth 2.0 Client ID from Google Cloud Console" Visibility="Collapsed"/>
+
+                                                <!-- Client Secret -->
+                                                <TextBlock Text="{x:Static properties:Resources.GoogleClientSecretLabel}" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" FontWeight="Medium" Visibility="Collapsed"/>
+                                                <PasswordBox x:Name="ClientSecretPasswordBox" Margin="0,0,0,12" ToolTip="OAuth 2.0 Client Secret from Google Cloud Console" Visibility="Collapsed"/>
+
+                                                <!-- Drive folder path -->
+                                                <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathLabel}" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" FontWeight="Medium"/>
+                                                <Grid Margin="0,0,0,16">
+                                                    <TextBox x:Name="DriveFolderPathTextBox" Text="{Binding GoogleDriveFolderPath, UpdateSourceTrigger=PropertyChanged}" ToolTip="Folder path in Google Drive. Use / to separate nested folders."/>
+                                                    <TextBlock Text="{x:Static properties:Resources.GoogleDriveFolderPathPlaceholder}" Foreground="{DynamicResource TextMutedBrush}" FontSize="12" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Text, ElementName=DriveFolderPathTextBox}" Value="">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Grid>
+
+                                                <!-- Action buttons -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                                                    <Button x:Name="LoginButton" Content="{x:Static properties:Resources.GoogleDriveSignInButton}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" Padding="12,6" Command="{Binding LoginCommand}" CommandParameter="{Binding ElementName=ClientSecretPasswordBox}"/>
+                                                    <Button x:Name="ClearTokenButton" Content="{x:Static properties:Resources.ClearTokenButton}" Style="{StaticResource DangerButtonStyle}" Margin="0,0,8,0" Padding="12,6" Command="{Binding ClearTokenCommand}"/>
+                                                    <Button x:Name="OrganizeButton" Content="{x:Static properties:Resources.OrganizeFilesButton}" Style="{StaticResource PrimaryButtonStyle}" Padding="12,6" Command="{Binding OrganizeFilesCommand}"/>
+                                                </StackPanel>
+
+                                                <!-- Progress and Status -->
+                                                <StackPanel Margin="0,12,0,0" Visibility="{Binding ShowOrganizeProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                    <TextBlock Text="{Binding OrganizeStatusText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                                                    <ProgressBar Value="{Binding OrganizeProgressValue}" Minimum="0" Maximum="100" Height="8"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
 
                 <!-- Footer Divider -->
                 <Border Grid.Row="1" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,12,0,16" SnapsToDevicePixels="True"/>

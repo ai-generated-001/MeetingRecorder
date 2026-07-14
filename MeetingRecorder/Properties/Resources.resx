@@ -275,4 +275,25 @@
   <data name="OrganizeFailed" xml:space="preserve">
     <value>Failed to organize files: {0}</value>
   </data>
+  <data name="TabGeneral" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="TabRecording" xml:space="preserve">
+    <value>Recording</value>
+  </data>
+  <data name="TabGoogleDrive" xml:space="preserve">
+    <value>Google Drive</value>
+  </data>
+  <data name="MinFileSizeLabel" xml:space="preserve">
+    <value>Min file size to save (MB)</value>
+  </data>
+  <data name="MinFileSizeTooltip" xml:space="preserve">
+    <value>Recording files smaller than this threshold will be discarded.</value>
+  </data>
+  <data name="RecordingSettings" xml:space="preserve">
+    <value>Recording Settings</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>General Settings</value>
+  </data>
 </root>
