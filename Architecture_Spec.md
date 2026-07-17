@@ -47,7 +47,7 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 4. **MainViewModel**
    - Bridges coordinator and recorder.
    - Starts monitoring on app startup (outside design mode).
-   - Builds timestamped output filenames (optionally prefixed by sanitized window title).
+   - Builds timestamped output filenames starting with the datetime timestamp (optionally suffixed by sanitized window title).
    - Exposes commands: start/stop monitoring, stop recording, open folder/settings, exit.
 
 5. **Tray and App Host (`App.xaml.cs`)**

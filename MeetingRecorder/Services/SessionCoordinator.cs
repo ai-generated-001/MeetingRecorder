@@ -105,12 +105,12 @@ public sealed class SessionCoordinator : IDisposable
         _recordingStartTime = _dateTimeProvider.Now;
 
         string ext = _settings.OutputFormat == OutputFormat.Mp3 ? "mp3" : "wav";
-        string baseName = $"Meeting_{_recordingStartTime:yyyyMMdd_HHmmss}";
+        string baseName = $"{_recordingStartTime:yyyyMMdd_HHmmss}_Meeting";
         string? titlePrefix = SanitizeFileNameSegment(e.WindowTitle);
         
         string fileName = string.IsNullOrWhiteSpace(titlePrefix)
             ? $"{baseName}.{ext}"
-            : $"{titlePrefix}_{baseName}.{ext}";
+            : $"{baseName}_{titlePrefix}.{ext}";
         _currentAudioPath = Path.Combine(_settings.OutputDirectory, fileName);
 
 

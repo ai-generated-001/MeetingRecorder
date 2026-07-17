@@ -34,6 +34,39 @@ public class SessionCoordinatorTests
         coordinator.State.Should().Be(SessionState.Recording);
         requestedMeeting.Should().NotBeNull();
         requestedMeeting!.MeetingDetails.ProcessName.Should().Be("teams");
+        
+        string expectedTimestamp = clock.Now.ToString("yyyyMMdd_HHmmss");
+        requestedMeeting.AudioFilePath.Should().Contain($"{expectedTimestamp}_Meeting_Standup.mp3");
+    }
+
+    [Fact]
+    public void MeetingStarted_WhenDetectedWithNoTitle_GeneratesCorrectFileNameWithTimestampAtStart()
+    {
+        var monitor = CreateMonitor();
+        var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
+        var settings = new AppSettings();
+        var fileIOService = new Mock<IFileIOService>();
+        var cloudSyncService = new Mock<ICloudSyncService>();
+
+        using var coordinator = new SessionCoordinator(
+            monitor.Object, 
+            clock, 
+            TimeSpan.FromSeconds(5),
+            settings,
+            fileIOService.Object,
+            cloudSyncService.Object);
+
+        RecordingRequestedEventArgs? requestedMeeting = null;
+        coordinator.RecordingRequested += (_, e) => requestedMeeting = e;
+
+        coordinator.Start();
+        monitor.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("teams", ""));
+
+        coordinator.State.Should().Be(SessionState.Recording);
+        requestedMeeting.Should().NotBeNull();
+        
+        string expectedTimestamp = clock.Now.ToString("yyyyMMdd_HHmmss");
+        requestedMeeting!.AudioFilePath.Should().Contain($"{expectedTimestamp}_Meeting.mp3");
     }
 
     [Fact]
