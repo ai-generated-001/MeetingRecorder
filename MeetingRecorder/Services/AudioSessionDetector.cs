@@ -19,9 +19,11 @@ public class AudioSessionDetector : IAudioSessionMonitor
     private readonly object _sync = new();
     private bool _isMeetingActive;
     private DateTime? _lastActiveTime;
+    private DateTime? _firstActiveTime;
     private CancellationTokenSource? _cts;
     private Task? _monitoringTask;
     private MeetingDetectedEventArgs? _currentMeeting;
+    private MeetingDetectedEventArgs? _tentativeMeeting;
 
     public bool IsMonitoring { get; private set; }
     public event EventHandler<MeetingDetectedEventArgs>? MeetingStarted;
@@ -145,7 +147,9 @@ public class AudioSessionDetector : IAudioSessionMonitor
                 IsMonitoring = false;
                 _isMeetingActive = false;
                 _lastActiveTime = null;
+                _firstActiveTime = null;
                 _currentMeeting = null;
+                _tentativeMeeting = null;
             }
         }
     }
@@ -190,19 +194,35 @@ public class AudioSessionDetector : IAudioSessionMonitor
                 _lastActiveTime = DateTime.UtcNow;
                 if (!_isMeetingActive)
                 {
-                    _isMeetingActive = true;
-                    _currentMeeting = detectedMeeting;
-                    MeetingStarted?.Invoke(this, _currentMeeting ?? new MeetingDetectedEventArgs("Meeting", null));
+                    if (!_firstActiveTime.HasValue)
+                    {
+                        _firstActiveTime = DateTime.UtcNow;
+                        _tentativeMeeting = detectedMeeting;
+                    }
+                    else if ((DateTime.UtcNow - _firstActiveTime.Value).TotalSeconds >= 4)
+                    {
+                        _isMeetingActive = true;
+                        _currentMeeting = _tentativeMeeting ?? detectedMeeting;
+                        MeetingStarted?.Invoke(this, _currentMeeting ?? new MeetingDetectedEventArgs("Meeting", null));
+                    }
                 }
             }
             else
             {
+                if (!_isMeetingActive && _lastActiveTime.HasValue && (DateTime.UtcNow - _lastActiveTime.Value).TotalSeconds >= 4)
+                {
+                    _firstActiveTime = null;
+                    _tentativeMeeting = null;
+                }
+
                 if (_isMeetingActive)
                 {
                     if (_lastActiveTime.HasValue && (DateTime.UtcNow - _lastActiveTime.Value).TotalSeconds >= _settings.DebounceSeconds)
                     {
                         _isMeetingActive = false;
                         _currentMeeting = null;
+                        _firstActiveTime = null;
+                        _tentativeMeeting = null;
                         MeetingEnded?.Invoke(this, EventArgs.Empty);
                     }
                 }
