@@ -39,6 +39,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ICloudSyncService _cloudSyncService;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ITranscriptionService _transcriptionService;
+    private readonly TranscriptionOverlayViewModel _overlayViewModel;
+    private TranscriptionOverlayWindow? _overlayWindow;
 
     [ObservableProperty]
     private AppStatus _status = AppStatus.Idle;
@@ -112,7 +115,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IFileIOService fileIOService,
         IDateTimeProvider dateTimeProvider,
         ICloudSyncService cloudSyncService,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        ITranscriptionService transcriptionService,
+        TranscriptionOverlayViewModel overlayViewModel)
     {
         _settings = settings;
         _recorder = recorder;
@@ -121,6 +126,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _dateTimeProvider = dateTimeProvider;
         _cloudSyncService = cloudSyncService;
         _serviceProvider = serviceProvider;
+        _transcriptionService = transcriptionService;
+        _overlayViewModel = overlayViewModel;
 
         _sessionCoordinator.RecordingRequested += OnRecordingRequested;
         _sessionCoordinator.RecordingStopped += OnRecordingStopped;
@@ -128,6 +135,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _cloudSyncService.UploadFailed += OnUploadFailed;
         _cloudSyncService.UploadCompleted += OnUploadCompleted;
         _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
+        
+        _recorder.AudioDataAvailable += OnAudioDataAvailable;
 
         IsOrganizing = _cloudSyncService.IsOrganizing;
         OrganizeStatusText = _cloudSyncService.OrganizeStatusText;
@@ -139,7 +148,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        if (_settings.TranscriptionEnabled)
+        {
+            _ = _transcriptionService.InitializeModelAsync(_settings.WhisperModelSize, _settings.TranscriptionLanguage);
+        }
+
         StartMonitoring();
+    }
+    
+    private void OnAudioDataAvailable(object? sender, AudioDataEventArgs e)
+    {
+        if (_settings.TranscriptionEnabled && _transcriptionService.IsTranscribing)
+        {
+            _transcriptionService.FeedAudioData(e.Buffer, e.Count);
+        }
     }
 
     [RelayCommand]
@@ -223,14 +245,69 @@ public partial class MainViewModel : ObservableObject, IDisposable
         UpdateStatusText();
     }
 
+    private string? _currentAudioFilePath;
+
     private void OnRecordingRequested(object? sender, RecordingRequestedEventArgs e)
     {
+        _currentAudioFilePath = e.AudioFilePath;
         _recorder.Start(e.AudioFilePath, _settings.OutputFormat);
+        
+        if (_settings.TranscriptionEnabled)
+        {
+            _overlayViewModel.Clear();
+            _transcriptionService.StartTranscription();
+            
+            if (_settings.ShowTranscriptionOverlay)
+            {
+                ExecuteOnUIThread(() =>
+                {
+                    if (_overlayWindow == null)
+                    {
+                        _overlayWindow = _serviceProvider.GetRequiredService<TranscriptionOverlayWindow>();
+                        _overlayWindow.DataContext = _overlayViewModel;
+                    }
+                    _overlayViewModel.IsOverlayVisible = true;
+                    _overlayWindow.Show();
+                });
+            }
+        }
     }
 
     private void OnRecordingStopped(object? sender, EventArgs e)
     {
         _recorder.Stop();
+        
+        if (_settings.TranscriptionEnabled)
+        {
+            _transcriptionService.StopTranscription();
+            ExecuteOnUIThread(() =>
+            {
+                _overlayViewModel.IsOverlayVisible = false;
+                _overlayWindow?.Hide();
+            });
+
+            // Save transcript
+            if (_currentAudioFilePath != null)
+            {
+                var transcript = _transcriptionService.GetFullTranscript();
+                if (transcript.Count > 0)
+                {
+                    string transcriptPath = Path.ChangeExtension(_currentAudioFilePath, ".txt");
+                    try
+                    {
+                        using var writer = new StreamWriter(transcriptPath);
+                        foreach (var segment in transcript)
+                        {
+                            writer.WriteLine($"[{segment.Start:hh\\:mm\\:ss} - {segment.End:hh\\:mm\\:ss}] {segment.Text}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to save transcript: {ex.Message}");
+                    }
+                }
+            }
+        }
     }
 
     private void ExecuteOnUIThread(Action action)
@@ -396,5 +473,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _cloudSyncService.UploadFailed -= OnUploadFailed;
         _cloudSyncService.UploadCompleted -= OnUploadCompleted;
         _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
+        _recorder.AudioDataAvailable -= OnAudioDataAvailable;
+        
+        ExecuteOnUIThread(() =>
+        {
+            _overlayWindow?.Close();
+        });
     }
 }

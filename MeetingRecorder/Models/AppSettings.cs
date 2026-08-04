@@ -74,6 +74,12 @@ public class AppSettings
     /// The tag version that the user has chosen to skip prompting.
     /// </summary>
     public string SkippedVersion { get; set; } = "";
+
+    // Transcription Settings
+    public bool TranscriptionEnabled { get; set; } = false;
+    public string TranscriptionLanguage { get; set; } = "auto";
+    public string WhisperModelSize { get; set; } = "Base";  // Tiny, Base, Small, Medium
+    public bool ShowTranscriptionOverlay { get; set; } = true;
 }
 
 

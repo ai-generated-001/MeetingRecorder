@@ -606,6 +606,30 @@
                             </ScrollViewer>
                         </TabItem>
 
+                        <!-- Transcription Settings Tab -->
+                        <TabItem Header="Transcription">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                                <StackPanel Margin="0,10,10,10">
+                                    <TextBlock Text="Transcription Settings" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,14"/>
+
+                                    <CheckBox x:Name="TranscriptionEnabledCheckBox" Content="Enable Real-Time Transcription" Margin="0,0,0,16" IsChecked="{Binding TranscriptionEnabled}" FontWeight="Medium"/>
+
+                                    <StackPanel IsEnabled="{Binding IsChecked, ElementName=TranscriptionEnabledCheckBox}">
+                                        <TextBlock Text="Whisper Model Size" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
+                                        <ComboBox x:Name="ModelSizeComboBox" Margin="0,0,0,16" ItemsSource="{Binding SupportedModelSizes}" SelectedItem="{Binding WhisperModelSize}" HorizontalAlignment="Stretch"/>
+
+                                        <TextBlock Text="Transcription Language" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
+                                        <ComboBox x:Name="TranscriptionLanguageComboBox" Margin="0,0,0,16" ItemsSource="{Binding SupportedTranscriptionLanguages}" SelectedValue="{Binding TranscriptionLanguage}" DisplayMemberPath="DisplayName" SelectedValuePath="Code" HorizontalAlignment="Stretch"/>
+
+                                        <CheckBox x:Name="ShowOverlayCheckBox" Content="Show Floating Subtitle Overlay" Margin="0,0,0,16" IsChecked="{Binding ShowTranscriptionOverlay}" FontWeight="Medium"/>
+
+                                        <Button Content="Download Model in Advance" Command="{Binding DownloadModelCommand}" Width="200" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{Binding DownloadStatusText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+
                         <!-- Google Drive Settings Tab -->
                         <TabItem Header="{x:Static properties:Resources.TabGoogleDrive}">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">

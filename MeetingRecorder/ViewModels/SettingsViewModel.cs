@@ -20,6 +20,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ICloudSyncService _cloudSyncService;
     private readonly IServiceProvider _serviceProvider;
     private readonly IUpdateService _updateService;
+    private readonly ITranscriptionService _transcriptionService;
 
     [ObservableProperty]
     private bool _autoCheckUpdates;
@@ -45,6 +46,22 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _startWithWindows;
+
+    // Transcription properties
+    [ObservableProperty]
+    private bool _transcriptionEnabled;
+
+    [ObservableProperty]
+    private string _transcriptionLanguage = "auto";
+
+    [ObservableProperty]
+    private string _whisperModelSize = "Base";
+
+    [ObservableProperty]
+    private string _downloadStatusText = "";
+
+    [ObservableProperty]
+    private bool _showTranscriptionOverlay;
 
     [ObservableProperty]
     private string _googleClientId = "";
@@ -97,16 +114,34 @@ public partial class SettingsViewModel : ObservableObject
         new(Resources.ThemeDark, "Dark")
     ];
 
+    public List<string> SupportedModelSizes { get; } = ["Tiny", "Base", "Small", "Medium"];
+
+    public List<LanguageItem> SupportedTranscriptionLanguages { get; } =
+    [
+        new("Auto Detect", "auto"),
+        new("English", "en"),
+        new("Chinese", "zh"),
+        new("Japanese", "ja"),
+        new("Korean", "ko"),
+        new("French", "fr"),
+        new("German", "de"),
+        new("Spanish", "es")
+    ];
+
     public SettingsViewModel(
         AppSettings settings,
         ICloudSyncService cloudSyncService,
         IServiceProvider serviceProvider,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        ITranscriptionService transcriptionService)
     {
         _settings = settings;
         _cloudSyncService = cloudSyncService;
         _serviceProvider = serviceProvider;
         _updateService = updateService;
+        _transcriptionService = transcriptionService;
+
+        _transcriptionService.StatusChanged += OnTranscriptionStatusChanged;
 
         // Initialize from settings
         OutputDirectory = string.IsNullOrWhiteSpace(_settings.OutputDirectory)
@@ -124,6 +159,11 @@ public partial class SettingsViewModel : ObservableObject
         AutoCheckUpdates = _settings.AutoCheckUpdates;
         MinFileSizeMb = _settings.MinFileSizeMb;
 
+        TranscriptionEnabled = _settings.TranscriptionEnabled;
+        TranscriptionLanguage = _settings.TranscriptionLanguage ?? "auto";
+        WhisperModelSize = _settings.WhisperModelSize ?? "Base";
+        ShowTranscriptionOverlay = _settings.ShowTranscriptionOverlay;
+
         var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         UpdateStatusText = string.Format("Version: {0}", version?.ToString() ?? "1.0.0.0");
 
@@ -134,6 +174,32 @@ public partial class SettingsViewModel : ObservableObject
         OrganizeStatusText = _cloudSyncService.OrganizeStatusText;
         OrganizeProgressValue = _cloudSyncService.OrganizeProgressValue;
         _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
+    }
+
+    private void OnTranscriptionStatusChanged(object? sender, string status)
+    {
+        ExecuteOnUIThread(() =>
+        {
+            DownloadStatusText = status;
+        });
+    }
+
+    [RelayCommand]
+    private async Task DownloadModelAsync()
+    {
+        IsUiEnabled = false;
+        try
+        {
+            await _transcriptionService.DownloadModelAsync(WhisperModelSize, TranscriptionLanguage);
+        }
+        catch (Exception ex)
+        {
+            DownloadStatusText = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsUiEnabled = true;
+        }
     }
 
     [RelayCommand]
@@ -364,6 +430,11 @@ public partial class SettingsViewModel : ObservableObject
         _settings.AutoCheckUpdates = AutoCheckUpdates;
         _settings.MinFileSizeMb = MinFileSizeMb;
 
+        _settings.TranscriptionEnabled = TranscriptionEnabled;
+        _settings.TranscriptionLanguage = TranscriptionLanguage;
+        _settings.WhisperModelSize = WhisperModelSize;
+        _settings.ShowTranscriptionOverlay = ShowTranscriptionOverlay;
+
         if (credentialsChanged)
         {
             _settings.GoogleDriveFolderId = "";
@@ -412,5 +483,6 @@ public partial class SettingsViewModel : ObservableObject
     public void Cleanup()
     {
         _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
+        _transcriptionService.StatusChanged -= OnTranscriptionStatusChanged;
     }
 }

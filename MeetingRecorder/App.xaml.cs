@@ -150,6 +150,10 @@ public partial class App : Application
                 sp.GetRequiredService<IFileIOService>(),
                 sp.GetRequiredService<ICloudSyncService>()));
 
+        services.AddSingleton<ITranscriptionService, WhisperTranscriptionService>();
+        services.AddSingleton<TranscriptionOverlayViewModel>();
+        services.AddTransient<TranscriptionOverlayWindow>();
+
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
         services.AddTransient<SettingsViewModel>();

@@ -30,6 +30,8 @@ public class WasapiRecorder : IAudioRecorder
 
     public bool IsRecording => _isRecording;
 
+    public event EventHandler<AudioDataEventArgs>? AudioDataAvailable;
+
     public void Start(string filePath, OutputFormat format = OutputFormat.Mp3)
     {
         if (_isRecording) return;
@@ -151,6 +153,9 @@ public class WasapiRecorder : IAudioRecorder
                 {
                     _waveWriter!.WriteSamples(buffer, 0, samplesRead);
                 }
+
+                // Fire event for transcription service
+                AudioDataAvailable?.Invoke(this, new AudioDataEventArgs(buffer, samplesRead));
             }
 
             int elapsedMs = (int)(Environment.TickCount64 - loopStart);

@@ -8,6 +8,7 @@ MeetingRecorder is a lightweight WPF desktop app that runs primarily from the sy
 - **Language:** C# 14
 - **UI Framework:** WPF + MVVM (CommunityToolkit.Mvvm)
 - **Audio Library:** NAudio (WASAPI + LAME)
+- **Transcription Library:** Whisper.net (GGML)
 - **DI Container:** Microsoft.Extensions.DependencyInjection
 - **Target OS:** Windows 10/11
 
@@ -44,13 +45,27 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
    - Resamples streams to a common format and mixes in real time.
    - Writes output as MP3 (`LameMP3FileWriter`) or WAV (`WaveFileWriter`).
 
-4. **MainViewModel**
+4. **WhisperTranscriptionService (`ITranscriptionService`)**
+   - Automatically downloads the required GGML model to `%LocalAppData%\MeetingRecorder\Models`.
+   - Takes streaming audio data from the `IAudioRecorder` via `AudioDataAvailable` event.
+   - Resamples stereo 44.1kHz floats to mono 16kHz floats required by Whisper.
+   - Accumulates chunks and streams them through the local `WhisperProcessor`.
+   - Fires `SegmentTranscribed` when new text is generated.
+
+5. **MainViewModel**
    - Bridges coordinator and recorder.
    - Starts monitoring on app startup (outside design mode).
+   - Manages the lifecycle of transcription: initializes the Whisper model, feeds data to it, and manages the `TranscriptionOverlayWindow`.
+   - On stop, grabs the full transcript from `ITranscriptionService` and saves it alongside the audio recording.
    - Builds timestamped output filenames starting with the datetime timestamp (optionally suffixed by sanitized window title).
    - Exposes commands: start/stop monitoring, stop recording, open folder/settings, exit.
 
-5. **Tray and App Host (`App.xaml.cs`)**
+6. **TranscriptionOverlayWindow & ViewModel**
+   - A floating, transparent, always-on-top window.
+   - Draggable by its title bar.
+   - Receives and dynamically displays newly transcribed text segments.
+
+7. **Tray and App Host (`App.xaml.cs`)**
    - Configures culture and service provider.
    - Initializes `H.NotifyIcon.TaskbarIcon` as the tray entry point.
    - Shows and positions the floating main window near the bottom-right work area.
@@ -96,6 +111,10 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 - `StartWithWindows` (enable/disable auto-start with Windows via HKCU Registry Run key)
 - `AutoCheckUpdates` (enable/disable automatic checking for updates on startup)
 - `SkippedVersion` (version string the user decided to skip prompting)
+- `TranscriptionEnabled` (enable/disable real-time transcription)
+- `TranscriptionLanguage` (target language for Whisper inference)
+- `WhisperModelSize` (size of the Whisper model to download/use)
+- `ShowTranscriptionOverlay` (enable/disable the live subtitle window)
 
 ### Persistence
 Settings are automatically saved as JSON in the local application data directory (`%LocalAppData%\MeetingRecorder\settings.json`) whenever they are updated from the UI or Settings Window. On application startup, settings are loaded from this file or default settings are created if it does not exist.
@@ -108,6 +127,7 @@ Folder existence checks are case-insensitive. If a user specifies a target folde
     MeetingRecorder/
     ├── Models/
     │   ├── AppSettings.cs
+    │   ├── TranscriptionSegment.cs
     │   └── MeetingDetectedEventArgs.cs
     ├── Services/
     │   ├── IAudioSessionMonitor.cs
@@ -119,16 +139,22 @@ Folder existence checks are case-insensitive. If a user specifies a target folde
     │   ├── GoogleDriveSyncService.cs
     │   ├── DpapiFileDataStore.cs
     │   ├── RecordingRequestedEventArgs.cs
+    │   ├── AudioDataEventArgs.cs
+    │   ├── ITranscriptionService.cs
+    │   ├── WhisperTranscriptionService.cs
+    │   ├── TranscriptionSegmentEventArgs.cs
     │   ├── IUpdateService.cs
     │   ├── UpdateInfo.cs
     │   └── GitHubUpdateService.cs
     ├── ViewModels/
     │   ├── MainViewModel.cs
     │   ├── SettingsViewModel.cs
+    │   ├── TranscriptionOverlayViewModel.cs
     │   └── UpdateViewModel.cs
     ├── MainWindow.xaml
     ├── SettingsWindow.xaml
     ├── UpdateWindow.xaml
+    ├── TranscriptionOverlayWindow.xaml
     ├── App.xaml.cs
     └── credentials.json (Embedded Resource)
 
