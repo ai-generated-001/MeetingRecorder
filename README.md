@@ -6,6 +6,9 @@ MeetingRecorder is a modern Windows application built with .NET 10 and WPF desig
 
 - **Automatic Detection**: Automatically starts recording when a supported meeting application (like Zoom, Microsoft Teams, Webex, etc.) begins an active audio session.
 - **Dual-Channel Recording**: Captures both system audio (loopback) and your microphone, mixing them into a single high-quality stream.
+- **Real-Time AI Transcription**: Streams real-time speech-to-text recognition via Alibaba Cloud DashScope (`paraformer-realtime-v2`) over WebSockets.
+- **AI Contextual Mention Insights**: Powered by Qwen LLM (`qwen-turbo` / `qwen-plus` / `qwen-max`), detects when you or your team are mentioned in the meeting, analyzes the surrounding context, and surfaces real-time actionable insights in the overlay window.
+- **Floating Subtitle & Insight Overlay**: A lightweight, always-on-top, draggable overlay window that shows live transcripts and mention alerts.
 - **Multiple Formats**: Supports saving recordings in both **MP3** (using LAME) and high-fidelity **WAV** formats.
 - **Tray Integration**: Runs quietly in the system tray with notifications for recording status.
 - **Process Whitelisting**: Pre-configured to recognize common meeting software including:
@@ -19,9 +22,10 @@ MeetingRecorder is a modern Windows application built with .NET 10 and WPF desig
 ## Technical Stack
 
 - **Framework**: .NET 10.0 (Windows)
-- **UI**: WPF (Windows Presentation Foundation)
+- **UI**: WPF (Windows Presentation Foundation) + MVVM (CommunityToolkit.Mvvm)
 - **Audio Engine**: [NAudio](https://github.com/naudio/NAudio) for WASAPI loopback and microphone capture.
 - **MP3 Encoding**: [NAudio.Lame](https://github.com/corey84/NAudio.Lame) for LAME MP3 conversion.
+- **AI & Transcription**: Alibaba Cloud DashScope WebSocket API (Paraformer-realtime ASR) + Qwen LLM API (Text Generation).
 - **Tray Icon**: [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon) for system tray management.
 
 ## Project Structure
@@ -52,6 +56,29 @@ MeetingRecorder is a modern Windows application built with .NET 10 and WPF desig
 ## Configuration
 
 Recording settings and the process whitelist can be found in `MeetingRecorder/Models/AppSettings.cs`. By default, recordings are saved to your `Documents\MeetingRecordings` folder.
+
+## AI & Real-Time Transcription Setup
+
+MeetingRecorder provides real-time transcription and contextual AI mention insights powered by Alibaba Cloud DashScope.
+
+### Configuration in Settings
+1. Open the application and click **Settings** (or right-click the tray icon and select **Settings**).
+2. Go to the **AI & Transcription** tab:
+   - **Enable Real-Time Transcription**: Turn on live speech-to-text.
+   - **DashScope API Key**: Enter your Alibaba Cloud DashScope API Key (e.g. `sk-...`).
+   - **API Base URL (Optional)**: Defaults to `https://dashscope.aliyuncs.com`. You can specify a custom or OpenAI-compatible proxy URL if desired.
+   - **Audio Language Hint**: Choose Auto Detect, Chinese, English, Japanese, Korean, French, German, or Spanish.
+   - **Show Floating Subtitle Overlay**: Displays real-time subtitles and mention alerts during the meeting.
+   - **Mention Names**: Enter comma-separated names/nicknames (e.g. `Alex, 张伟, 团队`) that the app should monitor in the speech stream.
+   - **Qwen Model**: Choose between `qwen-turbo` (fastest & cost-effective), `qwen-plus`, or `qwen-max`.
+   - **Context Window**: Specify how many seconds of prior transcript context to send to the LLM (default: `30` seconds).
+3. Click **Test API Connection** to verify your API credentials, then click **Save**.
+
+### Real-Time Workflow
+- When a meeting begins, speech is streamed to DashScope Paraformer in 100ms PCM chunks.
+- Subtitles appear live in the floating overlay window.
+- When any configured name is mentioned in the meeting, Qwen LLM analyzes the context and presents an actionable summary card (e.g., *"You were asked to review the Q3 budget slides by Friday"*) directly inside the overlay.
+- On meeting conclusion, the full transcript is automatically saved as a `.txt` file alongside the audio recording.
 
 ## Google Drive Synchronization & OAuth Setup
 
