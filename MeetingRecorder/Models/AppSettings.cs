@@ -75,11 +75,18 @@ public class AppSettings
     /// </summary>
     public string SkippedVersion { get; set; } = "";
 
-    // Transcription Settings
+    // Transcription Settings (DashScope Paraformer Real-time)
     public bool TranscriptionEnabled { get; set; } = false;
+    public string DashScopeApiKey { get; set; } = "";
+    public string DashScopeBaseUrl { get; set; } = "https://dashscope.aliyuncs.com";
     public string TranscriptionLanguage { get; set; } = "auto";
-    public string WhisperModelSize { get; set; } = "Base";  // Tiny, Base, Small, Medium
     public bool ShowTranscriptionOverlay { get; set; } = true;
+
+    // AI Insights Settings (Qwen LLM)
+    public bool InsightsEnabled { get; set; } = true;
+    public List<string> MentionNames { get; set; } = new();
+    public int InsightContextSeconds { get; set; } = 30;
+    public string QwenModel { get; set; } = "qwen-turbo";
 }
 
 

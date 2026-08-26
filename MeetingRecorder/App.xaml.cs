@@ -10,6 +10,7 @@ using MeetingRecorder.Models;
 using MeetingRecorder.Services;
 using MeetingRecorder.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net.Http;
 using System.Text.Json;
 using Application = System.Windows.Application;
 
@@ -150,7 +151,9 @@ public partial class App : Application
                 sp.GetRequiredService<IFileIOService>(),
                 sp.GetRequiredService<ICloudSyncService>()));
 
-        services.AddSingleton<ITranscriptionService, WhisperTranscriptionService>();
+        services.AddSingleton<HttpClient>();
+        services.AddSingleton<IInsightService, QwenInsightService>();
+        services.AddSingleton<ITranscriptionService, DashScopeTranscriptionService>();
         services.AddSingleton<TranscriptionOverlayViewModel>();
         services.AddTransient<TranscriptionOverlayWindow>();
 

@@ -12,8 +12,8 @@ public interface ITranscriptionService : IDisposable
     
     bool IsTranscribing { get; }
     
-    Task InitializeModelAsync(string modelSize, string language = "auto");
-    Task DownloadModelAsync(string modelSize, string language = "auto");
+    Task ConnectAsync(CancellationToken ct = default);
+    Task DisconnectAsync();
     void StartTranscription();
     void StopTranscription();
     void FeedAudioData(float[] samples, int count);

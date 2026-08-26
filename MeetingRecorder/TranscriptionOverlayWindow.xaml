@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Live Transcript" 
-        Height="300" Width="450"
+        Height="360" Width="460"
+        MinHeight="250" MinWidth="350"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -31,6 +32,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
@@ -72,9 +74,57 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
+
+            <!-- AI Mention Insight Panel -->
+            <Border Grid.Row="2" 
+                    Margin="8,4,8,6" 
+                    Padding="10,8" 
+                    Background="#F01E1F38" 
+                    BorderBrush="#FFD97706" 
+                    BorderThickness="1.5" 
+                    CornerRadius="6"
+                    Visibility="{Binding IsInsightVisible, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="💡" FontSize="13" Margin="0,0,6,0"/>
+                            <TextBlock Text="You were mentioned" Foreground="#FBBF24" FontSize="12" FontWeight="Bold"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" 
+                                Command="{Binding DismissInsightCommand}" 
+                                Background="Transparent" 
+                                BorderThickness="0" 
+                                Foreground="#99FFFFFF" 
+                                Width="18" Height="18" 
+                                ToolTip="Dismiss Insight"
+                                Cursor="Hand">
+                            <Path Data="M 2,2 L 8,8 M 8,2 L 2,8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.5" Stretch="Uniform" Margin="2"/>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Grid.Row="1" 
+                               Text="{Binding InsightText}" 
+                               Foreground="#FFFFFF" 
+                               FontSize="13" 
+                               FontWeight="Medium" 
+                               TextWrapping="Wrap" 
+                               LineHeight="18"/>
+                </Grid>
+            </Border>
             
             <!-- Status Bar -->
-            <Border Grid.Row="2" Background="#10FFFFFF" CornerRadius="0,0,7,7">
+            <Border Grid.Row="3" Background="#10FFFFFF" CornerRadius="0,0,7,7">
                 <TextBlock Text="{Binding StatusText}" Foreground="#AAFFFFFF" FontSize="11" Margin="10,4" />
             </Border>
         </Grid>

@@ -47,21 +47,39 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _startWithWindows;
 
-    // Transcription properties
+    // Transcription & AI Insights properties
     [ObservableProperty]
     private bool _transcriptionEnabled;
+
+    [ObservableProperty]
+    private string _dashScopeApiKey = "";
+
+    [ObservableProperty]
+    private string _dashScopeBaseUrl = "https://dashscope.aliyuncs.com";
 
     [ObservableProperty]
     private string _transcriptionLanguage = "auto";
 
     [ObservableProperty]
-    private string _whisperModelSize = "Base";
-
-    [ObservableProperty]
-    private string _downloadStatusText = "";
-
-    [ObservableProperty]
     private bool _showTranscriptionOverlay;
+
+    [ObservableProperty]
+    private bool _insightsEnabled = true;
+
+    [ObservableProperty]
+    private string _mentionNamesText = "";
+
+    [ObservableProperty]
+    private int _insightContextSeconds = 30;
+
+    [ObservableProperty]
+    private string _qwenModel = "qwen-turbo";
+
+    [ObservableProperty]
+    private string _testConnectionStatus = "";
+
+    [ObservableProperty]
+    private System.Windows.Media.Brush _testConnectionStatusForeground = System.Windows.Media.Brushes.Gray;
 
     [ObservableProperty]
     private string _googleClientId = "";
@@ -114,34 +132,36 @@ public partial class SettingsViewModel : ObservableObject
         new(Resources.ThemeDark, "Dark")
     ];
 
-    public List<string> SupportedModelSizes { get; } = ["Tiny", "Base", "Small", "Medium"];
+    public List<string> SupportedQwenModels { get; } = ["qwen-turbo", "qwen-plus", "qwen-max"];
 
     public List<LanguageItem> SupportedTranscriptionLanguages { get; } =
     [
         new("Auto Detect", "auto"),
+        new("Chinese (中文)", "zh"),
         new("English", "en"),
-        new("Chinese", "zh"),
-        new("Japanese", "ja"),
-        new("Korean", "ko"),
-        new("French", "fr"),
-        new("German", "de"),
-        new("Spanish", "es")
+        new("Japanese (日本語)", "ja"),
+        new("Korean (한국어)", "ko"),
+        new("French (Français)", "fr"),
+        new("German (Deutsch)", "de"),
+        new("Spanish (Español)", "es")
     ];
+
+    private readonly IInsightService _insightService;
 
     public SettingsViewModel(
         AppSettings settings,
         ICloudSyncService cloudSyncService,
         IServiceProvider serviceProvider,
         IUpdateService updateService,
-        ITranscriptionService transcriptionService)
+        ITranscriptionService transcriptionService,
+        IInsightService insightService)
     {
         _settings = settings;
         _cloudSyncService = cloudSyncService;
         _serviceProvider = serviceProvider;
         _updateService = updateService;
         _transcriptionService = transcriptionService;
-
-        _transcriptionService.StatusChanged += OnTranscriptionStatusChanged;
+        _insightService = insightService;
 
         // Initialize from settings
         OutputDirectory = string.IsNullOrWhiteSpace(_settings.OutputDirectory)
@@ -160,9 +180,15 @@ public partial class SettingsViewModel : ObservableObject
         MinFileSizeMb = _settings.MinFileSizeMb;
 
         TranscriptionEnabled = _settings.TranscriptionEnabled;
+        DashScopeApiKey = _settings.DashScopeApiKey ?? "";
+        DashScopeBaseUrl = string.IsNullOrWhiteSpace(_settings.DashScopeBaseUrl) ? "https://dashscope.aliyuncs.com" : _settings.DashScopeBaseUrl;
         TranscriptionLanguage = _settings.TranscriptionLanguage ?? "auto";
-        WhisperModelSize = _settings.WhisperModelSize ?? "Base";
         ShowTranscriptionOverlay = _settings.ShowTranscriptionOverlay;
+
+        InsightsEnabled = _settings.InsightsEnabled;
+        MentionNamesText = string.Join(", ", _settings.MentionNames ?? new List<string>());
+        InsightContextSeconds = _settings.InsightContextSeconds <= 0 ? 30 : _settings.InsightContextSeconds;
+        QwenModel = string.IsNullOrWhiteSpace(_settings.QwenModel) ? "qwen-turbo" : _settings.QwenModel;
 
         var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         UpdateStatusText = string.Format("Version: {0}", version?.ToString() ?? "1.0.0.0");
@@ -176,25 +202,49 @@ public partial class SettingsViewModel : ObservableObject
         _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
     }
 
-    private void OnTranscriptionStatusChanged(object? sender, string status)
-    {
-        ExecuteOnUIThread(() =>
-        {
-            DownloadStatusText = status;
-        });
-    }
-
     [RelayCommand]
-    private async Task DownloadModelAsync()
+    private async Task TestConnectionAsync(object? parameter)
     {
+        var passwordBox = parameter as System.Windows.Controls.PasswordBox;
+        string key = passwordBox?.Password?.Trim() ?? DashScopeApiKey.Trim();
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            TestConnectionStatus = "API Key is empty.";
+            TestConnectionStatusForeground = System.Windows.Media.Brushes.OrangeRed;
+            return;
+        }
+
         IsUiEnabled = false;
+        TestConnectionStatus = "Testing connection...";
+        TestConnectionStatusForeground = System.Windows.Media.Brushes.Orange;
+
         try
         {
-            await _transcriptionService.DownloadModelAsync(WhisperModelSize, TranscriptionLanguage);
+            if (_insightService is QwenInsightService qwenService)
+            {
+                bool ok = await qwenService.TestConnectionAsync(key, DashScopeBaseUrl, QwenModel, CancellationToken.None);
+                if (ok)
+                {
+                    TestConnectionStatus = "Connection successful! ✅";
+                    TestConnectionStatusForeground = System.Windows.Media.Brushes.Green;
+                }
+                else
+                {
+                    TestConnectionStatus = "Connection failed. Please check key & base URL. ❌";
+                    TestConnectionStatusForeground = System.Windows.Media.Brushes.Red;
+                }
+            }
+            else
+            {
+                TestConnectionStatus = "Ready";
+                TestConnectionStatusForeground = System.Windows.Media.Brushes.Green;
+            }
         }
         catch (Exception ex)
         {
-            DownloadStatusText = $"Error: {ex.Message}";
+            TestConnectionStatus = $"Connection error: {ex.Message}";
+            TestConnectionStatusForeground = System.Windows.Media.Brushes.Red;
         }
         finally
         {
@@ -431,9 +481,20 @@ public partial class SettingsViewModel : ObservableObject
         _settings.MinFileSizeMb = MinFileSizeMb;
 
         _settings.TranscriptionEnabled = TranscriptionEnabled;
+        _settings.DashScopeApiKey = DashScopeApiKey;
+        _settings.DashScopeBaseUrl = string.IsNullOrWhiteSpace(DashScopeBaseUrl) ? "https://dashscope.aliyuncs.com" : DashScopeBaseUrl.Trim();
         _settings.TranscriptionLanguage = TranscriptionLanguage;
-        _settings.WhisperModelSize = WhisperModelSize;
         _settings.ShowTranscriptionOverlay = ShowTranscriptionOverlay;
+
+        _settings.InsightsEnabled = InsightsEnabled;
+        _settings.MentionNames = (MentionNamesText ?? "")
+            .Split(new[] { ',', ';', '\n', '\r', '，', '；' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct()
+            .ToList();
+        _settings.InsightContextSeconds = Math.Max(5, Math.Min(300, InsightContextSeconds));
+        _settings.QwenModel = string.IsNullOrWhiteSpace(QwenModel) ? "qwen-turbo" : QwenModel.Trim();
 
         if (credentialsChanged)
         {
@@ -483,6 +544,5 @@ public partial class SettingsViewModel : ObservableObject
     public void Cleanup()
     {
         _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
-        _transcriptionService.StatusChanged -= OnTranscriptionStatusChanged;
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,8 @@ public class SettingsViewModelTests : IDisposable
     private readonly Mock<ICloudSyncService> _cloudSyncMock;
     private readonly Mock<IServiceProvider> _serviceProviderMock;
     private readonly Mock<IUpdateService> _updateServiceMock;
+    private readonly Mock<ITranscriptionService> _transcriptionServiceMock;
+    private readonly Mock<IInsightService> _insightServiceMock;
     private readonly string _tempSettingsPath;
     private readonly string _tempTokenPath;
 
@@ -38,11 +41,31 @@ public class SettingsViewModelTests : IDisposable
             GoogleDriveFolderPath = "DriveFolder",
             GoogleDriveFolderId = "FolderId",
             StartWithWindows = true,
-            MinFileSizeMb = 2.5
+            MinFileSizeMb = 2.5,
+            TranscriptionEnabled = true,
+            DashScopeApiKey = "sk-test-key",
+            DashScopeBaseUrl = "https://dashscope.aliyuncs.com",
+            InsightsEnabled = true,
+            MentionNames = new List<string> { "Alex", "张伟" },
+            InsightContextSeconds = 45,
+            QwenModel = "qwen-turbo"
         };
         _cloudSyncMock = new Mock<ICloudSyncService>();
         _serviceProviderMock = new Mock<IServiceProvider>();
         _updateServiceMock = new Mock<IUpdateService>();
+        _transcriptionServiceMock = new Mock<ITranscriptionService>();
+        _insightServiceMock = new Mock<IInsightService>();
+    }
+
+    private SettingsViewModel CreateViewModel()
+    {
+        return new SettingsViewModel(
+            _settings,
+            _cloudSyncMock.Object,
+            _serviceProviderMock.Object,
+            _updateServiceMock.Object,
+            _transcriptionServiceMock.Object,
+            _insightServiceMock.Object);
     }
 
     public void Dispose()
@@ -65,11 +88,7 @@ public class SettingsViewModelTests : IDisposable
     public void Constructor_ShouldInitializePropertiesFromSettings()
     {
         // Act
-        var vm = new SettingsViewModel(
-            _settings,
-            _cloudSyncMock.Object,
-            _serviceProviderMock.Object,
-            _updateServiceMock.Object);
+        var vm = CreateViewModel();
 
         // Assert
         vm.OutputDirectory.Should().Be("Initial/Directory");
@@ -80,22 +99,29 @@ public class SettingsViewModelTests : IDisposable
         vm.GoogleDriveFolderPath.Should().Be("DriveFolder");
         vm.StartWithWindows.Should().BeTrue();
         vm.MinFileSizeMb.Should().Be(2.5);
+        vm.TranscriptionEnabled.Should().BeTrue();
+        vm.DashScopeApiKey.Should().Be("sk-test-key");
+        vm.DashScopeBaseUrl.Should().Be("https://dashscope.aliyuncs.com");
+        vm.InsightsEnabled.Should().BeTrue();
+        vm.MentionNamesText.Should().Be("Alex, 张伟");
+        vm.InsightContextSeconds.Should().Be(45);
+        vm.QwenModel.Should().Be("qwen-turbo");
     }
 
     [Fact]
     public void SaveCommand_ShouldUpdateSettingsAndRaiseRequestClose()
     {
         // Arrange
-        var vm = new SettingsViewModel(
-            _settings,
-            _cloudSyncMock.Object,
-            _serviceProviderMock.Object,
-            _updateServiceMock.Object);
+        var vm = CreateViewModel();
         vm.OutputDirectory = "New/Directory";
         vm.UiLanguage = "en-US";
         vm.GoogleDriveEnabled = false;
         vm.StartWithWindows = false;
         vm.MinFileSizeMb = 5.0;
+        vm.DashScopeApiKey = "sk-new-key";
+        vm.MentionNamesText = "Alice, Bob, 王五";
+        vm.InsightContextSeconds = 60;
+        vm.QwenModel = "qwen-max";
 
         bool? requestCloseResult = null;
         vm.RequestClose += (sender, result) => requestCloseResult = result;
@@ -109,6 +135,10 @@ public class SettingsViewModelTests : IDisposable
         _settings.GoogleDriveEnabled.Should().BeFalse();
         _settings.StartWithWindows.Should().BeFalse();
         _settings.MinFileSizeMb.Should().Be(5.0);
+        _settings.DashScopeApiKey.Should().Be("sk-new-key");
+        _settings.MentionNames.Should().ContainInOrder("Alice", "Bob", "王五");
+        _settings.InsightContextSeconds.Should().Be(60);
+        _settings.QwenModel.Should().Be("qwen-max");
         requestCloseResult.Should().BeTrue();
     }
 
@@ -116,11 +146,7 @@ public class SettingsViewModelTests : IDisposable
     public void SaveCommand_WithCredentialsChanged_ShouldResetPersistedFolderId()
     {
         // Arrange
-        var vm = new SettingsViewModel(
-            _settings,
-            _cloudSyncMock.Object,
-            _serviceProviderMock.Object,
-            _updateServiceMock.Object);
+        var vm = CreateViewModel();
         vm.GoogleDriveFolderPath = "ChangedFolder"; // Triggers credential change detection
 
         bool? requestCloseResult = null;

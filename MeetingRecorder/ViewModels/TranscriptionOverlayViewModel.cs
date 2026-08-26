@@ -11,6 +11,7 @@ namespace MeetingRecorder.ViewModels;
 public partial class TranscriptionOverlayViewModel : ObservableObject
 {
     private readonly ITranscriptionService _transcriptionService;
+    private readonly IInsightService _insightService;
     private readonly AppSettings _settings;
 
     public ObservableCollection<TranscriptionSegment> Segments { get; } = new();
@@ -27,13 +28,24 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = "Ready";
 
-    public TranscriptionOverlayViewModel(ITranscriptionService transcriptionService, AppSettings settings)
+    [ObservableProperty]
+    private string _insightText = "";
+
+    [ObservableProperty]
+    private string _insightSnippet = "";
+
+    [ObservableProperty]
+    private bool _isInsightVisible;
+
+    public TranscriptionOverlayViewModel(ITranscriptionService transcriptionService, IInsightService insightService, AppSettings settings)
     {
         _transcriptionService = transcriptionService;
+        _insightService = insightService;
         _settings = settings;
 
         _transcriptionService.SegmentTranscribed += OnSegmentTranscribed;
         _transcriptionService.StatusChanged += OnStatusChanged;
+        _insightService.InsightGenerated += OnInsightGenerated;
     }
 
     private void OnSegmentTranscribed(object? sender, TranscriptionSegmentEventArgs e)
@@ -42,6 +54,16 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
         {
             Segments.Add(e.Segment);
             LatestText = e.Segment.Text;
+        });
+    }
+
+    private void OnInsightGenerated(object? sender, InsightEventArgs e)
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            InsightText = e.InsightText;
+            InsightSnippet = e.MentionSnippet;
+            IsInsightVisible = true;
         });
     }
 
@@ -54,6 +76,12 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void DismissInsight()
+    {
+        IsInsightVisible = false;
+    }
+
+    [RelayCommand]
     private void TogglePin()
     {
         IsPinned = !IsPinned;
@@ -63,7 +91,6 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
     private void Close()
     {
         IsOverlayVisible = false;
-        // Optionally update settings if user manually closes it, but for now just hide it for this session.
     }
     
     public void Clear()
@@ -72,6 +99,9 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
         {
             Segments.Clear();
             LatestText = "";
+            InsightText = "";
+            InsightSnippet = "";
+            IsInsightVisible = false;
             StatusText = "Waiting for audio...";
         });
     }
