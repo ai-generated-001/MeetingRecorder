@@ -20,6 +20,12 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
     private string _latestText = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLiveText))]
+    private string _currentLiveText = "";
+
+    public bool HasLiveText => !string.IsNullOrWhiteSpace(CurrentLiveText);
+
+    [ObservableProperty]
     private bool _isOverlayVisible;
 
     [ObservableProperty]
@@ -54,6 +60,7 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
         _toggleAiButtonTooltip = _isAiActive ? Resources.TurnOffAi : Resources.TurnOnAi;
 
         _transcriptionService.SegmentTranscribed += OnSegmentTranscribed;
+        _transcriptionService.PartialSegmentTranscribed += OnPartialSegmentTranscribed;
         _transcriptionService.StatusChanged += OnStatusChanged;
         _insightService.InsightGenerated += OnInsightGenerated;
     }
@@ -73,8 +80,17 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
     {
         ExecuteOnUIThread(() =>
         {
+            CurrentLiveText = "";
             Segments.Add(e.Segment);
             LatestText = e.Segment.Text;
+        });
+    }
+
+    private void OnPartialSegmentTranscribed(object? sender, TranscriptionSegmentEventArgs e)
+    {
+        ExecuteOnUIThread(() =>
+        {
+            CurrentLiveText = e.Segment.Text;
         });
     }
 
@@ -120,6 +136,7 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
         {
             Segments.Clear();
             LatestText = "";
+            CurrentLiveText = "";
             InsightText = "";
             InsightSnippet = "";
             IsInsightVisible = false;

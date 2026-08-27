@@ -325,4 +325,54 @@ public class MainViewModelTests
         vm.IsAiEnabled.Should().BeFalse();
         _settings.TranscriptionEnabled.Should().BeFalse();
     }
+
+    [Fact]
+    public void OverlayViewModel_PartialSegmentTranscribed_UpdatesCurrentLiveText()
+    {
+        // Arrange
+        var segment = new TranscriptionSegment(TimeSpan.Zero, TimeSpan.FromSeconds(1), "Hello world in progress");
+
+        // Act
+        _transcriptionServiceMock.Raise(t => t.PartialSegmentTranscribed += null, _transcriptionServiceMock.Object, new TranscriptionSegmentEventArgs(segment));
+
+        // Assert
+        _overlayViewModel.CurrentLiveText.Should().Be("Hello world in progress");
+        _overlayViewModel.HasLiveText.Should().BeTrue();
+    }
+
+    [Fact]
+    public void OverlayViewModel_SegmentTranscribed_ClearsLiveTextAndAddsToSegments()
+    {
+        // Arrange
+        var partialSegment = new TranscriptionSegment(TimeSpan.Zero, TimeSpan.FromSeconds(1), "Hello");
+        _transcriptionServiceMock.Raise(t => t.PartialSegmentTranscribed += null, _transcriptionServiceMock.Object, new TranscriptionSegmentEventArgs(partialSegment));
+        _overlayViewModel.CurrentLiveText.Should().Be("Hello");
+
+        var finalSegment = new TranscriptionSegment(TimeSpan.Zero, TimeSpan.FromSeconds(2), "Hello everyone.");
+
+        // Act
+        _transcriptionServiceMock.Raise(t => t.SegmentTranscribed += null, _transcriptionServiceMock.Object, new TranscriptionSegmentEventArgs(finalSegment));
+
+        // Assert
+        _overlayViewModel.CurrentLiveText.Should().BeEmpty();
+        _overlayViewModel.HasLiveText.Should().BeFalse();
+        _overlayViewModel.Segments.Should().ContainSingle(s => s.Text == "Hello everyone.");
+    }
+
+    [Fact]
+    public void OverlayViewModel_Clear_ResetsLiveTextAndSegments()
+    {
+        // Arrange
+        var partialSegment = new TranscriptionSegment(TimeSpan.Zero, TimeSpan.FromSeconds(1), "Testing live");
+        _transcriptionServiceMock.Raise(t => t.PartialSegmentTranscribed += null, _transcriptionServiceMock.Object, new TranscriptionSegmentEventArgs(partialSegment));
+        _overlayViewModel.HasLiveText.Should().BeTrue();
+
+        // Act
+        _overlayViewModel.Clear();
+
+        // Assert
+        _overlayViewModel.CurrentLiveText.Should().BeEmpty();
+        _overlayViewModel.HasLiveText.Should().BeFalse();
+        _overlayViewModel.Segments.Should().BeEmpty();
+    }
 }

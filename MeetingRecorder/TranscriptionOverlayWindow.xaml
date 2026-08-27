@@ -77,16 +77,23 @@
 
             <!-- Transcript Scroll Area -->
             <ScrollViewer x:Name="TranscriptScrollViewer" Grid.Row="1" Margin="10,5" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl ItemsSource="{Binding Segments}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="0,4">
-                                <TextBlock Text="{Binding Start, StringFormat={}{0:hh\\:mm\\:ss}}" Foreground="#88FFFFFF" FontSize="10" Margin="0,0,0,2"/>
-                                <TextBlock Text="{Binding Text}" Foreground="White" FontSize="14" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <StackPanel>
+                    <ItemsControl ItemsSource="{Binding Segments}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,4">
+                                    <TextBlock Text="{Binding Start, StringFormat={}{0:hh\\:mm\\:ss}}" Foreground="#88FFFFFF" FontSize="10" Margin="0,0,0,2"/>
+                                    <TextBlock Text="{Binding Text}" Foreground="White" FontSize="14" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Real-time live streaming text preview -->
+                    <Border Margin="0,4" Visibility="{Binding HasLiveText, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding CurrentLiveText}" Foreground="#B0E0E6" FontStyle="Italic" FontSize="14" TextWrapping="Wrap"/>
+                    </Border>
+                </StackPanel>
             </ScrollViewer>
 
             <!-- AI Mention Insight Panel -->

@@ -16,9 +16,24 @@ public partial class TranscriptionOverlayWindow : Window
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
+        if (e.OldValue is TranscriptionOverlayViewModel oldVm)
+        {
+            oldVm.Segments.CollectionChanged -= Segments_CollectionChanged;
+            oldVm.PropertyChanged -= ViewModel_PropertyChanged;
+        }
+
         if (e.NewValue is TranscriptionOverlayViewModel vm)
         {
             vm.Segments.CollectionChanged += Segments_CollectionChanged;
+            vm.PropertyChanged += ViewModel_PropertyChanged;
+        }
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(TranscriptionOverlayViewModel.CurrentLiveText) or nameof(TranscriptionOverlayViewModel.HasLiveText))
+        {
+            TranscriptScrollViewer.ScrollToEnd();
         }
     }
 

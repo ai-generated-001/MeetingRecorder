@@ -17,8 +17,9 @@ public class DashScopeTranscriptionService : ITranscriptionService
 {
     private const int TargetSampleRate = 16000;
     private const int InputSampleRate = 44100;
-    private const int FrameSamples = TargetSampleRate / 10; // 100ms = 1600 samples
-    private const int FrameBytes = FrameSamples * 2;       // 16-bit PCM = 3200 bytes
+    private const int FrameDurationMs = 40; // 40ms frame for low-latency streaming
+    private const int FrameSamples = TargetSampleRate * FrameDurationMs / 1000; // 40ms = 640 samples
+    private const int FrameBytes = FrameSamples * 2;       // 16-bit PCM = 1280 bytes
 
     private readonly AppSettings _settings;
     private ClientWebSocket? _webSocket;
@@ -33,7 +34,6 @@ public class DashScopeTranscriptionService : ITranscriptionService
 
     private readonly byte[] _pcmBuffer = new byte[FrameBytes * 8];
     private int _pcmBufferCount = 0;
-    private readonly object _pcmBufferLock = new();
 
     private string? _currentTaskId;
     private TimeSpan _sessionStartTimeOffset = TimeSpan.Zero;
@@ -42,6 +42,7 @@ public class DashScopeTranscriptionService : ITranscriptionService
     public bool IsTranscribing { get; private set; }
 
     public event EventHandler<TranscriptionSegmentEventArgs>? SegmentTranscribed;
+    public event EventHandler<TranscriptionSegmentEventArgs>? PartialSegmentTranscribed;
     public event EventHandler<string>? StatusChanged;
 
     public DashScopeTranscriptionService(AppSettings settings)
@@ -94,16 +95,14 @@ public class DashScopeTranscriptionService : ITranscriptionService
             _fullTranscript.Clear();
             _latestPartialSegment = null;
         }
-        lock (_pcmBufferLock)
-        {
-            _pcmBufferCount = 0;
-        }
+        
+        _pcmBufferCount = 0;
 
         _sessionStartTime = DateTime.UtcNow;
         _currentTaskId = Guid.NewGuid().ToString("N");
         _cts = new CancellationTokenSource();
 
-        _audioChannel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(50)
+        _audioChannel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(250)
         {
             FullMode = BoundedChannelFullMode.DropOldest,
             SingleReader = true,
@@ -177,32 +176,34 @@ public class DashScopeTranscriptionService : ITranscriptionService
         int outCount = (int)(monoCount * 16000L / 44100L);
         if (outCount == 0) return;
 
-        byte[] pcmBytes = new byte[outCount * 2];
-        for (int i = 0; i < outCount; i++)
+        int requiredBytes = outCount * 2;
+        byte[] rentedPcm = ArrayPool<byte>.Shared.Rent(requiredBytes);
+
+        try
         {
-            float srcIdx = i * 44100f / 16000f;
-            int lo = (int)srcIdx;
-            int hi = Math.Min(lo + 1, monoCount - 1);
-            float frac = srcIdx - lo;
+            for (int i = 0; i < outCount; i++)
+            {
+                float srcIdx = i * 44100f / 16000f;
+                int lo = (int)srcIdx;
+                int hi = Math.Min(lo + 1, monoCount - 1);
+                float frac = srcIdx - lo;
 
-            float monoLo = (samples[lo * 2] + samples[lo * 2 + 1]) * 0.5f;
-            float monoHi = (samples[hi * 2] + samples[hi * 2 + 1]) * 0.5f;
-            float sample = monoLo + frac * (monoHi - monoLo);
+                float monoLo = (samples[lo * 2] + samples[lo * 2 + 1]) * 0.5f;
+                float monoHi = (samples[hi * 2] + samples[hi * 2 + 1]) * 0.5f;
+                float sample = monoLo + frac * (monoHi - monoLo);
 
-            short pcmVal = (short)Math.Clamp((int)(sample * 32767f), short.MinValue, short.MaxValue);
-            pcmBytes[i * 2] = (byte)(pcmVal & 0xFF);
-            pcmBytes[i * 2 + 1] = (byte)((pcmVal >> 8) & 0xFF);
-        }
+                short pcmVal = (short)Math.Clamp((int)(sample * 32767f), short.MinValue, short.MaxValue);
+                rentedPcm[i * 2] = (byte)(pcmVal & 0xFF);
+                rentedPcm[i * 2 + 1] = (byte)((pcmVal >> 8) & 0xFF);
+            }
 
-        // Buffer and package into ~100ms frames (3200 bytes)
-        lock (_pcmBufferLock)
-        {
+            // Buffer and package into ~40ms frames (1280 bytes)
             int offset = 0;
-            while (offset < pcmBytes.Length)
+            while (offset < requiredBytes)
             {
                 int needed = FrameBytes - _pcmBufferCount;
-                int toCopy = Math.Min(needed, pcmBytes.Length - offset);
-                Buffer.BlockCopy(pcmBytes, offset, _pcmBuffer, _pcmBufferCount, toCopy);
+                int toCopy = Math.Min(needed, requiredBytes - offset);
+                Buffer.BlockCopy(rentedPcm, offset, _pcmBuffer, _pcmBufferCount, toCopy);
                 _pcmBufferCount += toCopy;
                 offset += toCopy;
 
@@ -214,6 +215,10 @@ public class DashScopeTranscriptionService : ITranscriptionService
                     _pcmBufferCount = 0;
                 }
             }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rentedPcm);
         }
     }
 
@@ -310,7 +315,7 @@ public class DashScopeTranscriptionService : ITranscriptionService
 
     private async Task ReceiveLoopAsync(ClientWebSocket ws, CancellationToken token)
     {
-        var buffer = new byte[16 * 1024];
+        var buffer = ArrayPool<byte>.Shared.Rent(32 * 1024);
         using var ms = new MemoryStream();
 
         try
@@ -332,8 +337,14 @@ public class DashScopeTranscriptionService : ITranscriptionService
 
                 if (result.MessageType == WebSocketMessageType.Text)
                 {
-                    string json = Encoding.UTF8.GetString(ms.ToArray());
-                    ProcessServerMessage(json);
+                    if (ms.TryGetBuffer(out ArraySegment<byte> segment))
+                    {
+                        ProcessServerMessage(segment.AsMemory(0, (int)ms.Length));
+                    }
+                    else
+                    {
+                        ProcessServerMessage(ms.ToArray());
+                    }
                 }
             }
         }
@@ -343,13 +354,17 @@ public class DashScopeTranscriptionService : ITranscriptionService
             Debug.WriteLine($"[DashScope] Receive loop error: {ex.Message}");
             StatusChanged?.Invoke(this, $"Transcription receive error: {ex.Message}");
         }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
-    private void ProcessServerMessage(string json)
+    private void ProcessServerMessage(ReadOnlyMemory<byte> utf8Json)
     {
         try
         {
-            using var doc = JsonDocument.Parse(json);
+            using var doc = JsonDocument.Parse(utf8Json);
             var root = doc.RootElement;
 
             if (root.TryGetProperty("header", out var header))
@@ -396,7 +411,7 @@ public class DashScopeTranscriptionService : ITranscriptionService
                                 {
                                     _latestPartialSegment = segment;
                                 }
-                                // For intermediate progress display if needed
+                                PartialSegmentTranscribed?.Invoke(this, new TranscriptionSegmentEventArgs(segment));
                                 StatusChanged?.Invoke(this, $"[Live] {text}");
                             }
                         }
@@ -415,7 +430,7 @@ public class DashScopeTranscriptionService : ITranscriptionService
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[DashScope] Failed to parse message: {ex.Message}. JSON: {json}");
+            Debug.WriteLine($"[DashScope] Failed to parse message: {ex.Message}");
         }
     }
 

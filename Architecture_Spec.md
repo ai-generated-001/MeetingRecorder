@@ -48,10 +48,10 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 
 4. **DashScopeTranscriptionService (`ITranscriptionService`)**
    - Subscribes to audio data from `IAudioRecorder` via `AudioDataAvailable`.
-   - Downsamples stereo 44.1kHz float samples to mono 16kHz 16-bit PCM in 100ms frames.
-   - Manages duplex WebSocket connection to DashScope (`wss://dashscope.aliyuncs.com/api-ws/v1/inference`).
-   - Streams audio frames and parses `result-generated` events.
-   - Fires `SegmentTranscribed` when sentence endpoints are detected, and updates status with partial live text.
+   - Downsamples stereo 44.1kHz float samples to mono 16kHz 16-bit PCM in 40ms frames (1280 bytes) using pooled buffers (`ArrayPool<byte>`) and lock-free staging.
+   - Manages duplex WebSocket connection to DashScope (`wss://dashscope.aliyuncs.com/api-ws/v1/inference`) with resilient channel buffering (250 frames / 10s headroom).
+   - Streams audio frames and performs zero-allocation UTF-8 parsing of `result-generated` events directly from memory buffers.
+   - Fires `PartialSegmentTranscribed` for instantaneous interim results and `SegmentTranscribed` when sentence endpoints are detected.
 
 5. **QwenInsightService (`IInsightService`)**
    - Provides contextual meeting intelligence powered by Qwen LLMs (`qwen-turbo`, `qwen-plus`, `qwen-max`).
@@ -70,7 +70,7 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 
 7. **TranscriptionOverlayWindow & ViewModel**
    - A floating, transparent, always-on-top window draggable by its title bar.
-   - Displays live scrolling subtitles.
+   - Displays live scrolling subtitles with instantaneous word-by-word streaming updates (`CurrentLiveText`) and finalized sentence segments.
    - Features an AI Insight card ("💡 You were mentioned") displaying actionable summaries with a dismiss button.
 
 8. **Tray and App Host (`App.xaml.cs`)**

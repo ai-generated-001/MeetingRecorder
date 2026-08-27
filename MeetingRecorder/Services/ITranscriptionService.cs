@@ -8,6 +8,7 @@ namespace MeetingRecorder.Services;
 public interface ITranscriptionService : IDisposable
 {
     event EventHandler<TranscriptionSegmentEventArgs> SegmentTranscribed;
+    event EventHandler<TranscriptionSegmentEventArgs> PartialSegmentTranscribed;
     event EventHandler<string> StatusChanged;
     
     bool IsTranscribing { get; }
