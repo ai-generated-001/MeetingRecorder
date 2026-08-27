@@ -167,6 +167,8 @@ public sealed class SessionCoordinator : IDisposable
                 try
                 {
                     _fileIOService.DeleteFile(_currentAudioPath);
+                    string transcriptPath = Path.ChangeExtension(_currentAudioPath, ".txt");
+                    _fileIOService.DeleteFile(transcriptPath);
                     System.Diagnostics.Debug.WriteLine($"Discarded recording ({discardReason}): {_currentAudioPath}");
                 }
                 catch (Exception ex)
@@ -177,11 +179,13 @@ public sealed class SessionCoordinator : IDisposable
         }
         else
         {
-            if (_settings.GoogleDriveEnabled)
+            if (_settings.GoogleDriveEnabled && _currentAudioPath != null)
             {
-                if (_currentAudioPath != null)
+                _cloudSyncService.EnqueueUpload(_currentAudioPath);
+                string transcriptPath = Path.ChangeExtension(_currentAudioPath, ".txt");
+                if (File.Exists(transcriptPath))
                 {
-                    _cloudSyncService.EnqueueUpload(_currentAudioPath);
+                    _cloudSyncService.EnqueueUpload(transcriptPath);
                 }
             }
         }

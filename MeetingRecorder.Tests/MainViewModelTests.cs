@@ -215,6 +215,8 @@ public class MainViewModelTests
     [InlineData("Hey Alex, can you review the slides?", new[] { "Alex" }, true)]
     [InlineData("alex, what do you think?", new[] { "Alex" }, true)]
     [InlineData("张伟，请你准备一下明天的会议报告", new[] { "张伟" }, true)]
+    [InlineData("张维，请你准备一下明天的会议报告", new[] { "张伟|张维" }, true)]
+    [InlineData("Hey Alec, can you check this?", new[] { "Alex/Alec" }, true)]
     [InlineData("We discussed the new product roadmap.", new[] { "Alex", "Bob" }, false)]
     [InlineData("", new[] { "Alex" }, false)]
     [InlineData("Hello everyone", null, false)]

@@ -81,6 +81,8 @@ public class AppSettings
     public string DashScopeBaseUrl { get; set; } = "https://dashscope.aliyuncs.com";
     public string TranscriptionLanguage { get; set; } = "auto";
     public bool ShowTranscriptionOverlay { get; set; } = true;
+    public string VocabularyId { get; set; } = "";
+    public string Hotwords { get; set; } = "";
 
     // AI Insights Settings (Qwen LLM)
     public bool InsightsEnabled { get; set; } = true;

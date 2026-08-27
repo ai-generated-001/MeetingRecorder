@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -203,15 +204,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (string.IsNullOrWhiteSpace(text) || mentionNames == null) return false;
 
-        foreach (var name in mentionNames)
+        foreach (var nameEntry in mentionNames)
         {
-            if (string.IsNullOrWhiteSpace(name)) continue;
-            string trimmed = name.Trim();
-            if (trimmed.Length == 0) continue;
+            if (string.IsNullOrWhiteSpace(nameEntry)) continue;
 
-            if (text.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+            // Support alias syntax: "张伟|张维|Alex|Alec" or "张伟 / 张维"
+            var aliases = nameEntry.Split(new[] { '|', '/' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var alias in aliases)
             {
-                return true;
+                string trimmed = alias.Trim();
+                if (trimmed.Length == 0) continue;
+
+                if (text.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
             }
         }
 
@@ -360,7 +367,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 _overlayWindow?.Hide();
             });
 
-            // Save transcript
+            // Save transcript alongside audio recording
             if (_currentAudioFilePath != null)
             {
                 var transcript = _transcriptionService.GetFullTranscript();
@@ -369,7 +376,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     string transcriptPath = Path.ChangeExtension(_currentAudioFilePath, ".txt");
                     try
                     {
-                        using var writer = new StreamWriter(transcriptPath);
+                        using var writer = new StreamWriter(transcriptPath, false, Encoding.UTF8);
+                        writer.WriteLine("================================================================================");
+                        writer.WriteLine($"Meeting Transcript: {Path.GetFileName(_currentAudioFilePath)}");
+                        writer.WriteLine($"Recorded At: {_dateTimeProvider.Now:yyyy-MM-dd HH:mm:ss}");
+                        writer.WriteLine("================================================================================");
+                        writer.WriteLine();
                         foreach (var segment in transcript)
                         {
                             writer.WriteLine($"[{segment.Start:hh\\:mm\\:ss} - {segment.End:hh\\:mm\\:ss}] {segment.Text}");

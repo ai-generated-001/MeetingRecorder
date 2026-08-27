@@ -248,13 +248,28 @@ public class QwenInsightService : IInsightService
             baseStr = "https://" + baseStr.Substring(6);
         }
 
+        // If it already points to the full generation or chat/completions endpoint
         if (baseStr.Contains("/v1/services/aigc/text-generation/generation", StringComparison.OrdinalIgnoreCase) ||
-            baseStr.Contains("/chat/completions", StringComparison.OrdinalIgnoreCase))
+            baseStr.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
         {
             return baseStr;
         }
 
-        if (baseStr.Contains("dashscope.aliyuncs.com", StringComparison.OrdinalIgnoreCase))
+        // Alibaba Bailian OpenAI-compatible or generic OpenAI endpoints (e.g. /compatible-mode/v1 or /v1)
+        if (baseStr.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{baseStr}/chat/completions";
+        }
+
+        if (baseStr.EndsWith("/compatible-mode", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{baseStr}/v1/chat/completions";
+        }
+
+        // DashScope native API endpoint if standard root domain without compatible-mode
+        if (baseStr.Equals("https://dashscope.aliyuncs.com", StringComparison.OrdinalIgnoreCase) ||
+            baseStr.Equals("http://dashscope.aliyuncs.com", StringComparison.OrdinalIgnoreCase) ||
+            baseStr.Equals("dashscope.aliyuncs.com", StringComparison.OrdinalIgnoreCase))
         {
             return $"{baseStr}/api/v1/services/aigc/text-generation/generation";
         }

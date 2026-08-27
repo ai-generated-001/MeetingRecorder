@@ -644,6 +644,32 @@
                                         <!-- Separator -->
                                         <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,16" SnapsToDevicePixels="True"/>
 
+                                        <!-- Hotwords / Vocabulary Customization -->
+                                        <TextBlock Text="ASR Hotwords &amp; Custom Vocabulary (People &amp; Terms)" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                        <TextBlock Text="Boosts speech recognition accuracy for people's names and domain terms." FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                                        <!-- Hotwords Input -->
+                                        <TextBlock Text="Hotwords List (comma-separated, optional :weight 1..5)" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
+                                        <TextBox x:Name="HotwordsTextBox" Margin="0,0,0,4" Text="{Binding HotwordsText, UpdateSourceTrigger=PropertyChanged}" ToolTip="e.g. 张伟:5, 李娜:5, Alex:5, ProjectAlpha:4"/>
+                                        <TextBlock Text="e.g. '张伟:5, 李娜:5, Alex:5'. Higher weights (1-5) increase recognition likelihood." FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,14" TextWrapping="Wrap"/>
+
+                                        <!-- Vocabulary ID Input -->
+                                        <TextBlock Text="Vocabulary ID / Phrase ID (Auto-compiled or Console ID)" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
+                                        <TextBox x:Name="VocabularyIdTextBox" Margin="0,0,0,10" Text="{Binding VocabularyId, UpdateSourceTrigger=PropertyChanged}" ToolTip="DashScope Vocabulary ID (e.g. paraformer-realtime-v1-ft-...)"/>
+
+                                        <!-- Compile Hotwords Button & Status -->
+                                        <Grid Margin="0,0,0,16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Content="Compile Hotwords" Command="{Binding CompileHotwordsCommand}" CommandParameter="{Binding ElementName=ApiKeyTextBox}" Width="160" Margin="0,0,10,0"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding CompileHotwordsStatus}" Foreground="{Binding CompileHotwordsStatusForeground}" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        </Grid>
+
+                                        <!-- Separator -->
+                                        <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,16" SnapsToDevicePixels="True"/>
+
                                         <!-- AI Mention Insights Section -->
                                         <TextBlock Text="AI Contextual Mention Insights (Qwen LLM)" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,14"/>
 

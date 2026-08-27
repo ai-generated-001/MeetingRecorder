@@ -152,6 +152,7 @@ public partial class App : Application
                 sp.GetRequiredService<ICloudSyncService>()));
 
         services.AddSingleton<HttpClient>();
+        services.AddSingleton<IDashScopePhraseService, DashScopePhraseService>();
         services.AddSingleton<IInsightService, QwenInsightService>();
         services.AddSingleton<ITranscriptionService, DashScopeTranscriptionService>();
         services.AddSingleton<TranscriptionOverlayViewModel>();

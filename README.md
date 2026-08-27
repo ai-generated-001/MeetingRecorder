@@ -69,7 +69,9 @@ MeetingRecorder provides real-time transcription and contextual AI mention insig
    - **API Base URL (Optional)**: Defaults to `https://dashscope.aliyuncs.com`. You can specify a custom or OpenAI-compatible proxy URL if desired.
    - **Audio Language Hint**: Choose Auto Detect, Chinese, English, Japanese, Korean, French, German, or Spanish.
    - **Show Floating Subtitle Overlay**: Displays real-time subtitles and mention alerts during the meeting.
-   - **Mention Names**: Enter comma-separated names/nicknames (e.g. `Alex, 张伟, 团队`) that the app should monitor in the speech stream.
+   - **ASR Hotwords & Custom Vocabulary**: Input custom hotwords with optional weights (e.g. `张伟:5, 李娜:5, Alex:5, ProjectAlpha:4`) to significantly boost ASR recognition accuracy for names and domain terminology.
+   - **Compile Hotwords**: Click **Compile Hotwords** to automatically sync and compile the hotword dictionary into DashScope, generating a `Vocabulary ID` used during live transcription.
+   - **Mention Names & Aliases**: Enter comma-separated names/nicknames (e.g. `Alex|Alec, 张伟|张维, 团队`) that trigger real-time AI assistance when spoken.
    - **Qwen Model**: Choose between `qwen-turbo` (fastest & cost-effective), `qwen-plus`, or `qwen-max`.
    - **Context Window**: Specify how many seconds of prior transcript context to send to the LLM (default: `30` seconds).
 3. Click **Test API Connection** to verify your API credentials, then click **Save**.

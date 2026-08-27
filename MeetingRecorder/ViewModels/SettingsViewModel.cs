@@ -76,6 +76,18 @@ public partial class SettingsViewModel : ObservableObject
     private string _qwenModel = "qwen-turbo";
 
     [ObservableProperty]
+    private string _vocabularyId = "";
+
+    [ObservableProperty]
+    private string _hotwordsText = "";
+
+    [ObservableProperty]
+    private string _compileHotwordsStatus = "";
+
+    [ObservableProperty]
+    private System.Windows.Media.Brush _compileHotwordsStatusForeground = System.Windows.Media.Brushes.Gray;
+
+    [ObservableProperty]
     private string _testConnectionStatus = "";
 
     [ObservableProperty]
@@ -147,6 +159,7 @@ public partial class SettingsViewModel : ObservableObject
     ];
 
     private readonly IInsightService _insightService;
+    private readonly IDashScopePhraseService _phraseService;
 
     public SettingsViewModel(
         AppSettings settings,
@@ -154,7 +167,8 @@ public partial class SettingsViewModel : ObservableObject
         IServiceProvider serviceProvider,
         IUpdateService updateService,
         ITranscriptionService transcriptionService,
-        IInsightService insightService)
+        IInsightService insightService,
+        IDashScopePhraseService phraseService)
     {
         _settings = settings;
         _cloudSyncService = cloudSyncService;
@@ -162,6 +176,7 @@ public partial class SettingsViewModel : ObservableObject
         _updateService = updateService;
         _transcriptionService = transcriptionService;
         _insightService = insightService;
+        _phraseService = phraseService;
 
         // Initialize from settings
         OutputDirectory = string.IsNullOrWhiteSpace(_settings.OutputDirectory)
@@ -184,6 +199,8 @@ public partial class SettingsViewModel : ObservableObject
         DashScopeBaseUrl = string.IsNullOrWhiteSpace(_settings.DashScopeBaseUrl) ? "https://dashscope.aliyuncs.com" : _settings.DashScopeBaseUrl;
         TranscriptionLanguage = _settings.TranscriptionLanguage ?? "auto";
         ShowTranscriptionOverlay = _settings.ShowTranscriptionOverlay;
+        VocabularyId = _settings.VocabularyId ?? "";
+        HotwordsText = _settings.Hotwords ?? "";
 
         InsightsEnabled = _settings.InsightsEnabled;
         MentionNamesText = string.Join(", ", _settings.MentionNames ?? new List<string>());
@@ -200,6 +217,64 @@ public partial class SettingsViewModel : ObservableObject
         OrganizeStatusText = _cloudSyncService.OrganizeStatusText;
         OrganizeProgressValue = _cloudSyncService.OrganizeProgressValue;
         _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
+    }
+
+    [RelayCommand]
+    private async Task CompileHotwordsAsync(object? parameter)
+    {
+        var passwordBox = parameter as System.Windows.Controls.PasswordBox;
+        string key = passwordBox?.Password?.Trim() ?? DashScopeApiKey.Trim();
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            CompileHotwordsStatus = "API Key is required to compile hotwords.";
+            CompileHotwordsStatusForeground = System.Windows.Media.Brushes.OrangeRed;
+            return;
+        }
+
+        // Parse hotwords from both HotwordsText and MentionNamesText
+        var mentionList = (MentionNamesText ?? "")
+            .Split(new[] { ',', ';', '\n', '\r', '，', '；' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s));
+
+        var phrases = DashScopePhraseService.ParseHotwords(HotwordsText, mentionList);
+        if (phrases.Count == 0)
+        {
+            CompileHotwordsStatus = "Please enter at least one hotword or mention name.";
+            CompileHotwordsStatusForeground = System.Windows.Media.Brushes.Orange;
+            return;
+        }
+
+        IsUiEnabled = false;
+        CompileHotwordsStatus = $"Compiling {phrases.Count} hotwords on DashScope...";
+        CompileHotwordsStatusForeground = System.Windows.Media.Brushes.Orange;
+
+        try
+        {
+            string? resultId = await _phraseService.CreatePhrasesAsync(key, DashScopeBaseUrl, "paraformer-realtime-v1", phrases, CancellationToken.None);
+            if (!string.IsNullOrWhiteSpace(resultId))
+            {
+                VocabularyId = resultId;
+                _settings.VocabularyId = resultId;
+                CompileHotwordsStatus = $"Hotwords compiled! ID: {resultId} ✅";
+                CompileHotwordsStatusForeground = System.Windows.Media.Brushes.Green;
+            }
+            else
+            {
+                CompileHotwordsStatus = "Compilation returned no ID. ❌";
+                CompileHotwordsStatusForeground = System.Windows.Media.Brushes.Red;
+            }
+        }
+        catch (Exception ex)
+        {
+            CompileHotwordsStatus = $"Compilation failed: {ex.Message}";
+            CompileHotwordsStatusForeground = System.Windows.Media.Brushes.Red;
+        }
+        finally
+        {
+            IsUiEnabled = true;
+        }
     }
 
     [RelayCommand]
@@ -485,6 +560,8 @@ public partial class SettingsViewModel : ObservableObject
         _settings.DashScopeBaseUrl = string.IsNullOrWhiteSpace(DashScopeBaseUrl) ? "https://dashscope.aliyuncs.com" : DashScopeBaseUrl.Trim();
         _settings.TranscriptionLanguage = TranscriptionLanguage;
         _settings.ShowTranscriptionOverlay = ShowTranscriptionOverlay;
+        _settings.VocabularyId = VocabularyId?.Trim() ?? "";
+        _settings.Hotwords = HotwordsText?.Trim() ?? "";
 
         _settings.InsightsEnabled = InsightsEnabled;
         _settings.MentionNames = (MentionNamesText ?? "")

@@ -21,6 +21,7 @@ public class SettingsViewModelTests : IDisposable
     private readonly Mock<IUpdateService> _updateServiceMock;
     private readonly Mock<ITranscriptionService> _transcriptionServiceMock;
     private readonly Mock<IInsightService> _insightServiceMock;
+    private readonly Mock<IDashScopePhraseService> _phraseServiceMock;
     private readonly string _tempSettingsPath;
     private readonly string _tempTokenPath;
 
@@ -45,6 +46,8 @@ public class SettingsViewModelTests : IDisposable
             TranscriptionEnabled = true,
             DashScopeApiKey = "sk-test-key",
             DashScopeBaseUrl = "https://dashscope.aliyuncs.com",
+            VocabularyId = "voc-12345",
+            Hotwords = "张伟:5, Alex:5",
             InsightsEnabled = true,
             MentionNames = new List<string> { "Alex", "张伟" },
             InsightContextSeconds = 45,
@@ -55,6 +58,7 @@ public class SettingsViewModelTests : IDisposable
         _updateServiceMock = new Mock<IUpdateService>();
         _transcriptionServiceMock = new Mock<ITranscriptionService>();
         _insightServiceMock = new Mock<IInsightService>();
+        _phraseServiceMock = new Mock<IDashScopePhraseService>();
     }
 
     private SettingsViewModel CreateViewModel()
@@ -65,7 +69,8 @@ public class SettingsViewModelTests : IDisposable
             _serviceProviderMock.Object,
             _updateServiceMock.Object,
             _transcriptionServiceMock.Object,
-            _insightServiceMock.Object);
+            _insightServiceMock.Object,
+            _phraseServiceMock.Object);
     }
 
     public void Dispose()
@@ -102,6 +107,8 @@ public class SettingsViewModelTests : IDisposable
         vm.TranscriptionEnabled.Should().BeTrue();
         vm.DashScopeApiKey.Should().Be("sk-test-key");
         vm.DashScopeBaseUrl.Should().Be("https://dashscope.aliyuncs.com");
+        vm.VocabularyId.Should().Be("voc-12345");
+        vm.HotwordsText.Should().Be("张伟:5, Alex:5");
         vm.InsightsEnabled.Should().BeTrue();
         vm.MentionNamesText.Should().Be("Alex, 张伟");
         vm.InsightContextSeconds.Should().Be(45);

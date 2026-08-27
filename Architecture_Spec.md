@@ -93,7 +93,12 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
     - Provides controls for directory browsing, token clearing, Google Drive OAuth, and the **AI & Transcription** tab (DashScope API key, Base URL, Language Hint, Connection Testing, Mention Names, Qwen Model, Context Window).
     - Saves settings on request and handles language transitions at runtime.
 
-12. **GitHubUpdateService (`IUpdateService`)**
+12. **DashScopePhraseService (`IDashScopePhraseService`)**
+    - Interacts with DashScope ASR Customization / Phrase API (`POST /api/v1/services/audio/asr/phrase`).
+    - Compiles custom hotword dictionaries with integer weights ([1..5]) to create a `Vocabulary ID` (`phrase_id`).
+    - Parses both user-specified hotwords and configured mention names into phrase weight dictionaries.
+
+13. **GitHubUpdateService (`IUpdateService`)**
     - Checks for updates from GitHub releases, compares versions, and downloads/extracts updates.
     - Spawns a background self-replacing batch script to perform file copying and app restart upon update completion.
 
@@ -102,9 +107,9 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 2. `MainViewModel` starts `SessionCoordinator`, moving state to `Detecting`.
 3. `AudioSessionDetector` finds active whitelisted meeting audio and raises `MeetingStarted`.
 4. `SessionCoordinator` raises `RecordingRequested` and transitions to `Recording`.
-5. `MainViewModel` starts `IAudioRecorder` with generated output path/format, connects to `DashScopeTranscriptionService`, and opens `TranscriptionOverlayWindow`.
+5. `MainViewModel` starts `IAudioRecorder` with generated output path/format, connects to `DashScopeTranscriptionService` (passing `VocabularyId` for boosted hotwords recognition), and opens `TranscriptionOverlayWindow`.
 6. Live audio is recorded and simultaneously streamed to DashScope for transcription.
-7. If a mention name is detected in the speech, `MainViewModel` extracts recent transcript context and invokes `QwenInsightService` to display an insight card in the overlay.
+7. If a mention name or alias is detected in the speech, `MainViewModel` extracts recent transcript context and invokes `QwenInsightService` to display an insight card in the overlay.
 8. On meeting inactivity beyond debounce, detector triggers `MeetingEnded`.
 9. `SessionCoordinator` transitions to `Saving`, raises `RecordingStopped` (flushing recorder files), saves the full transcript `.txt`, enqueues files in the background sync service, and returns to `Detecting` (or `Idle` if monitoring stopped).
 
@@ -126,8 +131,10 @@ The implementation follows an **MVVM + service-layer** design with event-driven 
 - `DashScopeBaseUrl` (DashScope or OpenAI-compatible proxy endpoint)
 - `TranscriptionLanguage` (audio language hint, default: "auto")
 - `ShowTranscriptionOverlay` (enable/disable the live subtitle and insight window)
+- `VocabularyId` (custom hotwords / vocabulary ID for DashScope ASR)
+- `Hotwords` (custom hotwords text with weights, e.g. "张伟:5, Alex:5")
 - `InsightsEnabled` (enable/disable AI contextual mention insights)
-- `MentionNames` (list of user/team names that trigger AI insights)
+- `MentionNames` (list of user/team names and aliases that trigger AI insights, supporting "Name|Alias" syntax)
 - `InsightContextSeconds` (duration of prior transcript context window in seconds, default: 30)
 - `QwenModel` (Qwen LLM model name, default: "qwen-turbo")
 
@@ -158,6 +165,8 @@ Folder existence checks are case-insensitive. If a user specifies a target folde
     │   ├── ITranscriptionService.cs
     │   ├── DashScopeTranscriptionService.cs
     │   ├── TranscriptionSegmentEventArgs.cs
+    │   ├── IDashScopePhraseService.cs
+    │   ├── DashScopePhraseService.cs
     │   ├── IInsightService.cs
     │   ├── QwenInsightService.cs
     │   ├── InsightEventArgs.cs

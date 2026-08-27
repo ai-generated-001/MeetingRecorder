@@ -190,8 +190,10 @@ public class SessionCoordinatorTests
         clock.UtcNow = clock.UtcNow.AddSeconds(12);
         monitor.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
 
-        fileIOService.Verify(f => f.DeleteFile(It.IsAny<string>()), Times.Once,
+        fileIOService.Verify(f => f.DeleteFile(It.Is<string>(p => p.EndsWith(".mp3"))), Times.Once,
             "short recording file must be deleted");
+        fileIOService.Verify(f => f.DeleteFile(It.Is<string>(p => p.EndsWith(".txt"))), Times.Once,
+            "short recording transcript must be deleted");
         cloudSyncService.Verify(s => s.EnqueueUpload(It.IsAny<string>()), Times.Never,
             "short recording must not be uploaded");
     }
@@ -287,8 +289,10 @@ public class SessionCoordinatorTests
         clock.UtcNow = clock.UtcNow.AddSeconds(20);
         monitor.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
 
-        fileIOService.Verify(f => f.DeleteFile(It.IsAny<string>()), Times.Once,
+        fileIOService.Verify(f => f.DeleteFile(It.Is<string>(p => p.EndsWith(".mp3"))), Times.Once,
             "recording file below threshold size must be deleted");
+        fileIOService.Verify(f => f.DeleteFile(It.Is<string>(p => p.EndsWith(".txt"))), Times.Once,
+            "transcript file below threshold size must be deleted");
         cloudSyncService.Verify(s => s.EnqueueUpload(It.IsAny<string>()), Times.Never,
             "recording file below threshold size must not be uploaded");
     }

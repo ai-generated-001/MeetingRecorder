@@ -28,6 +28,7 @@ public class DashScopeTranscriptionService : ITranscriptionService
     private Channel<byte[]>? _audioChannel;
 
     private readonly List<TranscriptionSegment> _fullTranscript = new();
+    private TranscriptionSegment? _latestPartialSegment;
     private readonly object _transcriptLock = new();
 
     private readonly byte[] _pcmBuffer = new byte[FrameBytes * 8];
@@ -91,6 +92,7 @@ public class DashScopeTranscriptionService : ITranscriptionService
         lock (_transcriptLock)
         {
             _fullTranscript.Clear();
+            _latestPartialSegment = null;
         }
         lock (_pcmBufferLock)
         {
@@ -226,6 +228,26 @@ public class DashScopeTranscriptionService : ITranscriptionService
         await _webSocket.ConnectAsync(wsUri, token);
         StatusChanged?.Invoke(this, "Connected. Initializing stream...");
 
+        // Build parameters with optional language hints and custom vocabulary/hotwords ID
+        var parametersDict = new Dictionary<string, object>
+        {
+            ["format"] = "pcm",
+            ["sample_rate"] = TargetSampleRate
+        };
+
+        var langHints = GetLanguageHints(_settings.TranscriptionLanguage);
+        if (langHints != null)
+        {
+            parametersDict["language_hints"] = langHints;
+        }
+
+        string vocId = _settings.VocabularyId?.Trim() ?? "";
+        if (!string.IsNullOrWhiteSpace(vocId))
+        {
+            parametersDict["vocabulary_id"] = vocId;
+            parametersDict["phrase_id"] = vocId;
+        }
+
         // Send run-task message
         var runTaskPayload = new
         {
@@ -241,12 +263,7 @@ public class DashScopeTranscriptionService : ITranscriptionService
                 task = "asr",
                 function = "recognition",
                 model = "paraformer-realtime-v2",
-                parameters = new
-                {
-                    format = "pcm",
-                    sample_rate = TargetSampleRate,
-                    language_hints = GetLanguageHints(_settings.TranscriptionLanguage)
-                },
+                parameters = parametersDict,
                 input = new { }
             }
         };
@@ -369,11 +386,16 @@ public class DashScopeTranscriptionService : ITranscriptionService
                                 lock (_transcriptLock)
                                 {
                                     _fullTranscript.Add(segment);
+                                    _latestPartialSegment = null;
                                 }
                                 SegmentTranscribed?.Invoke(this, new TranscriptionSegmentEventArgs(segment));
                             }
                             else
                             {
+                                lock (_transcriptLock)
+                                {
+                                    _latestPartialSegment = segment;
+                                }
                                 // For intermediate progress display if needed
                                 StatusChanged?.Invoke(this, $"[Live] {text}");
                             }
@@ -407,6 +429,24 @@ public class DashScopeTranscriptionService : ITranscriptionService
 
         baseStr = baseStr.TrimEnd('/');
 
+        // Strip HTTP REST paths like /compatible-mode/v1, /compatible-mode, /v1
+        // so that the root host is used for WebSocket ASR connection
+        if (baseStr.EndsWith("/compatible-mode/v1", StringComparison.OrdinalIgnoreCase))
+        {
+            baseStr = baseStr.Substring(0, baseStr.Length - "/compatible-mode/v1".Length);
+        }
+        else if (baseStr.EndsWith("/compatible-mode", StringComparison.OrdinalIgnoreCase))
+        {
+            baseStr = baseStr.Substring(0, baseStr.Length - "/compatible-mode".Length);
+        }
+        else if (baseStr.EndsWith("/v1", StringComparison.OrdinalIgnoreCase) &&
+                 !baseStr.EndsWith("/api-ws/v1", StringComparison.OrdinalIgnoreCase))
+        {
+            baseStr = baseStr.Substring(0, baseStr.Length - "/v1".Length);
+        }
+
+        baseStr = baseStr.TrimEnd('/');
+
         if (baseStr.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
         {
             baseStr = "ws://" + baseStr.Substring(7);
@@ -433,7 +473,12 @@ public class DashScopeTranscriptionService : ITranscriptionService
     {
         lock (_transcriptLock)
         {
-            return new List<TranscriptionSegment>(_fullTranscript);
+            var list = new List<TranscriptionSegment>(_fullTranscript);
+            if (_latestPartialSegment != null && !list.Any(s => s.Text == _latestPartialSegment.Text))
+            {
+                list.Add(_latestPartialSegment);
+            }
+            return list;
         }
     }
 
