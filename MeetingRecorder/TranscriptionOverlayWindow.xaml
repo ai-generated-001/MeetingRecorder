@@ -48,6 +48,20 @@
                 
                 <!-- Controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,6,0">
+                    <Button Command="{Binding ToggleAiCommand}" Background="Transparent" BorderThickness="0" Width="24" Height="24" ToolTip="{Binding ToggleAiButtonTooltip}" Cursor="Hand">
+                        <TextBlock Text="✨" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Opacity" Value="0.9"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsAiActive}" Value="False">
+                                            <Setter Property="Opacity" Value="0.3"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Button>
                     <Button Command="{Binding TogglePinCommand}" Background="Transparent" BorderThickness="0" Foreground="#AAFFFFFF" Width="24" Height="24" ToolTip="Toggle Always On Top">
                         <Button.Content>
                             <Path Data="M 7,2 L 7,6 L 4,9 L 4,11 L 6.5,11 L 6.5,15 L 7.5,15 L 7.5,11 L 10,11 L 10,9 L 7,6 Z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Stretch="Uniform" Margin="4"/>

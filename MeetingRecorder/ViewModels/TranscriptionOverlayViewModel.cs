@@ -37,20 +37,41 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
     [ObservableProperty]
     private bool _isInsightVisible;
 
+    [ObservableProperty]
+    private bool _isAiActive = true;
+
+    [ObservableProperty]
+    private string _toggleAiButtonTooltip = Resources.TurnOffAi;
+
+    public event Action? ToggleAiRequested;
+
     public TranscriptionOverlayViewModel(ITranscriptionService transcriptionService, IInsightService insightService, AppSettings settings)
     {
         _transcriptionService = transcriptionService;
         _insightService = insightService;
         _settings = settings;
+        _isAiActive = settings.TranscriptionEnabled;
+        _toggleAiButtonTooltip = _isAiActive ? Resources.TurnOffAi : Resources.TurnOnAi;
 
         _transcriptionService.SegmentTranscribed += OnSegmentTranscribed;
         _transcriptionService.StatusChanged += OnStatusChanged;
         _insightService.InsightGenerated += OnInsightGenerated;
     }
 
+    partial void OnIsAiActiveChanged(bool value)
+    {
+        ToggleAiButtonTooltip = value ? Resources.TurnOffAi : Resources.TurnOnAi;
+    }
+
+    [RelayCommand]
+    private void ToggleAi()
+    {
+        ToggleAiRequested?.Invoke();
+    }
+
     private void OnSegmentTranscribed(object? sender, TranscriptionSegmentEventArgs e)
     {
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        ExecuteOnUIThread(() =>
         {
             Segments.Add(e.Segment);
             LatestText = e.Segment.Text;
@@ -59,7 +80,7 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
 
     private void OnInsightGenerated(object? sender, InsightEventArgs e)
     {
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        ExecuteOnUIThread(() =>
         {
             InsightText = e.InsightText;
             InsightSnippet = e.MentionSnippet;
@@ -69,7 +90,7 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
 
     private void OnStatusChanged(object? sender, string status)
     {
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        ExecuteOnUIThread(() =>
         {
             StatusText = status;
         });
@@ -95,7 +116,7 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
     
     public void Clear()
     {
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        ExecuteOnUIThread(() =>
         {
             Segments.Clear();
             LatestText = "";
@@ -104,5 +125,17 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
             IsInsightVisible = false;
             StatusText = "Waiting for audio...";
         });
+    }
+
+    private void ExecuteOnUIThread(Action action)
+    {
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            dispatcher.Invoke(action);
+        }
+        else
+        {
+            action();
+        }
     }
 }

@@ -226,4 +226,103 @@ public class MainViewModelTests
         bool result = MainViewModel.IsUserMentioned(text, names);
         result.Should().Be(expected);
     }
+
+    [Fact]
+    public void ToggleAiCommand_TogglesAiStateAndSavesSettings()
+    {
+        // Arrange
+        _settings.TranscriptionEnabled = false;
+        using var vm = CreateMainViewModel();
+
+        vm.IsAiEnabled.Should().BeFalse();
+        vm.AiStatusText.Should().Be(Resources.AiFeatureOff);
+        vm.AiToggleText.Should().Be(Resources.TurnOnAi);
+
+        // Act 1: Toggle ON
+        vm.ToggleAiCommand.Execute(null);
+
+        // Assert 1
+        vm.IsAiEnabled.Should().BeTrue();
+        _settings.TranscriptionEnabled.Should().BeTrue();
+        vm.AiStatusText.Should().Be(Resources.AiFeatureOn);
+        vm.AiToggleText.Should().Be(Resources.TurnOffAi);
+        _overlayViewModel.IsAiActive.Should().BeTrue();
+
+        // Act 2: Toggle OFF
+        vm.ToggleAiCommand.Execute(null);
+
+        // Assert 2
+        vm.IsAiEnabled.Should().BeFalse();
+        _settings.TranscriptionEnabled.Should().BeFalse();
+        vm.AiStatusText.Should().Be(Resources.AiFeatureOff);
+        vm.AiToggleText.Should().Be(Resources.TurnOnAi);
+        _overlayViewModel.IsAiActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ToggleAiCommand_WhileRecording_TurnsOffTranscription()
+    {
+        // Arrange
+        _settings.TranscriptionEnabled = true;
+        _settings.DashScopeApiKey = "sk-test-key";
+        _monitorMock.SetupGet(m => m.IsMonitoring).Returns(true);
+
+        using var vm = CreateMainViewModel();
+        _sessionCoordinator.Start();
+
+        // Start recording
+        _monitorMock.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "Sprint Review"));
+        vm.Status.Should().Be(AppStatus.Recording);
+        _transcriptionServiceMock.Verify(t => t.StartTranscription(), Times.Once);
+
+        // Act: Turn OFF AI during recording
+        vm.ToggleAiCommand.Execute(null);
+
+        // Assert
+        vm.IsAiEnabled.Should().BeFalse();
+        _transcriptionServiceMock.Verify(t => t.StopTranscription(), Times.Once);
+        _overlayViewModel.IsAiActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ToggleAiCommand_WhileRecording_TurnsOnTranscriptionWhenKeyIsPresent()
+    {
+        // Arrange
+        _settings.TranscriptionEnabled = false;
+        _settings.DashScopeApiKey = "sk-test-key";
+        _settings.ShowTranscriptionOverlay = false;
+        _monitorMock.SetupGet(m => m.IsMonitoring).Returns(true);
+
+        using var vm = CreateMainViewModel();
+        _sessionCoordinator.Start();
+
+        // Start recording without AI
+        _monitorMock.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "Sprint Review"));
+        vm.Status.Should().Be(AppStatus.Recording);
+        _transcriptionServiceMock.Verify(t => t.StartTranscription(), Times.Never);
+
+        // Act: Turn ON AI during recording
+        vm.ToggleAiCommand.Execute(null);
+
+        // Assert
+        vm.IsAiEnabled.Should().BeTrue();
+        _transcriptionServiceMock.Verify(t => t.StartTranscription(), Times.Once);
+        _overlayViewModel.IsAiActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void OverlayViewModel_ToggleAiCommand_TriggersMainViewModelToggle()
+    {
+        // Arrange
+        _settings.TranscriptionEnabled = true;
+        using var vm = CreateMainViewModel();
+        vm.IsAiEnabled.Should().BeTrue();
+
+        // Act: Invoke ToggleAi via OverlayViewModel
+        _overlayViewModel.ToggleAiCommand.Execute(null);
+
+        // Assert
+        vm.IsAiEnabled.Should().BeFalse();
+        _settings.TranscriptionEnabled.Should().BeFalse();
+    }
 }

@@ -315,15 +315,51 @@
                     </Grid>
                 </Border>
 
-                <!-- Format Row -->
+                <!-- Format Row & AI Toggle -->
                 <Grid Grid.Row="3" VerticalAlignment="Top" Margin="0,0,0,16">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="{Binding OutputFormatLabel}" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
                         <RadioButton Content="MP3" VerticalAlignment="Center" Margin="0,0,16,0"
                                      IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Mp3}}"/>
                         <RadioButton Content="WAV" VerticalAlignment="Center"
                                      IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:OutputFormat.Wav}}"/>
                     </StackPanel>
+
+                    <!-- AI Feature Toggle Button -->
+                    <Button Grid.Column="1" Command="{Binding ToggleAiCommand}" ToolTip="{Binding AiToggleText}" Padding="10,4" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsAiEnabled}" Value="True">
+                                        <Setter Property="BorderBrush" Value="#FF3B82F6"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="✨" Margin="0,0,6,0" VerticalAlignment="Center" FontSize="12"/>
+                            <TextBlock Text="{Binding AiStatusText}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="12">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAiEnabled}" Value="True">
+                                                <Setter Property="Foreground" Value="#FF3B82F6"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsAiEnabled}" Value="False">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Button>
                 </Grid>
 
                 <!-- Separator -->

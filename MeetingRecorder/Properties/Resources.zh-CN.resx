@@ -296,4 +296,25 @@
   <data name="GeneralSettings" xml:space="preserve">
     <value>常规设置</value>
   </data>
+  <data name="AiFeatureLabel" xml:space="preserve">
+    <value>AI 功能</value>
+  </data>
+  <data name="AiFeatureOn" xml:space="preserve">
+    <value>AI: 已开启</value>
+  </data>
+  <data name="AiFeatureOff" xml:space="preserve">
+    <value>AI: 已关闭</value>
+  </data>
+  <data name="TurnOnAi" xml:space="preserve">
+    <value>开启 AI</value>
+  </data>
+  <data name="TurnOffAi" xml:space="preserve">
+    <value>关闭 AI</value>
+  </data>
+  <data name="ToggleAi" xml:space="preserve">
+    <value>切换 AI 功能</value>
+  </data>
+  <data name="ApiKeyMissingPrompt" xml:space="preserve">
+    <value>尚未配置 DashScope API Key，请在设置中配置。</value>
+  </data>
 </root>

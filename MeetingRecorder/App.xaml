@@ -16,6 +16,8 @@
                     <MenuItem Header="{Binding ShowStatusWindowText}" Click="Show_Click" />
                     <MenuItem Header="{Binding OpenFolderText}"
                               Command="{Binding OpenFolderCommand}" />
+                    <MenuItem Header="{Binding AiStatusText}"
+                              Command="{Binding ToggleAiCommand}" />
                     <Separator />
                     <MenuItem Header="{Binding ExitButtonText}"
                               Command="{Binding ExitCommand}" />

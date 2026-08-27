@@ -500,5 +500,47 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("GeneralSettings", resourceCulture);
             }
         }
+
+        public static string AiFeatureLabel {
+            get {
+                return ResourceManager.GetString("AiFeatureLabel", resourceCulture);
+            }
+        }
+
+        public static string AiFeatureOn {
+            get {
+                return ResourceManager.GetString("AiFeatureOn", resourceCulture);
+            }
+        }
+
+        public static string AiFeatureOff {
+            get {
+                return ResourceManager.GetString("AiFeatureOff", resourceCulture);
+            }
+        }
+
+        public static string TurnOnAi {
+            get {
+                return ResourceManager.GetString("TurnOnAi", resourceCulture);
+            }
+        }
+
+        public static string TurnOffAi {
+            get {
+                return ResourceManager.GetString("TurnOffAi", resourceCulture);
+            }
+        }
+
+        public static string ToggleAi {
+            get {
+                return ResourceManager.GetString("ToggleAi", resourceCulture);
+            }
+        }
+
+        public static string ApiKeyMissingPrompt {
+            get {
+                return ResourceManager.GetString("ApiKeyMissingPrompt", resourceCulture);
+            }
+        }
     }
 }

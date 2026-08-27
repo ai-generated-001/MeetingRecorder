@@ -47,13 +47,13 @@ public class DashScopeServicesTests
     }
 
     [Theory]
-    [InlineData("https://dashscope.aliyuncs.com", "https://dashscope.aliyuncs.com/api/v1/services/audio/asr/phrase")]
-    [InlineData("https://dashscope.aliyuncs.com/compatible-mode/v1", "https://dashscope.aliyuncs.com/api/v1/services/audio/asr/phrase")]
-    [InlineData("https://ws-oyh3eh8d1ea0swra.cn-beijing.maas.aliyuncs.com/compatible-mode/v1", "https://ws-oyh3eh8d1ea0swra.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/asr/phrase")]
-    [InlineData("http://dashscope.aliyuncs.com", "http://dashscope.aliyuncs.com/api/v1/services/audio/asr/phrase")]
-    [InlineData("https://dashscope.aliyuncs.com/api/v1/services/audio/asr/phrase", "https://dashscope.aliyuncs.com/api/v1/services/audio/asr/phrase")]
-    [InlineData("", "https://dashscope.aliyuncs.com/api/v1/services/audio/asr/phrase")]
-    [InlineData(null, "https://dashscope.aliyuncs.com/api/v1/services/audio/asr/phrase")]
+    [InlineData("https://dashscope.aliyuncs.com", "https://dashscope.aliyuncs.com/api/v1/fine-tunes")]
+    [InlineData("https://dashscope.aliyuncs.com/compatible-mode/v1", "https://dashscope.aliyuncs.com/api/v1/fine-tunes")]
+    [InlineData("https://ws-oyh3eh8d1ea0swra.cn-beijing.maas.aliyuncs.com/compatible-mode/v1", "https://ws-oyh3eh8d1ea0swra.cn-beijing.maas.aliyuncs.com/api/v1/fine-tunes")]
+    [InlineData("http://dashscope.aliyuncs.com", "http://dashscope.aliyuncs.com/api/v1/fine-tunes")]
+    [InlineData("https://dashscope.aliyuncs.com/api/v1/fine-tunes", "https://dashscope.aliyuncs.com/api/v1/fine-tunes")]
+    [InlineData("", "https://dashscope.aliyuncs.com/api/v1/fine-tunes")]
+    [InlineData(null, "https://dashscope.aliyuncs.com/api/v1/fine-tunes")]
     public void ResolvePhraseEndpoint_ResolvesCorrectUrl(string? input, string expected)
     {
         var result = DashScopePhraseService.ResolvePhraseEndpoint(input);

@@ -99,6 +99,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AiToggleText))]
+    [NotifyPropertyChangedFor(nameof(AiStatusText))]
+    private bool _isAiEnabled;
+
+    public string AiFeatureLabel => Resources.AiFeatureLabel;
+    public string AiToggleText => IsAiEnabled ? Resources.TurnOffAi : Resources.TurnOnAi;
+    public string AiStatusText => IsAiEnabled ? Resources.AiFeatureOn : Resources.AiFeatureOff;
+
     public string SettingsButtonText => Resources.Settings;
     public string ExitButtonText => Resources.Exit;
     public string AppTitle => string.Format("{0} {1}", Resources.AppTitle, Assembly.GetExecutingAssembly().GetName().Version);
@@ -136,6 +145,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _transcriptionService = transcriptionService;
         _insightService = insightService;
         _overlayViewModel = overlayViewModel;
+
+        _isAiEnabled = _settings.TranscriptionEnabled;
+        _overlayViewModel.IsAiActive = _isAiEnabled;
+        _overlayViewModel.ToggleAiRequested += ToggleAi;
 
         _sessionCoordinator.RecordingRequested += OnRecordingRequested;
         _sessionCoordinator.RecordingStopped += OnRecordingStopped;
@@ -307,8 +320,77 @@ public partial class MainViewModel : ObservableObject, IDisposable
         System.Windows.Application.Current.Shutdown();
     }
 
+    [RelayCommand]
+    public void ToggleAi()
+    {
+        SetAiEnabled(!IsAiEnabled);
+    }
+
+    public void SetAiEnabled(bool enabled)
+    {
+        IsAiEnabled = enabled;
+        _settings.TranscriptionEnabled = enabled;
+        App.SaveSettings(_settings);
+
+        _overlayViewModel.IsAiActive = enabled;
+
+        if (Status == AppStatus.Recording)
+        {
+            if (enabled)
+            {
+                if (string.IsNullOrWhiteSpace(_settings.DashScopeApiKey))
+                {
+                    ExecuteOnUIThread(() =>
+                    {
+                        System.Windows.MessageBox.Show(
+                            System.Windows.Application.Current?.MainWindow,
+                            Resources.ApiKeyMissingPrompt,
+                            Resources.Settings,
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                    });
+                    return;
+                }
+
+                _overlayViewModel.Clear();
+                _transcriptionService.StartTranscription();
+
+                if (_settings.ShowTranscriptionOverlay)
+                {
+                    ExecuteOnUIThread(() =>
+                    {
+                        if (_overlayWindow == null)
+                        {
+                            _overlayWindow = _serviceProvider.GetService(typeof(TranscriptionOverlayWindow)) as TranscriptionOverlayWindow;
+                            if (_overlayWindow != null)
+                            {
+                                _overlayWindow.DataContext = _overlayViewModel;
+                            }
+                        }
+                        _overlayViewModel.IsOverlayVisible = true;
+                        _overlayWindow?.Show();
+                    });
+                }
+            }
+            else
+            {
+                _transcriptionService.StopTranscription();
+                ExecuteOnUIThread(() =>
+                {
+                    _overlayViewModel.IsOverlayVisible = false;
+                    _overlayWindow?.Hide();
+                });
+            }
+        }
+    }
+
     public void UpdateLanguage()
     {
+        IsAiEnabled = _settings.TranscriptionEnabled;
+        _overlayViewModel.IsAiActive = IsAiEnabled;
+        OnPropertyChanged(nameof(AiFeatureLabel));
+        OnPropertyChanged(nameof(AiToggleText));
+        OnPropertyChanged(nameof(AiStatusText));
         OnPropertyChanged(nameof(SettingsButtonText));
         OnPropertyChanged(nameof(ExitButtonText));
         OnPropertyChanged(nameof(AppTitle));
@@ -344,11 +426,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 {
                     if (_overlayWindow == null)
                     {
-                        _overlayWindow = _serviceProvider.GetRequiredService<TranscriptionOverlayWindow>();
-                        _overlayWindow.DataContext = _overlayViewModel;
+                        _overlayWindow = _serviceProvider.GetService(typeof(TranscriptionOverlayWindow)) as TranscriptionOverlayWindow;
+                        if (_overlayWindow != null)
+                        {
+                            _overlayWindow.DataContext = _overlayViewModel;
+                        }
                     }
                     _overlayViewModel.IsOverlayVisible = true;
-                    _overlayWindow.Show();
+                    _overlayWindow?.Show();
                 });
             }
         }
@@ -358,7 +443,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         _recorder.Stop();
         
-        if (_settings.TranscriptionEnabled)
+        if (_transcriptionService.IsTranscribing || _settings.TranscriptionEnabled)
         {
             _transcriptionService.StopTranscription();
             ExecuteOnUIThread(() =>
@@ -561,6 +646,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
         _recorder.AudioDataAvailable -= OnAudioDataAvailable;
         _transcriptionService.SegmentTranscribed -= OnSegmentTranscribed;
+        _overlayViewModel.ToggleAiRequested -= ToggleAi;
         
         ExecuteOnUIThread(() =>
         {

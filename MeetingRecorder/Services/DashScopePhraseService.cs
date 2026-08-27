@@ -41,8 +41,11 @@ public class DashScopePhraseService : IDashScopePhraseService
         var payload = new
         {
             model = targetModel,
-            phrases = phrases,
-            training_type = "compile_asr_phrase"
+            training_type = "compile_asr_phrase",
+            hyper_parameters = new
+            {
+                phrase_list = phrases
+            }
         };
 
         string json = JsonSerializer.Serialize(payload);
@@ -120,12 +123,12 @@ public class DashScopePhraseService : IDashScopePhraseService
             baseStr = "https://" + baseStr.Substring(6);
         }
 
-        if (baseStr.Contains("/api/v1/services/audio/asr/phrase", StringComparison.OrdinalIgnoreCase))
+        if (baseStr.Contains("/api/v1/fine-tunes", StringComparison.OrdinalIgnoreCase))
         {
             return baseStr;
         }
 
-        return $"{baseStr}/api/v1/services/audio/asr/phrase";
+        return $"{baseStr}/api/v1/fine-tunes";
     }
 
     public static Dictionary<string, int> ParseHotwords(string? hotwordsText, IEnumerable<string>? mentionNames = null)
