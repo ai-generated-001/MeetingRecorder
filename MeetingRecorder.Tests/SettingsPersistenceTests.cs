@@ -19,6 +19,7 @@ public class SettingsPersistenceTests
             GoogleClientSecret = "TestClientSecret",
             GoogleDriveFolderPath = "Resolved/Work/Meetings",
             UiLanguage = "zh-CN",
+            MicrophoneDeviceId = "{0.0.1.00000000}.{test-device-id}",
             OutputFormat = OutputFormat.Wav,
             DebounceSeconds = 12,
             StartWithWindows = true
@@ -28,6 +29,7 @@ public class SettingsPersistenceTests
         json.Should().Contain("TestClientId");
         json.Should().Contain("Resolved/Work/Meetings");
         json.Should().Contain("StartWithWindows");
+        json.Should().Contain("{0.0.1.00000000}.{test-device-id}");
 
         var deserialized = JsonSerializer.Deserialize<AppSettings>(json);
         deserialized.Should().NotBeNull();
@@ -36,6 +38,7 @@ public class SettingsPersistenceTests
         deserialized.GoogleClientSecret.Should().Be("TestClientSecret");
         deserialized.GoogleDriveFolderPath.Should().Be("Resolved/Work/Meetings");
         deserialized.UiLanguage.Should().Be("zh-CN");
+        deserialized.MicrophoneDeviceId.Should().Be("{0.0.1.00000000}.{test-device-id}");
         deserialized.OutputFormat.Should().Be(OutputFormat.Wav);
         deserialized.DebounceSeconds.Should().Be(12);
         deserialized.StartWithWindows.Should().BeTrue();

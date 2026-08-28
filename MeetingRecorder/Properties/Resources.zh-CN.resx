@@ -317,4 +317,13 @@
   <data name="ApiKeyMissingPrompt" xml:space="preserve">
     <value>尚未配置 DashScope API Key，请在设置中配置。</value>
   </data>
+  <data name="MicrophoneDeviceLabel" xml:space="preserve">
+    <value>麦克风输入设备</value>
+  </data>
+  <data name="MicrophoneDefault" xml:space="preserve">
+    <value>系统默认（通信设备）</value>
+  </data>
+  <data name="MicrophoneSilentWarning" xml:space="preserve">
+    <value>未检测到麦克风声音</value>
+  </data>
 </root>

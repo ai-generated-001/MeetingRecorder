@@ -375,4 +375,30 @@ public class MainViewModelTests
         _overlayViewModel.HasLiveText.Should().BeFalse();
         _overlayViewModel.Segments.Should().BeEmpty();
     }
+
+    [Fact]
+    public void MicrophoneWarning_DuringRecording_UpdatesStatusTextWithWarning()
+    {
+        // Arrange
+        _monitorMock.SetupGet(m => m.IsMonitoring).Returns(true);
+        using var vm = CreateMainViewModel();
+        _sessionCoordinator.Start();
+
+        _monitorMock.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "Sprint Review"));
+        vm.Status.Should().Be(AppStatus.Recording);
+        vm.StatusText.Should().Be(Resources.Recording);
+
+        // Act: Raise MicrophoneWarning
+        _recorderMock.Raise(r => r.MicrophoneWarning += null, _recorderMock.Object, "Microphone silent / no audio detected");
+
+        // Assert
+        vm.StatusText.Should().Contain(Resources.Recording);
+        vm.StatusText.Should().Contain("⚠️");
+
+        // Act: Raise MicrophoneRestored
+        _recorderMock.Raise(r => r.MicrophoneRestored += null, EventArgs.Empty);
+
+        // Assert
+        vm.StatusText.Should().Be(Resources.Recording);
+    }
 }

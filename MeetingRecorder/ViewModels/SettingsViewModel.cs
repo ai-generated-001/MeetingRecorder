@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,6 +11,7 @@ using System.Windows.Input;
 using Forms = System.Windows.Forms;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using NAudio.CoreAudioApi;
 using MeetingRecorder.Models;
 using MeetingRecorder.Services;
 
@@ -34,6 +37,9 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private double _minFileSizeMb;
+
+    [ObservableProperty]
+    private string _selectedMicrophoneDeviceId = "";
 
     [ObservableProperty]
     private string _uiLanguage = "";
@@ -128,6 +134,9 @@ public partial class SettingsViewModel : ObservableObject
 
     public record LanguageItem(string DisplayName, string Code);
     public record ThemeItem(string DisplayName, string Code);
+    public record AudioDeviceItem(string DisplayName, string Id);
+
+    public ObservableCollection<AudioDeviceItem> AvailableMicrophones { get; } = new();
 
     public List<LanguageItem> SupportedLanguages { get; } =
     [
@@ -210,6 +219,8 @@ public partial class SettingsViewModel : ObservableObject
         var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         UpdateStatusText = string.Format("Version: {0}", version?.ToString() ?? "1.0.0.0");
 
+        LoadMicrophones();
+
         // Asynchronously load the initial status
         _ = LoadStatusAsync();
 
@@ -217,6 +228,30 @@ public partial class SettingsViewModel : ObservableObject
         OrganizeStatusText = _cloudSyncService.OrganizeStatusText;
         OrganizeProgressValue = _cloudSyncService.OrganizeProgressValue;
         _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
+    }
+
+    public void LoadMicrophones()
+    {
+        AvailableMicrophones.Clear();
+        AvailableMicrophones.Add(new AudioDeviceItem(Resources.MicrophoneDefault, ""));
+
+        try
+        {
+            using var enumerator = new MMDeviceEnumerator();
+            var endpoints = enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active);
+            foreach (var device in endpoints)
+            {
+                AvailableMicrophones.Add(new AudioDeviceItem(device.FriendlyName, device.ID));
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[SettingsViewModel] Failed to enumerate capture devices: {ex.Message}");
+        }
+
+        SelectedMicrophoneDeviceId = AvailableMicrophones.Any(m => m.Id == _settings.MicrophoneDeviceId)
+            ? _settings.MicrophoneDeviceId
+            : "";
     }
 
     [RelayCommand]
@@ -554,6 +589,7 @@ public partial class SettingsViewModel : ObservableObject
         _settings.StartWithWindows = StartWithWindows;
         _settings.AutoCheckUpdates = AutoCheckUpdates;
         _settings.MinFileSizeMb = MinFileSizeMb;
+        _settings.MicrophoneDeviceId = SelectedMicrophoneDeviceId ?? "";
 
         _settings.TranscriptionEnabled = TranscriptionEnabled;
         _settings.DashScopeApiKey = DashScopeApiKey;

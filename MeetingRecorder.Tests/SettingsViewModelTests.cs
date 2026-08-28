@@ -125,6 +125,7 @@ public class SettingsViewModelTests : IDisposable
         vm.GoogleDriveEnabled = false;
         vm.StartWithWindows = false;
         vm.MinFileSizeMb = 5.0;
+        vm.SelectedMicrophoneDeviceId = "custom-mic-id";
         vm.DashScopeApiKey = "sk-new-key";
         vm.MentionNamesText = "Alice, Bob, 王五";
         vm.InsightContextSeconds = 60;
@@ -142,6 +143,7 @@ public class SettingsViewModelTests : IDisposable
         _settings.GoogleDriveEnabled.Should().BeFalse();
         _settings.StartWithWindows.Should().BeFalse();
         _settings.MinFileSizeMb.Should().Be(5.0);
+        _settings.MicrophoneDeviceId.Should().Be("custom-mic-id");
         _settings.DashScopeApiKey.Should().Be("sk-new-key");
         _settings.MentionNames.Should().ContainInOrder("Alice", "Bob", "王五");
         _settings.InsightContextSeconds.Should().Be(60);

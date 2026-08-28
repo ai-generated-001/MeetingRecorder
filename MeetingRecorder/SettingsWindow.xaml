@@ -589,6 +589,15 @@
                                         <Button Grid.Column="1" Content="{x:Static properties:Resources.Browse}" Width="90" Command="{Binding BrowseCommand}"/>
                                     </Grid>
 
+                                    <!-- Microphone Device -->
+                                    <TextBlock Text="{x:Static properties:Resources.MicrophoneDeviceLabel}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
+                                    <ComboBox x:Name="MicrophoneComboBox" Margin="0,0,0,20" 
+                                              ItemsSource="{Binding AvailableMicrophones}" 
+                                              SelectedValue="{Binding SelectedMicrophoneDeviceId}" 
+                                              DisplayMemberPath="DisplayName" 
+                                              SelectedValuePath="Id" 
+                                              HorizontalAlignment="Stretch"/>
+
                                     <!-- Minimum File Size Threshold -->
                                     <TextBlock Text="{x:Static properties:Resources.MinFileSizeLabel}" Margin="0,0,0,6" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Medium"/>
                                     <Grid Margin="0,0,0,8">

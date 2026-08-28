@@ -542,5 +542,23 @@ namespace MeetingRecorder {
                 return ResourceManager.GetString("ApiKeyMissingPrompt", resourceCulture);
             }
         }
+
+        public static string MicrophoneDeviceLabel {
+            get {
+                return ResourceManager.GetString("MicrophoneDeviceLabel", resourceCulture);
+            }
+        }
+
+        public static string MicrophoneDefault {
+            get {
+                return ResourceManager.GetString("MicrophoneDefault", resourceCulture);
+            }
+        }
+
+        public static string MicrophoneSilentWarning {
+            get {
+                return ResourceManager.GetString("MicrophoneSilentWarning", resourceCulture);
+            }
+        }
     }
 }

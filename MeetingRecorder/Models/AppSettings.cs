@@ -20,6 +20,11 @@ public class AppSettings
 
     public OutputFormat OutputFormat { get; set; } = OutputFormat.Mp3;
 
+    /// <summary>
+    /// Optional specific microphone/capture device ID. Empty string means System Default.
+    /// </summary>
+    public string MicrophoneDeviceId { get; set; } = "";
+
     public string UiLanguage { get; set; } = "";
 
     /// <summary>

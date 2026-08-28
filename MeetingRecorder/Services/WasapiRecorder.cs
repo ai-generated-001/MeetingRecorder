@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -13,6 +14,7 @@ namespace MeetingRecorder.Services;
 
 public class WasapiRecorder : IAudioRecorder
 {
+    private readonly AppSettings? _settings;
     private WasapiLoopbackCapture? _loopbackCapture;
     private WasapiCapture? _micCapture;
     private WaveFileWriter? _waveWriter;
@@ -28,9 +30,20 @@ public class WasapiRecorder : IAudioRecorder
     private Task? _recordingTask;
     private CancellationTokenSource? _cts;
 
+    private DateTime _recordingStartTime;
+    private DateTime _lastMicAudioTime;
+    private bool _hasReportedMicSilence;
+
     public bool IsRecording => _isRecording;
 
     public event EventHandler<AudioDataEventArgs>? AudioDataAvailable;
+    public event EventHandler<string>? MicrophoneWarning;
+    public event EventHandler? MicrophoneRestored;
+
+    public WasapiRecorder(AppSettings? settings = null)
+    {
+        _settings = settings;
+    }
 
     public void Start(string filePath, OutputFormat format = OutputFormat.Mp3)
     {
@@ -48,7 +61,10 @@ public class WasapiRecorder : IAudioRecorder
         var mixFormat = WaveFormat.CreateIeeeFloatWaveFormat(44100, 2);
 
         _loopbackCapture = new WasapiLoopbackCapture();
-        _micCapture = new WasapiCapture();
+        _micCapture = CreateMicCapture();
+
+        Debug.WriteLine($"[WasapiRecorder] Loopback format: {_loopbackCapture.WaveFormat.SampleRate}Hz, {_loopbackCapture.WaveFormat.Channels}ch, {_loopbackCapture.WaveFormat.BitsPerSample}bit");
+        Debug.WriteLine($"[WasapiRecorder] Mic format: {_micCapture.WaveFormat.SampleRate}Hz, {_micCapture.WaveFormat.Channels}ch, {_micCapture.WaveFormat.BitsPerSample}bit");
 
         _loopbackBuffer = new BufferedWaveProvider(mixFormat) { DiscardOnBufferOverflow = true };
         _micBuffer = new BufferedWaveProvider(mixFormat) { DiscardOnBufferOverflow = true };
@@ -58,7 +74,10 @@ public class WasapiRecorder : IAudioRecorder
             if (e.BytesRecorded > 0)
             {
                 var resampled = Resample(e.Buffer, e.BytesRecorded, _loopbackCapture.WaveFormat, mixFormat);
-                _loopbackBuffer.AddSamples(resampled, 0, resampled.Length);
+                if (resampled.Length > 0)
+                {
+                    _loopbackBuffer.AddSamples(resampled, 0, resampled.Length);
+                }
             }
         };
 
@@ -66,8 +85,22 @@ public class WasapiRecorder : IAudioRecorder
         {
             if (e.BytesRecorded > 0)
             {
+                float peak = CalculatePeak(e.Buffer, e.BytesRecorded, _micCapture.WaveFormat);
+                if (peak > 0.001f) // above -60dB noise threshold
+                {
+                    _lastMicAudioTime = DateTime.UtcNow;
+                    if (_hasReportedMicSilence)
+                    {
+                        _hasReportedMicSilence = false;
+                        MicrophoneRestored?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+
                 var resampled = Resample(e.Buffer, e.BytesRecorded, _micCapture.WaveFormat, mixFormat);
-                _micBuffer.AddSamples(resampled, 0, resampled.Length);
+                if (resampled.Length > 0)
+                {
+                    _micBuffer.AddSamples(resampled, 0, resampled.Length);
+                }
             }
         };
 
@@ -85,12 +118,55 @@ public class WasapiRecorder : IAudioRecorder
         }
 
         _isRecording = true;
+        _recordingStartTime = DateTime.UtcNow;
+        _lastMicAudioTime = DateTime.UtcNow;
+        _hasReportedMicSilence = false;
         _cts = new CancellationTokenSource();
         
         _loopbackCapture.StartRecording();
         _micCapture.StartRecording();
 
         _recordingTask = Task.Run(() => RecordLoop(_cts.Token));
+    }
+
+    private WasapiCapture CreateMicCapture()
+    {
+        string? targetDeviceId = _settings?.MicrophoneDeviceId;
+        if (!string.IsNullOrWhiteSpace(targetDeviceId))
+        {
+            try
+            {
+                using var enumerator = new MMDeviceEnumerator();
+                var device = enumerator.GetDevice(targetDeviceId);
+                if (device != null && device.State == DeviceState.Active)
+                {
+                    Debug.WriteLine($"[WasapiRecorder] Using configured microphone: {device.FriendlyName} ({device.ID})");
+                    return new WasapiCapture(device);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WasapiRecorder] Failed to open configured mic {targetDeviceId}: {ex.Message}. Falling back to default.");
+            }
+        }
+
+        try
+        {
+            using var enumerator = new MMDeviceEnumerator();
+            var defaultMic = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
+            if (defaultMic != null)
+            {
+                Debug.WriteLine($"[WasapiRecorder] Using default communications microphone: {defaultMic.FriendlyName}");
+                return new WasapiCapture(defaultMic);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[WasapiRecorder] Failed to query default communications endpoint: {ex.Message}");
+        }
+
+        Debug.WriteLine("[WasapiRecorder] Falling back to default WasapiCapture()");
+        return new WasapiCapture();
     }
 
     private byte[] Resample(byte[] buffer, int length, WaveFormat inputFormat, WaveFormat outputFormat)
@@ -102,16 +178,78 @@ public class WasapiRecorder : IAudioRecorder
             return result;
         }
 
-        using var ms = new MemoryStream(buffer, 0, length);
-        using var reader = new RawSourceWaveStream(ms, inputFormat);
-        using var resampler = new MediaFoundationResampler(reader, outputFormat);
-        
-        byte[] outBuffer = new byte[length * 4]; // Estimate
-        int read = resampler.Read(outBuffer, 0, outBuffer.Length);
-        
-        byte[] final = new byte[read];
-        Array.Copy(outBuffer, final, read);
-        return final;
+        try
+        {
+            using var ms = new MemoryStream(buffer, 0, length);
+            using var reader = new RawSourceWaveStream(ms, inputFormat);
+            using var resampler = new MediaFoundationResampler(reader, outputFormat);
+            
+            byte[] outBuffer = new byte[length * 4]; // Estimate
+            int read = resampler.Read(outBuffer, 0, outBuffer.Length);
+            
+            byte[] final = new byte[read];
+            Array.Copy(outBuffer, final, read);
+            return final;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[WasapiRecorder] Resampling failed for format {inputFormat} -> {outputFormat}: {ex.Message}");
+            return Array.Empty<byte>();
+        }
+    }
+
+    internal static float CalculatePeak(byte[] buffer, int bytesRecorded, WaveFormat format)
+    {
+        if (bytesRecorded <= 0 || buffer == null) return 0f;
+
+        float max = 0f;
+        try
+        {
+            if (format.Encoding == WaveFormatEncoding.IeeeFloat)
+            {
+                int sampleCount = Math.Min(bytesRecorded / 4, buffer.Length / 4);
+                for (int i = 0; i < sampleCount; i++)
+                {
+                    float sample = Math.Abs(BitConverter.ToSingle(buffer, i * 4));
+                    if (sample > max) max = sample;
+                }
+            }
+            else if (format.BitsPerSample == 16)
+            {
+                int sampleCount = Math.Min(bytesRecorded / 2, buffer.Length / 2);
+                for (int i = 0; i < sampleCount; i++)
+                {
+                    short sample = BitConverter.ToInt16(buffer, i * 2);
+                    float norm = Math.Abs(sample / 32768f);
+                    if (norm > max) max = norm;
+                }
+            }
+            else if (format.BitsPerSample == 24)
+            {
+                int sampleCount = Math.Min(bytesRecorded / 3, buffer.Length / 3);
+                for (int i = 0; i < sampleCount; i++)
+                {
+                    int sample24 = (buffer[i * 3 + 0]) | (buffer[i * 3 + 1] << 8) | ((sbyte)buffer[i * 3 + 2] << 16);
+                    float norm = Math.Abs(sample24 / 8388608f);
+                    if (norm > max) max = norm;
+                }
+            }
+            else if (format.BitsPerSample == 32)
+            {
+                int sampleCount = Math.Min(bytesRecorded / 4, buffer.Length / 4);
+                for (int i = 0; i < sampleCount; i++)
+                {
+                    int sample32 = BitConverter.ToInt32(buffer, i * 4);
+                    float norm = Math.Abs(sample32 / 2147483648f);
+                    if (norm > max) max = norm;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore format parsing exceptions and return default
+        }
+        return max;
     }
 
     private void RecordLoop(CancellationToken token)
@@ -124,10 +262,25 @@ public class WasapiRecorder : IAudioRecorder
         float[] buffer = new float[chunkSamples];
         // PCM16 byte buffer used for MP3 encoding
         byte[] pcmBuffer = new byte[chunkSamples * 2];
+        long lastSilenceCheckTick = Environment.TickCount64;
 
         while (!token.IsCancellationRequested && _isRecording)
         {
             long loopStart = Environment.TickCount64;
+
+            // Check for prolonged mic silence every ~1000ms
+            if (loopStart - lastSilenceCheckTick >= 1000)
+            {
+                lastSilenceCheckTick = loopStart;
+                if ((DateTime.UtcNow - _recordingStartTime).TotalSeconds >= 5)
+                {
+                    if ((DateTime.UtcNow - _lastMicAudioTime).TotalSeconds >= 5 && !_hasReportedMicSilence)
+                    {
+                        _hasReportedMicSilence = true;
+                        MicrophoneWarning?.Invoke(this, "Microphone silent / no audio detected");
+                    }
+                }
+            }
 
             if ((_loopbackBuffer?.BufferedBytes ?? 0) == 0 && (_micBuffer?.BufferedBytes ?? 0) == 0)
             {

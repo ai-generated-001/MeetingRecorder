@@ -74,10 +74,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // Transient override: set by upload callbacks; cleared on the next state change.
     private string? _uploadStatusText;
     private StatusMessageCategory _uploadCategory;
+    private string? _micWarningText;
 
     partial void OnStatusChanged(AppStatus value)
     {
         _uploadStatusText = null;   // clear transient upload message on state change
+        _micWarningText = null;
         UpdateStatusText();
         StartMonitoringCommand.NotifyCanExecuteChanged();
         StopMonitoringCommand.NotifyCanExecuteChanged();
@@ -158,6 +160,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
         
         _recorder.AudioDataAvailable += OnAudioDataAvailable;
+        _recorder.MicrophoneWarning += OnMicrophoneWarning;
+        _recorder.MicrophoneRestored += OnMicrophoneRestored;
         _transcriptionService.SegmentTranscribed += OnSegmentTranscribed;
 
         IsOrganizing = _cloudSyncService.IsOrganizing;
@@ -559,12 +563,39 @@ public partial class MainViewModel : ObservableObject, IDisposable
         });
     }
 
+    private void OnMicrophoneWarning(object? sender, string message)
+    {
+        ExecuteOnUIThread(() =>
+        {
+            _micWarningText = Resources.MicrophoneSilentWarning;
+            UpdateStatusText();
+        });
+    }
+
+    private void OnMicrophoneRestored(object? sender, EventArgs e)
+    {
+        ExecuteOnUIThread(() =>
+        {
+            _micWarningText = null;
+            UpdateStatusText();
+        });
+    }
+
     private void UpdateStatusText()
     {
         if (_uploadStatusText is not null && Status != AppStatus.Recording)
         {
             StatusText = _uploadStatusText;
             StatusCategory = _uploadCategory;
+            return;
+        }
+
+        if (Status == AppStatus.Recording)
+        {
+            StatusText = !string.IsNullOrWhiteSpace(_micWarningText)
+                ? $"{Resources.Recording} (⚠️ {_micWarningText})"
+                : Resources.Recording;
+            StatusCategory = StatusMessageCategory.Recording;
             return;
         }
 
@@ -645,6 +676,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _cloudSyncService.UploadCompleted -= OnUploadCompleted;
         _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
         _recorder.AudioDataAvailable -= OnAudioDataAvailable;
+        _recorder.MicrophoneWarning -= OnMicrophoneWarning;
+        _recorder.MicrophoneRestored -= OnMicrophoneRestored;
         _transcriptionService.SegmentTranscribed -= OnSegmentTranscribed;
         _overlayViewModel.ToggleAiRequested -= ToggleAi;
         

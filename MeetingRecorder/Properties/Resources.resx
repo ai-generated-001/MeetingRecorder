@@ -317,4 +317,13 @@
   <data name="ApiKeyMissingPrompt" xml:space="preserve">
     <value>DashScope API key is not configured. Please open Settings to set your API key.</value>
   </data>
+  <data name="MicrophoneDeviceLabel" xml:space="preserve">
+    <value>Microphone input device</value>
+  </data>
+  <data name="MicrophoneDefault" xml:space="preserve">
+    <value>System Default (Communications)</value>
+  </data>
+  <data name="MicrophoneSilentWarning" xml:space="preserve">
+    <value>Microphone silent / no audio detected</value>
+  </data>
 </root>
