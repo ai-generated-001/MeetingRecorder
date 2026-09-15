@@ -89,6 +89,11 @@ public partial class App : Application
         "MeetingRecorder",
         "token.json");
 
+    public static string PythonEnvFolderPath { get; set; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "MeetingRecorder",
+        "python_env");
+
     private static AppSettings LoadSettings()
     {
         try
@@ -142,6 +147,9 @@ public partial class App : Application
         services.AddSingleton<IAudioRecorder, WasapiRecorder>();
         services.AddSingleton<ICloudSyncService>(sp =>
             new GoogleDriveSyncService(sp.GetRequiredService<AppSettings>()));
+        services.AddSingleton<NotebookLmSyncService>(sp =>
+            new NotebookLmSyncService(sp.GetRequiredService<AppSettings>()));
+        services.AddSingleton<IPythonEnvSetupService, PythonEnvSetupService>();
         services.AddSingleton<SessionCoordinator>(sp =>
             new SessionCoordinator(
                 sp.GetRequiredService<IAudioSessionMonitor>(),
@@ -149,7 +157,8 @@ public partial class App : Application
                 TimeSpan.FromSeconds(sp.GetRequiredService<AppSettings>().DebounceSeconds),
                 sp.GetRequiredService<AppSettings>(),
                 sp.GetRequiredService<IFileIOService>(),
-                sp.GetRequiredService<ICloudSyncService>()));
+                sp.GetRequiredService<ICloudSyncService>(),
+                sp.GetRequiredService<NotebookLmSyncService>()));
 
         services.AddSingleton<HttpClient>();
         services.AddSingleton<IDashScopePhraseService, DashScopePhraseService>();

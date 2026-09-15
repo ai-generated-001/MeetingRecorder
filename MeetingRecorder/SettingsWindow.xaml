@@ -779,6 +779,148 @@
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
+
+                                    <!-- NotebookLM Section Card -->
+                                    <Border BorderBrush="{DynamicResource DriveCardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,16,0,0" Background="{DynamicResource DriveCardBackgroundBrush}">
+                                        <StackPanel>
+                                            <TextBlock Text="NotebookLM (Gemini Notebook)" FontWeight="SemiBold" Margin="0,0,0,4" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Automatically upload recordings to Google Gemini Notebook (NotebookLM) via notebooklm-py." Margin="0,0,0,12" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+
+                                            <!-- Auth Warning notice when Google Auth is not signed in -->
+                                            <Border CornerRadius="6" Padding="10,8" Margin="0,0,0,12" Background="#18FF9800" BorderBrush="#80FF9800" BorderThickness="1">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding CanEnableNotebookLm}" Value="False">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="⚠️ Google authentication required. Please sign in to Google Drive above to enable NotebookLM upload." FontSize="12" Foreground="#FFF57C00" FontWeight="Medium" TextWrapping="Wrap"/>
+                                            </Border>
+
+                                            <!-- Enable Toggle CheckBox (gated on CanEnableNotebookLm) -->
+                                            <CheckBox x:Name="NotebookLmEnabledCheckBox" 
+                                                      Content="Enable NotebookLM Upload" 
+                                                      Margin="0,0,0,12" 
+                                                      IsChecked="{Binding NotebookLmEnabled}" 
+                                                      IsEnabled="{Binding CanEnableNotebookLm}" 
+                                                      FontWeight="Medium"/>
+
+                                            <!-- Detail fields (active only when both enabled and auth available) -->
+                                            <StackPanel>
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="IsEnabled" Value="True"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsChecked, ElementName=NotebookLmEnabledCheckBox}" Value="False">
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding CanEnableNotebookLm}" Value="False">
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+
+                                                <!-- Separator line -->
+                                                <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,12" SnapsToDevicePixels="True"/>
+
+                                                <!-- CLI Status -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
+                                                    <TextBlock Text="CLI Tool:" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" FontWeight="Medium"/>
+                                                    <Border CornerRadius="4" Padding="8,3" Background="{DynamicResource DriveStatusBadgeBackgroundBrush}" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding NotebookLmCliStatus}" Foreground="{Binding NotebookLmCliStatusForeground}" FontWeight="SemiBold" FontSize="11"/>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <!-- Managed Python Environment Section -->
+                                                <Border Background="{DynamicResource ControlBackgroundBrush}" BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,16">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Python Environment" FontWeight="SemiBold" Margin="0,0,0,4" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                        <TextBlock Text="MeetingRecorder can create a dedicated virtual environment with notebooklm-py automatically." 
+                                                                   FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+                                                        <!-- Action Buttons -->
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                            <Button Padding="12,6"
+                                                                    Command="{Binding SetupPythonEnvCommand}">
+                                                                <Button.Style>
+                                                                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+                                                                        <Setter Property="Content" Value="Setup Python Environment"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsPythonEnvReady}" Value="True">
+                                                                                <Setter Property="Content" Value="Reinstall / Update Environment"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding IsSettingUpPythonEnv}" Value="True">
+                                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Button.Style>
+                                                            </Button>
+
+                                                            <Button Margin="8,0,0,0"
+                                                                    Padding="10,6"
+                                                                    Content="Install Python..."
+                                                                    Command="{Binding OpenPythonDownloadCommand}">
+                                                                <Button.Style>
+                                                                    <Style TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding HasHostPython}" Value="False">
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Button.Style>
+                                                            </Button>
+                                                        </StackPanel>
+
+                                                        <!-- Progress Bar & Status -->
+                                                        <StackPanel Margin="0,6,0,0">
+                                                            <StackPanel.Style>
+                                                                <Style TargetType="StackPanel">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsSettingUpPythonEnv}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </StackPanel.Style>
+                                                            <ProgressBar IsIndeterminate="True" Height="4" Margin="0,0,0,4"/>
+                                                            <TextBlock Text="{Binding PythonEnvProgressText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!-- Notebook Name Pattern -->
+                                                <TextBlock Text="Notebook Name Pattern:" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" FontWeight="Medium"/>
+                                                <TextBox x:Name="NotebookPatternTextBox" 
+                                                         Margin="0,0,0,4" 
+                                                         Text="{Binding NotebookLmNotebookPattern, UpdateSourceTrigger=PropertyChanged}" 
+                                                         ToolTip="Supports {Year}, {Month}, and {Day} tokens (e.g. 'Meetings {Year}-{Month}')"/>
+                                                <TextBlock Text="Tokens supported: {Year}, {Month}, {Day} (e.g. 'Meetings {Year}-{Month}' becomes 'Meetings 2026-09')" 
+                                                           FontSize="11" 
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" 
+                                                           Margin="0,0,0,12"/>
+
+                                                <!-- Custom CLI Path (optional) -->
+                                                <TextBlock Text="Custom CLI Path (Optional):" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" FontWeight="Medium"/>
+                                                <TextBox x:Name="NotebookCliPathTextBox" 
+                                                         Margin="0,0,0,4" 
+                                                         Text="{Binding NotebookLmCliPath, UpdateSourceTrigger=PropertyChanged}" 
+                                                         ToolTip="Path to notebooklm executable (leave blank to prefer managed virtual environment)"/>
+                                                <TextBlock Text="Leave empty to use the managed virtual environment or system PATH" 
+                                                           FontSize="11" 
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" 
+                                                           Margin="0,0,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>

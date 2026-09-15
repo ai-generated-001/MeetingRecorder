@@ -94,6 +94,25 @@ public class AppSettings
     public List<string> MentionNames { get; set; } = new();
     public int InsightContextSeconds { get; set; } = 30;
     public string QwenModel { get; set; } = "qwen-turbo";
+
+    // NotebookLM Settings
+    /// <summary>
+    /// When true, recordings are uploaded to Google Gemini Notebook (NotebookLM).
+    /// Requires Google OAuth credentials and authentication to be configured.
+    /// </summary>
+    public bool NotebookLmEnabled { get; set; } = false;
+
+    /// <summary>
+    /// Pattern used to name the target notebook. Supports {Year} and {Month} tokens.
+    /// Example: "Meetings {Year}-{Month}" -> "Meetings 2026-09"
+    /// </summary>
+    public string NotebookLmNotebookPattern { get; set; } = "Meetings {Year}-{Month}";
+
+    /// <summary>
+    /// Optional override path to the `notebooklm` CLI executable.
+    /// Leave empty to use the one found on PATH.
+    /// </summary>
+    public string NotebookLmCliPath { get; set; } = "";
 }
 
 

@@ -13,6 +13,7 @@ public sealed class SessionCoordinator : IDisposable
     private readonly AppSettings _settings;
     private readonly IFileIOService _fileIOService;
     private readonly ICloudSyncService _cloudSyncService;
+    private readonly ICloudSyncService? _notebookLmSyncService;
 
     private string? _currentAudioPath;
     private DateTime _recordingStartTime;
@@ -30,13 +31,15 @@ public sealed class SessionCoordinator : IDisposable
         TimeSpan debounceDuration,
         AppSettings settings,
         IFileIOService fileIOService,
-        ICloudSyncService cloudSyncService)
+        ICloudSyncService cloudSyncService,
+        ICloudSyncService? notebookLmSyncService = null)
     {
         _audioSessionMonitor = audioSessionMonitor;
         _dateTimeProvider = dateTimeProvider;
         _settings = settings;
         _fileIOService = fileIOService;
         _cloudSyncService = cloudSyncService;
+        _notebookLmSyncService = notebookLmSyncService;
 
         _audioSessionMonitor.MeetingStarted += OnMeetingStarted;
         _audioSessionMonitor.MeetingEnded += OnMeetingEnded;
@@ -187,6 +190,11 @@ public sealed class SessionCoordinator : IDisposable
                 {
                     _cloudSyncService.EnqueueUpload(transcriptPath);
                 }
+            }
+
+            if (_settings.NotebookLmEnabled && _notebookLmSyncService != null && _currentAudioPath != null)
+            {
+                _notebookLmSyncService.EnqueueUpload(_currentAudioPath);
             }
         }
 

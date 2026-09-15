@@ -24,6 +24,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
     private readonly IUpdateService _updateService;
     private readonly ITranscriptionService _transcriptionService;
+    private readonly IPythonEnvSetupService _pythonEnvSetupService;
 
     [ObservableProperty]
     private bool _autoCheckUpdates;
@@ -115,6 +116,36 @@ public partial class SettingsViewModel : ObservableObject
     private System.Windows.Media.Brush _googleDriveStatusForeground = System.Windows.Media.Brushes.Gray;
 
     [ObservableProperty]
+    private bool _notebookLmEnabled;
+
+    [ObservableProperty]
+    private string _notebookLmNotebookPattern = "Meetings {Year}-{Month}";
+
+    [ObservableProperty]
+    private string _notebookLmCliPath = "";
+
+    [ObservableProperty]
+    private bool _canEnableNotebookLm;
+
+    [ObservableProperty]
+    private string _notebookLmCliStatus = "";
+
+    [ObservableProperty]
+    private System.Windows.Media.Brush _notebookLmCliStatusForeground = System.Windows.Media.Brushes.Gray;
+
+    [ObservableProperty]
+    private bool _isPythonEnvReady;
+
+    [ObservableProperty]
+    private bool _isSettingUpPythonEnv;
+
+    [ObservableProperty]
+    private string _pythonEnvProgressText = "";
+
+    [ObservableProperty]
+    private bool _hasHostPython;
+
+    [ObservableProperty]
     private bool _isUiEnabled = true;
 
     [ObservableProperty]
@@ -177,7 +208,8 @@ public partial class SettingsViewModel : ObservableObject
         IUpdateService updateService,
         ITranscriptionService transcriptionService,
         IInsightService insightService,
-        IDashScopePhraseService phraseService)
+        IDashScopePhraseService phraseService,
+        IPythonEnvSetupService pythonEnvSetupService)
     {
         _settings = settings;
         _cloudSyncService = cloudSyncService;
@@ -186,6 +218,7 @@ public partial class SettingsViewModel : ObservableObject
         _transcriptionService = transcriptionService;
         _insightService = insightService;
         _phraseService = phraseService;
+        _pythonEnvSetupService = pythonEnvSetupService;
 
         // Initialize from settings
         OutputDirectory = string.IsNullOrWhiteSpace(_settings.OutputDirectory)
@@ -210,6 +243,12 @@ public partial class SettingsViewModel : ObservableObject
         ShowTranscriptionOverlay = _settings.ShowTranscriptionOverlay;
         VocabularyId = _settings.VocabularyId ?? "";
         HotwordsText = _settings.Hotwords ?? "";
+
+        NotebookLmEnabled = _settings.NotebookLmEnabled;
+        NotebookLmNotebookPattern = string.IsNullOrWhiteSpace(_settings.NotebookLmNotebookPattern)
+            ? "Meetings {Year}-{Month}"
+            : _settings.NotebookLmNotebookPattern;
+        NotebookLmCliPath = _settings.NotebookLmCliPath ?? "";
 
         InsightsEnabled = _settings.InsightsEnabled;
         MentionNamesText = string.Join(", ", _settings.MentionNames ?? new List<string>());
@@ -404,6 +443,109 @@ public partial class SettingsViewModel : ObservableObject
             GoogleDriveStatus = Resources.GoogleDriveNotSignedIn;
             GoogleDriveStatusForeground = System.Windows.Media.Brushes.Gray;
         }
+
+        UpdateNotebookLmState();
+    }
+
+    private void UpdateNotebookLmState()
+    {
+        // Must have credentials and be signed in (dpapi_user.dat exists)
+        bool hasCreds = NotebookLmSyncService.HasGoogleOAuthCredentials(_settings);
+        bool isAuthenticated = NotebookLmSyncService.IsGoogleUserAuthenticated();
+        CanEnableNotebookLm = hasCreds && isAuthenticated;
+
+        if (!CanEnableNotebookLm && NotebookLmEnabled)
+        {
+            NotebookLmEnabled = false;
+        }
+
+        IsPythonEnvReady = _pythonEnvSetupService.IsVenvReady();
+
+        var cliPath = NotebookLmSyncService.FindNotebookLmExecutable(NotebookLmCliPath);
+        if (string.IsNullOrWhiteSpace(cliPath))
+        {
+            NotebookLmCliStatus = "CLI not found";
+            NotebookLmCliStatusForeground = System.Windows.Media.Brushes.Orange;
+        }
+        else
+        {
+            bool isVenv = !string.IsNullOrWhiteSpace(App.PythonEnvFolderPath) &&
+                          cliPath.StartsWith(App.PythonEnvFolderPath, StringComparison.OrdinalIgnoreCase);
+            NotebookLmCliStatus = isVenv
+                ? "Ready (managed venv)"
+                : $"CLI detected: {Path.GetFileName(cliPath)}";
+            NotebookLmCliStatusForeground = System.Windows.Media.Brushes.Green;
+        }
+
+        // Asynchronously check for host python
+        _ = CheckHostPythonAsync();
+    }
+
+    private async Task CheckHostPythonAsync()
+    {
+        var host = await _pythonEnvSetupService.FindHostPythonExecutableAsync();
+        HasHostPython = !string.IsNullOrWhiteSpace(host);
+    }
+
+    [RelayCommand]
+    private async Task SetupPythonEnvAsync()
+    {
+        if (IsSettingUpPythonEnv) return;
+
+        IsSettingUpPythonEnv = true;
+        PythonEnvProgressText = "Starting setup...";
+
+        var progress = new Progress<string>(msg =>
+        {
+            PythonEnvProgressText = msg;
+        });
+
+        try
+        {
+            await _pythonEnvSetupService.SetupEnvironmentAsync(progress, CancellationToken.None);
+            UpdateNotebookLmState();
+
+            System.Windows.MessageBox.Show(
+                System.Windows.Application.Current.MainWindow,
+                "Python environment and notebooklm-py setup successfully!",
+                "NotebookLM Environment Setup",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[SettingsViewModel] Python environment setup failed: {ex.Message}");
+            PythonEnvProgressText = $"Error: {ex.Message}";
+
+            System.Windows.MessageBox.Show(
+                System.Windows.Application.Current.MainWindow,
+                $"Failed to set up Python environment:\n{ex.Message}",
+                "Setup Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            IsSettingUpPythonEnv = false;
+            UpdateNotebookLmState();
+        }
+    }
+
+    [RelayCommand]
+    private void OpenPythonDownload()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "https://www.python.org/downloads/",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to open python website: {ex.Message}");
+        }
     }
 
     [RelayCommand]
@@ -423,6 +565,8 @@ public partial class SettingsViewModel : ObservableObject
         // Clear the persisted folder ID since the user may sign in with
         // a different account whose Drive has different folder IDs.
         _settings.GoogleDriveFolderId = "";
+        _settings.NotebookLmEnabled = false;
+        NotebookLmEnabled = false;
         App.SaveSettings(_settings);
 
         // Also reset the in-memory DriveService so the next upload re-authenticates.
@@ -430,6 +574,7 @@ public partial class SettingsViewModel : ObservableObject
 
         GoogleDriveStatus = Resources.GoogleDriveNotSignedIn;
         GoogleDriveStatusForeground = System.Windows.Media.Brushes.Gray;
+        UpdateNotebookLmState();
 
         System.Windows.MessageBox.Show(
             System.Windows.Application.Current.MainWindow,
@@ -511,6 +656,8 @@ public partial class SettingsViewModel : ObservableObject
             GoogleDriveStatus = Resources.GoogleDriveNotSignedIn;
             GoogleDriveStatusForeground = System.Windows.Media.Brushes.Gray;
         }
+
+        UpdateNotebookLmState();
     }
 
     [RelayCommand]
@@ -608,6 +755,12 @@ public partial class SettingsViewModel : ObservableObject
             .ToList();
         _settings.InsightContextSeconds = Math.Max(5, Math.Min(300, InsightContextSeconds));
         _settings.QwenModel = string.IsNullOrWhiteSpace(QwenModel) ? "qwen-turbo" : QwenModel.Trim();
+
+        _settings.NotebookLmEnabled = CanEnableNotebookLm && NotebookLmEnabled;
+        _settings.NotebookLmNotebookPattern = string.IsNullOrWhiteSpace(NotebookLmNotebookPattern)
+            ? "Meetings {Year}-{Month}"
+            : NotebookLmNotebookPattern.Trim();
+        _settings.NotebookLmCliPath = NotebookLmCliPath?.Trim() ?? "";
 
         if (credentialsChanged)
         {

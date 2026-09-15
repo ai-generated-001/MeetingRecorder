@@ -22,6 +22,7 @@ public class SettingsViewModelTests : IDisposable
     private readonly Mock<ITranscriptionService> _transcriptionServiceMock;
     private readonly Mock<IInsightService> _insightServiceMock;
     private readonly Mock<IDashScopePhraseService> _phraseServiceMock;
+    private readonly Mock<IPythonEnvSetupService> _pythonEnvSetupMock;
     private readonly string _tempSettingsPath;
     private readonly string _tempTokenPath;
 
@@ -43,9 +44,13 @@ public class SettingsViewModelTests : IDisposable
             GoogleDriveFolderId = "FolderId",
             StartWithWindows = true,
             MinFileSizeMb = 2.5,
+            AutoCheckUpdates = true,
+            Theme = "Dark",
             TranscriptionEnabled = true,
             DashScopeApiKey = "sk-test-key",
             DashScopeBaseUrl = "https://dashscope.aliyuncs.com",
+            TranscriptionLanguage = "zh",
+            ShowTranscriptionOverlay = false,
             VocabularyId = "voc-12345",
             Hotwords = "张伟:5, Alex:5",
             InsightsEnabled = true,
@@ -59,6 +64,7 @@ public class SettingsViewModelTests : IDisposable
         _transcriptionServiceMock = new Mock<ITranscriptionService>();
         _insightServiceMock = new Mock<IInsightService>();
         _phraseServiceMock = new Mock<IDashScopePhraseService>();
+        _pythonEnvSetupMock = new Mock<IPythonEnvSetupService>();
     }
 
     private SettingsViewModel CreateViewModel()
@@ -70,7 +76,8 @@ public class SettingsViewModelTests : IDisposable
             _updateServiceMock.Object,
             _transcriptionServiceMock.Object,
             _insightServiceMock.Object,
-            _phraseServiceMock.Object);
+            _phraseServiceMock.Object,
+            _pythonEnvSetupMock.Object);
     }
 
     public void Dispose()

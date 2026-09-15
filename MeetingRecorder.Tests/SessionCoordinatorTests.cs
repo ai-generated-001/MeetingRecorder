@@ -330,6 +330,82 @@ public class SessionCoordinatorTests
             "recording file above threshold size must be uploaded");
     }
 
+    [Fact]
+    public void MeetingEnded_WhenNotebookLmEnabled_EnqueuesAudioUploadToNotebookLmService()
+    {
+        var monitor = CreateMonitor();
+        var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
+        var settings = new AppSettings 
+        { 
+            DebounceSeconds = 5, 
+            GoogleDriveEnabled = false,
+            NotebookLmEnabled = true,
+            MinFileSizeMb = 0.1 
+        };
+        var fileIOService = new Mock<IFileIOService>();
+        fileIOService.Setup(f => f.GetFileSize(It.IsAny<string>())).Returns(1024 * 1024);
+
+        var driveSync = new Mock<ICloudSyncService>();
+        var notebookLmSync = new Mock<ICloudSyncService>();
+
+        using var coordinator = new SessionCoordinator(
+            monitor.Object,
+            clock,
+            TimeSpan.FromSeconds(5),
+            settings,
+            fileIOService.Object,
+            driveSync.Object,
+            notebookLmSync.Object);
+
+        coordinator.Start();
+        monitor.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "NotebookLM Test"));
+
+        clock.UtcNow = clock.UtcNow.AddSeconds(20);
+        monitor.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
+
+        driveSync.Verify(s => s.EnqueueUpload(It.IsAny<string>()), Times.Never,
+            "drive upload should not trigger when GoogleDriveEnabled is false");
+        notebookLmSync.Verify(s => s.EnqueueUpload(It.Is<string>(p => p.EndsWith(".mp3"))), Times.Once,
+            "notebooklm upload should trigger for the audio file when NotebookLmEnabled is true");
+    }
+
+    [Fact]
+    public void MeetingEnded_WhenNotebookLmDisabled_DoesNotEnqueueToNotebookLmService()
+    {
+        var monitor = CreateMonitor();
+        var clock = new FakeDateTimeProvider(new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc));
+        var settings = new AppSettings 
+        { 
+            DebounceSeconds = 5, 
+            GoogleDriveEnabled = false,
+            NotebookLmEnabled = false,
+            MinFileSizeMb = 0.1 
+        };
+        var fileIOService = new Mock<IFileIOService>();
+        fileIOService.Setup(f => f.GetFileSize(It.IsAny<string>())).Returns(1024 * 1024);
+
+        var driveSync = new Mock<ICloudSyncService>();
+        var notebookLmSync = new Mock<ICloudSyncService>();
+
+        using var coordinator = new SessionCoordinator(
+            monitor.Object,
+            clock,
+            TimeSpan.FromSeconds(5),
+            settings,
+            fileIOService.Object,
+            driveSync.Object,
+            notebookLmSync.Object);
+
+        coordinator.Start();
+        monitor.Raise(m => m.MeetingStarted += null, new MeetingDetectedEventArgs("zoom", "NotebookLM Disabled Test"));
+
+        clock.UtcNow = clock.UtcNow.AddSeconds(20);
+        monitor.Raise(m => m.MeetingEnded += null, EventArgs.Empty);
+
+        notebookLmSync.Verify(s => s.EnqueueUpload(It.IsAny<string>()), Times.Never,
+            "notebooklm upload must not trigger when NotebookLmEnabled is false");
+    }
+
     private static Mock<IAudioSessionMonitor> CreateMonitor()
     {
         var isMonitoring = false;
