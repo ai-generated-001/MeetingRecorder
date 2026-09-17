@@ -43,6 +43,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly ITranscriptionService _transcriptionService;
     private readonly IInsightService _insightService;
     private readonly TranscriptionOverlayViewModel _overlayViewModel;
+    private readonly IPythonEnvSetupService? _pythonEnvSetupService;
     private TranscriptionOverlayWindow? _overlayWindow;
 
     private readonly List<TranscriptionSegment> _recentSegments = new();
@@ -135,7 +136,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IServiceProvider serviceProvider,
         ITranscriptionService transcriptionService,
         IInsightService insightService,
-        TranscriptionOverlayViewModel overlayViewModel)
+        TranscriptionOverlayViewModel overlayViewModel,
+        IPythonEnvSetupService? pythonEnvSetupService = null)
     {
         _settings = settings;
         _recorder = recorder;
@@ -147,6 +149,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _transcriptionService = transcriptionService;
         _insightService = insightService;
         _overlayViewModel = overlayViewModel;
+        _pythonEnvSetupService = pythonEnvSetupService ?? serviceProvider.GetService<IPythonEnvSetupService>();
 
         _isAiEnabled = _settings.TranscriptionEnabled;
         _overlayViewModel.IsAiActive = _isAiEnabled;
@@ -163,6 +166,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _recorder.MicrophoneWarning += OnMicrophoneWarning;
         _recorder.MicrophoneRestored += OnMicrophoneRestored;
         _transcriptionService.SegmentTranscribed += OnSegmentTranscribed;
+
+        if (_pythonEnvSetupService != null)
+        {
+            _pythonEnvSetupService.SetupCompleted += OnPythonEnvSetupCompleted;
+        }
 
         IsOrganizing = _cloudSyncService.IsOrganizing;
         OrganizeStatusText = _cloudSyncService.OrganizeStatusText;
@@ -667,8 +675,42 @@ public partial class MainViewModel : ObservableObject, IDisposable
         });
     }
 
+    private void OnPythonEnvSetupCompleted(object? sender, PythonEnvSetupCompletedEventArgs e)
+    {
+        ExecuteOnUIThread(() =>
+        {
+            bool isSettingsWindowOpen = false;
+            try
+            {
+                isSettingsWindowOpen = System.Windows.Application.Current?.Windows.OfType<SettingsWindow>().Any(w => w.IsVisible) == true;
+            }
+            catch { }
+
+            if (!isSettingsWindowOpen)
+            {
+                if (e.Success)
+                {
+                    App.ShowTrayNotification(
+                        "Meeting Recorder",
+                        "Python environment and notebooklm-py setup completed successfully.");
+                }
+                else
+                {
+                    App.ShowTrayNotification(
+                        "Meeting Recorder",
+                        $"Python environment setup failed: {e.ErrorMessage}");
+                }
+            }
+        });
+    }
+
     public void Dispose()
     {
+        if (_pythonEnvSetupService != null)
+        {
+            _pythonEnvSetupService.SetupCompleted -= OnPythonEnvSetupCompleted;
+        }
+
         _sessionCoordinator.RecordingRequested -= OnRecordingRequested;
         _sessionCoordinator.RecordingStopped -= OnRecordingStopped;
         _sessionCoordinator.StateChanged -= OnStateChanged;

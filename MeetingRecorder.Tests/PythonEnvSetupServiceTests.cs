@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,6 +107,60 @@ public class PythonEnvSetupServiceTests
         finally
         {
             try { File.Delete(explicitFile); } catch { }
+        }
+    }
+
+    [Fact]
+    public void StartSetup_WhenCalledTwice_RejectsConcurrentRun()
+    {
+        using var service = new PythonEnvSetupService();
+        bool first = service.StartSetup();
+        bool second = service.StartSetup();
+
+        first.Should().BeTrue();
+        second.Should().BeFalse();
+        service.IsSettingUp.Should().BeTrue();
+
+        service.Cancel();
+    }
+
+    [Fact]
+    public async Task Cancel_WhenRunning_SetsIsSettingUpToFalse()
+    {
+        using var service = new PythonEnvSetupService();
+        var tcs = new TaskCompletionSource<PythonEnvSetupCompletedEventArgs>();
+        service.SetupCompleted += (sender, e) => tcs.TrySetResult(e);
+
+        service.StartSetup();
+        service.IsSettingUp.Should().BeTrue();
+
+        service.Cancel();
+
+        var completed = await Task.WhenAny(tcs.Task, Task.Delay(3000));
+        completed.Should().Be(tcs.Task);
+
+        service.IsSettingUp.Should().BeFalse();
+        var result = await tcs.Task;
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("cancelled");
+    }
+
+    [Fact]
+    public void SetupProgressChanged_FiresEventOnStart()
+    {
+        using var service = new PythonEnvSetupService();
+        string? receivedProgress = null;
+        service.SetupProgressChanged += (sender, e) => receivedProgress = e.ProgressText;
+
+        service.StartSetup();
+        try
+        {
+            receivedProgress.Should().NotBeNullOrWhiteSpace();
+            service.ProgressText.Should().NotBeNullOrWhiteSpace();
+        }
+        finally
+        {
+            service.Cancel();
         }
     }
 }

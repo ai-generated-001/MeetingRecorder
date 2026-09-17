@@ -267,6 +267,11 @@ public partial class SettingsViewModel : ObservableObject
         OrganizeStatusText = _cloudSyncService.OrganizeStatusText;
         OrganizeProgressValue = _cloudSyncService.OrganizeProgressValue;
         _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
+
+        IsSettingUpPythonEnv = _pythonEnvSetupService.IsSettingUp;
+        PythonEnvProgressText = _pythonEnvSetupService.ProgressText;
+        _pythonEnvSetupService.SetupProgressChanged += OnPythonEnvSetupProgressChanged;
+        _pythonEnvSetupService.SetupCompleted += OnPythonEnvSetupCompleted;
     }
 
     public void LoadMicrophones()
@@ -488,47 +493,60 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SetupPythonEnvAsync()
+    private void SetupPythonEnv()
     {
         if (IsSettingUpPythonEnv) return;
 
         IsSettingUpPythonEnv = true;
         PythonEnvProgressText = "Starting setup...";
 
-        var progress = new Progress<string>(msg =>
+        bool started = _pythonEnvSetupService.StartSetup();
+        if (!started)
         {
-            PythonEnvProgressText = msg;
+            IsSettingUpPythonEnv = _pythonEnvSetupService.IsSettingUp;
+            PythonEnvProgressText = _pythonEnvSetupService.ProgressText;
+        }
+    }
+
+    private bool _isCleanedUp;
+
+    private void OnPythonEnvSetupProgressChanged(object? sender, PythonEnvSetupProgressEventArgs e)
+    {
+        ExecuteOnUIThread(() =>
+        {
+            PythonEnvProgressText = e.ProgressText;
         });
+    }
 
-        try
-        {
-            await _pythonEnvSetupService.SetupEnvironmentAsync(progress, CancellationToken.None);
-            UpdateNotebookLmState();
-
-            System.Windows.MessageBox.Show(
-                System.Windows.Application.Current.MainWindow,
-                "Python environment and notebooklm-py setup successfully!",
-                "NotebookLM Environment Setup",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[SettingsViewModel] Python environment setup failed: {ex.Message}");
-            PythonEnvProgressText = $"Error: {ex.Message}";
-
-            System.Windows.MessageBox.Show(
-                System.Windows.Application.Current.MainWindow,
-                $"Failed to set up Python environment:\n{ex.Message}",
-                "Setup Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-        finally
+    private void OnPythonEnvSetupCompleted(object? sender, PythonEnvSetupCompletedEventArgs e)
+    {
+        ExecuteOnUIThread(() =>
         {
             IsSettingUpPythonEnv = false;
             UpdateNotebookLmState();
-        }
+
+            if (!_isCleanedUp)
+            {
+                if (e.Success)
+                {
+                    System.Windows.MessageBox.Show(
+                        System.Windows.Application.Current.MainWindow,
+                        "Python environment and notebooklm-py setup successfully!",
+                        "NotebookLM Environment Setup",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show(
+                        System.Windows.Application.Current.MainWindow,
+                        $"Failed to set up Python environment:\n{e.ErrorMessage}",
+                        "Setup Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        });
     }
 
     [RelayCommand]
@@ -809,6 +827,9 @@ public partial class SettingsViewModel : ObservableObject
 
     public void Cleanup()
     {
+        _isCleanedUp = true;
         _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
+        _pythonEnvSetupService.SetupProgressChanged -= OnPythonEnvSetupProgressChanged;
+        _pythonEnvSetupService.SetupCompleted -= OnPythonEnvSetupCompleted;
     }
 }

@@ -401,4 +401,16 @@ public class MainViewModelTests
         // Assert
         vm.StatusText.Should().Be(Resources.Recording);
     }
+
+    [Fact]
+    public void PythonEnvSetupCompleted_WhenReceived_DoesNotThrow()
+    {
+        var pythonMock = new Mock<IPythonEnvSetupService>();
+        _serviceProviderMock.Setup(sp => sp.GetService(typeof(IPythonEnvSetupService))).Returns(pythonMock.Object);
+
+        using var vm = CreateMainViewModel();
+
+        var act = () => pythonMock.Raise(p => p.SetupCompleted += null, new PythonEnvSetupCompletedEventArgs(true));
+        act.Should().NotThrow();
+    }
 }

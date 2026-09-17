@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,8 +8,117 @@ using System.Threading.Tasks;
 
 namespace MeetingRecorder.Services;
 
-public sealed class PythonEnvSetupService : IPythonEnvSetupService
+public sealed class PythonEnvSetupService : IPythonEnvSetupService, IDisposable
 {
+    private readonly object _setupLock = new();
+    private readonly object _processLock = new();
+    private Process? _currentProcess;
+    private CancellationTokenSource? _setupCts;
+    private Task? _setupTask;
+
+    public bool IsSettingUp { get; private set; }
+    public string ProgressText { get; private set; } = "";
+
+    public event EventHandler<PythonEnvSetupProgressEventArgs>? SetupProgressChanged;
+    public event EventHandler<PythonEnvSetupCompletedEventArgs>? SetupCompleted;
+
+    public bool StartSetup()
+    {
+        lock (_setupLock)
+        {
+            if (IsSettingUp)
+            {
+                return false;
+            }
+
+            IsSettingUp = true;
+            ProgressText = "Starting setup...";
+            SetupProgressChanged?.Invoke(this, new PythonEnvSetupProgressEventArgs(ProgressText));
+
+            _setupCts = new CancellationTokenSource();
+            var token = _setupCts.Token;
+
+            var progress = new Progress<string>(msg =>
+            {
+                ProgressText = msg;
+                SetupProgressChanged?.Invoke(this, new PythonEnvSetupProgressEventArgs(msg));
+            });
+
+            _setupTask = Task.Run(async () =>
+            {
+                try
+                {
+                    await SetupEnvironmentAsync(progress, token);
+                    lock (_setupLock)
+                    {
+                        IsSettingUp = false;
+                    }
+                    SetupCompleted?.Invoke(this, new PythonEnvSetupCompletedEventArgs(true));
+                }
+                catch (OperationCanceledException)
+                {
+                    lock (_setupLock)
+                    {
+                        IsSettingUp = false;
+                        ProgressText = "Setup cancelled.";
+                    }
+                    SetupCompleted?.Invoke(this, new PythonEnvSetupCompletedEventArgs(false, "Setup was cancelled."));
+                }
+                catch (Exception ex)
+                {
+                    lock (_setupLock)
+                    {
+                        IsSettingUp = false;
+                        ProgressText = $"Error: {ex.Message}";
+                    }
+                    SetupCompleted?.Invoke(this, new PythonEnvSetupCompletedEventArgs(false, ex.Message));
+                }
+            });
+
+            return true;
+        }
+    }
+
+    public void Cancel()
+    {
+        lock (_setupLock)
+        {
+            if (!IsSettingUp) return;
+            try
+            {
+                _setupCts?.Cancel();
+            }
+            catch { }
+
+            KillCurrentProcess();
+        }
+    }
+
+    private void KillCurrentProcess()
+    {
+        lock (_processLock)
+        {
+            try
+            {
+                if (_currentProcess != null && !_currentProcess.HasExited)
+                {
+                    _currentProcess.Kill(entireProcessTree: true);
+                }
+            }
+            catch { }
+            finally
+            {
+                _currentProcess = null;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        Cancel();
+        _setupCts?.Dispose();
+    }
+
     public static string GetVenvScriptsDirectory()
     {
         var basePath = App.PythonEnvFolderPath;
@@ -60,6 +169,7 @@ public sealed class PythonEnvSetupService : IPythonEnvSetupService
 
     private static async Task<bool> TestPythonCandidateAsync(string executable, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             var psi = new ProcessStartInfo
@@ -82,10 +192,15 @@ public sealed class PythonEnvSetupService : IPythonEnvSetupService
             if (completedTask == timeoutTask)
             {
                 try { process.Kill(); } catch { }
+                cancellationToken.ThrowIfCancellationRequested();
                 return false;
             }
 
             return process.ExitCode == 0;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch
         {
@@ -95,9 +210,11 @@ public sealed class PythonEnvSetupService : IPythonEnvSetupService
 
     public async Task SetupEnvironmentAsync(IProgress<string> progress, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         progress.Report("Detecting host Python runtime...");
 
         var hostPython = await FindHostPythonExecutableAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(hostPython))
         {
             throw new InvalidOperationException(
@@ -146,7 +263,7 @@ public sealed class PythonEnvSetupService : IPythonEnvSetupService
         progress.Report($"Environment setup complete! CLI ready: {notebookLmExe}");
     }
 
-    private static async Task<(int ExitCode, string Output)> RunCommandAsync(
+    private async Task<(int ExitCode, string Output)> RunCommandAsync(
         string fileName,
         string arguments,
         IProgress<string> progress,
@@ -163,6 +280,12 @@ public sealed class PythonEnvSetupService : IPythonEnvSetupService
         };
 
         using var process = new Process { StartInfo = psi };
+        lock (_processLock)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            _currentProcess = process;
+        }
+
         var sb = new StringBuilder();
 
         process.OutputDataReceived += (_, e) =>
@@ -183,11 +306,36 @@ public sealed class PythonEnvSetupService : IPythonEnvSetupService
             }
         };
 
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
+        try
+        {
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
 
-        await process.WaitForExitAsync(cancellationToken);
-        return (process.ExitCode, sb.ToString().Trim());
+            await process.WaitForExitAsync(cancellationToken);
+            return (process.ExitCode, sb.ToString().Trim());
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+            catch { }
+            throw;
+        }
+        finally
+        {
+            lock (_processLock)
+            {
+                if (_currentProcess == process)
+                {
+                    _currentProcess = null;
+                }
+            }
+        }
     }
 }

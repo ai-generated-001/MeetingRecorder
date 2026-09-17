@@ -175,4 +175,43 @@ public class SettingsViewModelTests : IDisposable
         _settings.GoogleDriveFolderId.Should().BeEmpty();
         requestCloseResult.Should().BeTrue();
     }
+
+    [Fact]
+    public void Constructor_WhenPythonEnvIsSettingUp_InitializesWithActiveState()
+    {
+        _pythonEnvSetupMock.SetupGet(x => x.IsSettingUp).Returns(true);
+        _pythonEnvSetupMock.SetupGet(x => x.ProgressText).Returns("Installing pip packages...");
+
+        var vm = CreateViewModel();
+
+        vm.IsSettingUpPythonEnv.Should().BeTrue();
+        vm.PythonEnvProgressText.Should().Be("Installing pip packages...");
+    }
+
+    [Fact]
+    public void SetupPythonEnvCommand_CallsStartSetupOnService()
+    {
+        _pythonEnvSetupMock.Setup(x => x.StartSetup()).Returns(true);
+
+        var vm = CreateViewModel();
+        vm.SetupPythonEnvCommand.Execute(null);
+
+        _pythonEnvSetupMock.Verify(x => x.StartSetup(), Times.Once);
+        vm.IsSettingUpPythonEnv.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Cleanup_UnsubscribesFromPythonEnvSetupEvents()
+    {
+        var vm = CreateViewModel();
+
+        var act = () =>
+        {
+            vm.Cleanup();
+            _pythonEnvSetupMock.Raise(x => x.SetupProgressChanged += null, new PythonEnvSetupProgressEventArgs("Progress"));
+            _pythonEnvSetupMock.Raise(x => x.SetupCompleted += null, new PythonEnvSetupCompletedEventArgs(true));
+        };
+
+        act.Should().NotThrow();
+    }
 }

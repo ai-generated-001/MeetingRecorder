@@ -213,8 +213,32 @@ public partial class App : Application
         mainWindow.Activate();
     }
 
+    public static void ShowTrayNotification(string title, string message)
+    {
+        if (Application.Current is App app && app._notifyIcon != null)
+        {
+            app.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    app._notifyIcon.ShowNotification(title, message);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to show notification: {ex.Message}");
+                }
+            });
+        }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
+        try
+        {
+            _serviceProvider?.GetService<IPythonEnvSetupService>()?.Cancel();
+        }
+        catch { }
+
         Microsoft.Win32.SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         _notifyIcon?.Dispose();
         _serviceProvider?.Dispose();
