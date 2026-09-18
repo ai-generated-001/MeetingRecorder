@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -118,6 +119,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string AppDescription => Resources.AppDescription;
     public string StatusLabel => Resources.StatusLabel;
     public string OutputFormatLabel => Resources.OutputFormatLabel;
+    public string MicrophoneDeviceLabel => Resources.MicrophoneDeviceLabel;
     public string StartMonitoringText => Resources.StartMonitoring;
     public string StopMonitoringText => Resources.StopMonitoring;
     public string ToggleMonitoringText => Status == AppStatus.Idle ? Resources.StartMonitoring : Resources.StopMonitoring;
@@ -125,6 +127,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string OpenFolderText => Resources.OpenFolder;
     public string ShowStatusWindowText => Resources.ShowStatusWindow;
     public string UploadToDriveText => Resources.UploadToDrive;
+
+    private readonly IAudioDeviceService? _audioDeviceService;
+    public ObservableCollection<AudioDeviceItem> AvailableMicrophones { get; } = new();
+
+    public string SelectedMicrophoneDeviceId
+    {
+        get => _settings.MicrophoneDeviceId ?? "";
+        set
+        {
+            var newVal = value ?? "";
+            if (_settings.MicrophoneDeviceId != newVal)
+            {
+                _settings.MicrophoneDeviceId = newVal;
+                OnPropertyChanged();
+                App.SaveSettings(_settings);
+                if (_recorder.IsRecording)
+                {
+                    _recorder.SwitchMicrophone(newVal);
+                }
+            }
+        }
+    }
 
     public MainViewModel(
         AppSettings settings,
@@ -137,7 +161,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ITranscriptionService transcriptionService,
         IInsightService insightService,
         TranscriptionOverlayViewModel overlayViewModel,
-        IPythonEnvSetupService? pythonEnvSetupService = null)
+        IPythonEnvSetupService? pythonEnvSetupService = null,
+        IAudioDeviceService? audioDeviceService = null)
     {
         _settings = settings;
         _recorder = recorder;
@@ -150,6 +175,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _insightService = insightService;
         _overlayViewModel = overlayViewModel;
         _pythonEnvSetupService = pythonEnvSetupService ?? serviceProvider.GetService<IPythonEnvSetupService>();
+        _audioDeviceService = audioDeviceService ?? serviceProvider.GetService<IAudioDeviceService>();
+
+        if (_audioDeviceService != null)
+        {
+            _audioDeviceService.DevicesChanged += OnAudioDevicesChanged;
+            _audioDeviceService.DefaultDeviceChanged += OnAudioDevicesChanged;
+        }
+        PopulateMicrophonesDirect();
 
         _isAiEnabled = _settings.TranscriptionEnabled;
         _overlayViewModel.IsAiActive = _isAiEnabled;
@@ -575,7 +608,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         ExecuteOnUIThread(() =>
         {
-            _micWarningText = Resources.MicrophoneSilentWarning;
+            _micWarningText = string.IsNullOrWhiteSpace(message) ? Resources.MicrophoneSilentWarning : message;
             UpdateStatusText();
         });
     }
@@ -587,6 +620,54 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _micWarningText = null;
             UpdateStatusText();
         });
+    }
+
+    private System.Threading.Timer? _deviceRefreshDebounce;
+    private readonly object _deviceRefreshLock = new();
+    internal int DeviceRefreshDebounceMs { get; set; } = 150;
+
+    private void PopulateMicrophonesDirect()
+    {
+        var devices = _audioDeviceService?.GetAvailableMicrophones() ?? new List<AudioDeviceItem>
+        {
+            new AudioDeviceItem(Resources.MicrophoneDefault, "")
+        };
+
+        AvailableMicrophones.Clear();
+        foreach (var d in devices)
+        {
+            AvailableMicrophones.Add(d);
+        }
+
+        if (!AvailableMicrophones.Any(m => m.Id == _settings.MicrophoneDeviceId))
+        {
+            SelectedMicrophoneDeviceId = "";
+        }
+        else
+        {
+            OnPropertyChanged(nameof(SelectedMicrophoneDeviceId));
+        }
+    }
+
+    [RelayCommand]
+    public void RefreshMicrophones()
+    {
+        ExecuteOnUIThread(PopulateMicrophonesDirect);
+    }
+
+    private void OnAudioDevicesChanged(object? sender, EventArgs e)
+    {
+        if (DeviceRefreshDebounceMs <= 0)
+        {
+            RefreshMicrophones();
+            return;
+        }
+
+        lock (_deviceRefreshLock)
+        {
+            _deviceRefreshDebounce?.Dispose();
+            _deviceRefreshDebounce = new System.Threading.Timer(_ => RefreshMicrophones(), null, DeviceRefreshDebounceMs, Timeout.Infinite);
+        }
     }
 
     private void UpdateStatusText()
@@ -722,6 +803,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _recorder.MicrophoneRestored -= OnMicrophoneRestored;
         _transcriptionService.SegmentTranscribed -= OnSegmentTranscribed;
         _overlayViewModel.ToggleAiRequested -= ToggleAi;
+
+        if (_audioDeviceService != null)
+        {
+            _audioDeviceService.DevicesChanged -= OnAudioDevicesChanged;
+            _audioDeviceService.DefaultDeviceChanged -= OnAudioDevicesChanged;
+        }
+
+        lock (_deviceRefreshLock)
+        {
+            _deviceRefreshDebounce?.Dispose();
+            _deviceRefreshDebounce = null;
+        }
         
         ExecuteOnUIThread(() =>
         {

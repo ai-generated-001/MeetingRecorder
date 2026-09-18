@@ -555,9 +555,27 @@ namespace MeetingRecorder {
             }
         }
 
+        public static string MicrophoneDefaultWithDevice {
+            get {
+                return ResourceManager.GetString("MicrophoneDefaultWithDevice", resourceCulture);
+            }
+        }
+
         public static string MicrophoneSilentWarning {
             get {
                 return ResourceManager.GetString("MicrophoneSilentWarning", resourceCulture);
+            }
+        }
+
+        public static string MicrophoneDisconnectedWarning {
+            get {
+                return ResourceManager.GetString("MicrophoneDisconnectedWarning", resourceCulture);
+            }
+        }
+
+        public static string Refresh {
+            get {
+                return ResourceManager.GetString("Refresh", resourceCulture);
             }
         }
     }

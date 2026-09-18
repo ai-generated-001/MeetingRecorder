@@ -165,7 +165,6 @@ public partial class SettingsViewModel : ObservableObject
 
     public record LanguageItem(string DisplayName, string Code);
     public record ThemeItem(string DisplayName, string Code);
-    public record AudioDeviceItem(string DisplayName, string Id);
 
     public ObservableCollection<AudioDeviceItem> AvailableMicrophones { get; } = new();
 
@@ -200,6 +199,7 @@ public partial class SettingsViewModel : ObservableObject
 
     private readonly IInsightService _insightService;
     private readonly IDashScopePhraseService _phraseService;
+    private readonly IAudioDeviceService? _audioDeviceService;
 
     public SettingsViewModel(
         AppSettings settings,
@@ -209,7 +209,8 @@ public partial class SettingsViewModel : ObservableObject
         ITranscriptionService transcriptionService,
         IInsightService insightService,
         IDashScopePhraseService phraseService,
-        IPythonEnvSetupService pythonEnvSetupService)
+        IPythonEnvSetupService pythonEnvSetupService,
+        IAudioDeviceService? audioDeviceService = null)
     {
         _settings = settings;
         _cloudSyncService = cloudSyncService;
@@ -219,6 +220,7 @@ public partial class SettingsViewModel : ObservableObject
         _insightService = insightService;
         _phraseService = phraseService;
         _pythonEnvSetupService = pythonEnvSetupService;
+        _audioDeviceService = audioDeviceService ?? serviceProvider.GetService(typeof(IAudioDeviceService)) as IAudioDeviceService;
 
         // Initialize from settings
         OutputDirectory = string.IsNullOrWhiteSpace(_settings.OutputDirectory)
@@ -277,20 +279,32 @@ public partial class SettingsViewModel : ObservableObject
     public void LoadMicrophones()
     {
         AvailableMicrophones.Clear();
-        AvailableMicrophones.Add(new AudioDeviceItem(Resources.MicrophoneDefault, ""));
-
-        try
+        IReadOnlyList<AudioDeviceItem> devices;
+        if (_audioDeviceService != null)
         {
-            using var enumerator = new MMDeviceEnumerator();
-            var endpoints = enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active);
-            foreach (var device in endpoints)
+            devices = _audioDeviceService.GetAvailableMicrophones();
+        }
+        else
+        {
+            try
             {
-                AvailableMicrophones.Add(new AudioDeviceItem(device.FriendlyName, device.ID));
+                var items = new List<AudioDeviceItem> { new(Resources.MicrophoneDefault, "") };
+                using var enumerator = new MMDeviceEnumerator();
+                foreach (var d in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
+                {
+                    items.Add(new AudioDeviceItem(d.FriendlyName, d.ID));
+                }
+                devices = items;
+            }
+            catch
+            {
+                devices = new List<AudioDeviceItem> { new(Resources.MicrophoneDefault, "") };
             }
         }
-        catch (Exception ex)
+
+        foreach (var device in devices)
         {
-            Debug.WriteLine($"[SettingsViewModel] Failed to enumerate capture devices: {ex.Message}");
+            AvailableMicrophones.Add(device);
         }
 
         SelectedMicrophoneDeviceId = AvailableMicrophones.Any(m => m.Id == _settings.MicrophoneDeviceId)

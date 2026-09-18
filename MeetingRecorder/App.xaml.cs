@@ -144,6 +144,7 @@ public partial class App : Application
         services.AddSingleton<IScreenCaptureService, ScreenCaptureService>();
         services.AddSingleton<IGlobalHotkeyService>(_ => new GlobalHotkeyService(IntPtr.Zero));
         services.AddSingleton<IAudioSessionMonitor, AudioSessionDetector>();
+        services.AddSingleton<IAudioDeviceService, AudioDeviceService>();
         services.AddSingleton<IAudioRecorder, WasapiRecorder>();
         services.AddSingleton<ICloudSyncService>(sp =>
             new GoogleDriveSyncService(sp.GetRequiredService<AppSettings>()));

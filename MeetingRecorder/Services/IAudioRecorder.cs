@@ -11,4 +11,5 @@ public interface IAudioRecorder : IDisposable
     event EventHandler? MicrophoneRestored;
     void Start(string filePath, OutputFormat format = OutputFormat.Mp3);
     void Stop();
+    bool SwitchMicrophone(string? deviceId);
 }

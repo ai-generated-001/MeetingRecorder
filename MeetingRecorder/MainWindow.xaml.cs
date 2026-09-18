@@ -28,4 +28,9 @@ public partial class MainWindow : Window
         this.Hide();
         base.OnClosing(e);
     }
+
+    private void MicrophoneComboBox_DropDownOpened(object sender, System.EventArgs e)
+    {
+        _viewModel.RefreshMicrophones();
+    }
 }

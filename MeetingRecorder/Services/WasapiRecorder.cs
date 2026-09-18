@@ -34,6 +34,9 @@ public class WasapiRecorder : IAudioRecorder
     private DateTime _lastMicAudioTime;
     private bool _hasReportedMicSilence;
 
+    private readonly object _micLock = new();
+    private WaveFormat? _mixFormat;
+
     public bool IsRecording => _isRecording;
 
     public event EventHandler<AudioDataEventArgs>? AudioDataAvailable;
@@ -59,9 +62,13 @@ public class WasapiRecorder : IAudioRecorder
 
         // Common format for mixing: 44.1kHz, Stereo, 32-bit float
         var mixFormat = WaveFormat.CreateIeeeFloatWaveFormat(44100, 2);
+        _mixFormat = mixFormat;
 
         _loopbackCapture = new WasapiLoopbackCapture();
-        _micCapture = CreateMicCapture();
+        lock (_micLock)
+        {
+            _micCapture = CreateMicCapture(_settings?.MicrophoneDeviceId);
+        }
 
         Debug.WriteLine($"[WasapiRecorder] Loopback format: {_loopbackCapture.WaveFormat.SampleRate}Hz, {_loopbackCapture.WaveFormat.Channels}ch, {_loopbackCapture.WaveFormat.BitsPerSample}bit");
         Debug.WriteLine($"[WasapiRecorder] Mic format: {_micCapture.WaveFormat.SampleRate}Hz, {_micCapture.WaveFormat.Channels}ch, {_micCapture.WaveFormat.BitsPerSample}bit");
@@ -81,28 +88,7 @@ public class WasapiRecorder : IAudioRecorder
             }
         };
 
-        _micCapture.DataAvailable += (s, e) =>
-        {
-            if (e.BytesRecorded > 0)
-            {
-                float peak = CalculatePeak(e.Buffer, e.BytesRecorded, _micCapture.WaveFormat);
-                if (peak > 0.001f) // above -60dB noise threshold
-                {
-                    _lastMicAudioTime = DateTime.UtcNow;
-                    if (_hasReportedMicSilence)
-                    {
-                        _hasReportedMicSilence = false;
-                        MicrophoneRestored?.Invoke(this, EventArgs.Empty);
-                    }
-                }
-
-                var resampled = Resample(e.Buffer, e.BytesRecorded, _micCapture.WaveFormat, mixFormat);
-                if (resampled.Length > 0)
-                {
-                    _micBuffer.AddSamples(resampled, 0, resampled.Length);
-                }
-            }
-        };
+        AttachMicCaptureHandlers(_micCapture, mixFormat);
 
         _mixer = new MixingSampleProvider(new[] { _loopbackBuffer.ToSampleProvider(), _micBuffer.ToSampleProvider() });
 
@@ -124,45 +110,145 @@ public class WasapiRecorder : IAudioRecorder
         _cts = new CancellationTokenSource();
         
         _loopbackCapture.StartRecording();
-        _micCapture.StartRecording();
+        lock (_micLock)
+        {
+            _micCapture.StartRecording();
+        }
 
         _recordingTask = Task.Run(() => RecordLoop(_cts.Token));
     }
 
-    private WasapiCapture CreateMicCapture()
+    private void AttachMicCaptureHandlers(WasapiCapture capture, WaveFormat mixFormat)
     {
-        string? targetDeviceId = _settings?.MicrophoneDeviceId;
-        if (!string.IsNullOrWhiteSpace(targetDeviceId))
+        capture.DataAvailable += (s, e) =>
+        {
+            if (e.BytesRecorded > 0)
+            {
+                float peak = CalculatePeak(e.Buffer, e.BytesRecorded, capture.WaveFormat);
+                if (peak > 0.001f) // above -60dB noise threshold
+                {
+                    _lastMicAudioTime = DateTime.UtcNow;
+                    if (_hasReportedMicSilence)
+                    {
+                        _hasReportedMicSilence = false;
+                        MicrophoneRestored?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+
+                var resampled = Resample(e.Buffer, e.BytesRecorded, capture.WaveFormat, mixFormat);
+                if (resampled.Length > 0)
+                {
+                    _micBuffer?.AddSamples(resampled, 0, resampled.Length);
+                }
+            }
+        };
+
+        capture.RecordingStopped += (s, e) =>
+        {
+            if (e.Exception != null && _isRecording)
+            {
+                Debug.WriteLine($"[WasapiRecorder] Mic capture stopped with exception: {e.Exception.Message}");
+                MicrophoneWarning?.Invoke(this, Resources.MicrophoneDisconnectedWarning);
+                Task.Run(() => SwitchMicrophone(""));
+            }
+        };
+    }
+
+    public bool SwitchMicrophone(string? deviceId)
+    {
+        if (_settings != null && deviceId != null)
+        {
+            _settings.MicrophoneDeviceId = deviceId;
+        }
+
+        if (!_isRecording || _mixFormat == null)
+        {
+            return true;
+        }
+
+        lock (_micLock)
         {
             try
             {
-                using var enumerator = new MMDeviceEnumerator();
-                var device = enumerator.GetDevice(targetDeviceId);
-                if (device != null && device.State == DeviceState.Active)
+                var oldMic = _micCapture;
+                var newMic = CreateMicCapture(deviceId);
+
+                AttachMicCaptureHandlers(newMic, _mixFormat);
+                newMic.StartRecording();
+
+                _micCapture = newMic;
+
+                if (oldMic != null)
                 {
-                    Debug.WriteLine($"[WasapiRecorder] Using configured microphone: {device.FriendlyName} ({device.ID})");
-                    return new WasapiCapture(device);
+                    try
+                    {
+                        oldMic.StopRecording();
+                        oldMic.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[WasapiRecorder] Error stopping/disposing previous mic: {ex.Message}");
+                    }
                 }
+
+                _lastMicAudioTime = DateTime.UtcNow;
+                _hasReportedMicSilence = false;
+                Debug.WriteLine($"[WasapiRecorder] Switched microphone to: {deviceId}");
+                return true;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[WasapiRecorder] Failed to open configured mic {targetDeviceId}: {ex.Message}. Falling back to default.");
+                Debug.WriteLine($"[WasapiRecorder] Failed to switch microphone: {ex.Message}");
+                return false;
             }
         }
+    }
+
+    private WasapiCapture CreateMicCapture(string? targetDeviceId = null)
+    {
+        targetDeviceId ??= _settings?.MicrophoneDeviceId;
 
         try
         {
             using var enumerator = new MMDeviceEnumerator();
-            var defaultMic = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
-            if (defaultMic != null)
+
+            if (!string.IsNullOrWhiteSpace(targetDeviceId))
             {
-                Debug.WriteLine($"[WasapiRecorder] Using default communications microphone: {defaultMic.FriendlyName}");
-                return new WasapiCapture(defaultMic);
+                try
+                {
+                    var device = enumerator.GetDevice(targetDeviceId);
+                    if (device != null && device.State == DeviceState.Active)
+                    {
+                        Debug.WriteLine($"[WasapiRecorder] Using configured microphone: {device.FriendlyName} ({device.ID})");
+                        return new WasapiCapture(device);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[WasapiRecorder] Failed to open configured mic {targetDeviceId}: {ex.Message}. Falling back to default.");
+                }
+            }
+
+            foreach (var role in new[] { Role.Communications, Role.Console })
+            {
+                try
+                {
+                    var defaultMic = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, role);
+                    if (defaultMic != null)
+                    {
+                        Debug.WriteLine($"[WasapiRecorder] Using default {role} microphone: {defaultMic.FriendlyName}");
+                        return new WasapiCapture(defaultMic);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[WasapiRecorder] Failed to query default {role} endpoint: {ex.Message}");
+                }
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[WasapiRecorder] Failed to query default communications endpoint: {ex.Message}");
+            Debug.WriteLine($"[WasapiRecorder] Error enumerating audio devices: {ex.Message}");
         }
 
         Debug.WriteLine("[WasapiRecorder] Falling back to default WasapiCapture()");
@@ -327,7 +413,10 @@ public class WasapiRecorder : IAudioRecorder
         _recordingTask?.Wait();
 
         _loopbackCapture?.StopRecording();
-        _micCapture?.StopRecording();
+        lock (_micLock)
+        {
+            _micCapture?.StopRecording();
+        }
 
         _waveWriter?.Dispose();
         _waveWriter = null;
@@ -335,7 +424,11 @@ public class WasapiRecorder : IAudioRecorder
         _mp3Writer = null;
 
         _loopbackCapture?.Dispose();
-        _micCapture?.Dispose();
+        lock (_micLock)
+        {
+            _micCapture?.Dispose();
+            _micCapture = null;
+        }
         
         _cts?.Dispose();
     }

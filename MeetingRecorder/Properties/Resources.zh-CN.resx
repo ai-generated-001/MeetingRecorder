@@ -323,7 +323,16 @@
   <data name="MicrophoneDefault" xml:space="preserve">
     <value>系统默认（通信设备）</value>
   </data>
+  <data name="MicrophoneDefaultWithDevice" xml:space="preserve">
+    <value>系统默认（{0}）</value>
+  </data>
   <data name="MicrophoneSilentWarning" xml:space="preserve">
     <value>未检测到麦克风声音</value>
+  </data>
+  <data name="MicrophoneDisconnectedWarning" xml:space="preserve">
+    <value>选中的麦克风已断开，已自动切换为系统默认麦克风。</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>刷新</value>
   </data>
 </root>
