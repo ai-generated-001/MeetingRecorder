@@ -21,6 +21,7 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly AppSettings _settings;
     private readonly ICloudSyncService _cloudSyncService;
+    private readonly IGoogleDriveAccountService? _googleDriveAccountService;
     private readonly IServiceProvider _serviceProvider;
     private readonly IUpdateService _updateService;
     private readonly ITranscriptionService _transcriptionService;
@@ -210,7 +211,8 @@ public partial class SettingsViewModel : ObservableObject
         IInsightService insightService,
         IDashScopePhraseService phraseService,
         IPythonEnvSetupService pythonEnvSetupService,
-        IAudioDeviceService? audioDeviceService = null)
+        IAudioDeviceService? audioDeviceService = null,
+        IGoogleDriveAccountService? googleDriveAccountService = null)
     {
         _settings = settings;
         _cloudSyncService = cloudSyncService;
@@ -221,6 +223,7 @@ public partial class SettingsViewModel : ObservableObject
         _phraseService = phraseService;
         _pythonEnvSetupService = pythonEnvSetupService;
         _audioDeviceService = audioDeviceService ?? serviceProvider.GetService(typeof(IAudioDeviceService)) as IAudioDeviceService;
+        _googleDriveAccountService = googleDriveAccountService ?? serviceProvider.GetService(typeof(IGoogleDriveAccountService)) as IGoogleDriveAccountService;
 
         // Initialize from settings
         OutputDirectory = string.IsNullOrWhiteSpace(_settings.OutputDirectory)
@@ -442,9 +445,9 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            if (_cloudSyncService is GoogleDriveSyncService syncService)
+            if (_googleDriveAccountService != null)
             {
-                var status = await syncService.GetAccountStatusStringAsync(CancellationToken.None);
+                var status = await _googleDriveAccountService.GetAccountStatusStringAsync(CancellationToken.None);
                 GoogleDriveStatus = status;
                 GoogleDriveStatusForeground = status == Resources.GoogleDriveNotSignedIn
                     ? System.Windows.Media.Brushes.Gray
@@ -602,7 +605,7 @@ public partial class SettingsViewModel : ObservableObject
         App.SaveSettings(_settings);
 
         // Also reset the in-memory DriveService so the next upload re-authenticates.
-        (_cloudSyncService as GoogleDriveSyncService)?.ResetCredentials();
+        _googleDriveAccountService?.ResetCredentials();
 
         GoogleDriveStatus = Resources.GoogleDriveNotSignedIn;
         GoogleDriveStatusForeground = System.Windows.Media.Brushes.Gray;
@@ -629,9 +632,9 @@ public partial class SettingsViewModel : ObservableObject
 
         try
         {
-            if (_cloudSyncService is GoogleDriveSyncService syncService)
+            if (_googleDriveAccountService != null)
             {
-                var status = await syncService.LoginAsync(clientId, clientSecret, CancellationToken.None);
+                var status = await _googleDriveAccountService.LoginAsync(clientId, clientSecret, CancellationToken.None);
                 GoogleDriveStatus = status;
                 GoogleDriveStatusForeground = System.Windows.Media.Brushes.Green;
 
@@ -669,9 +672,9 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            if (_cloudSyncService is GoogleDriveSyncService syncService)
+            if (_googleDriveAccountService != null)
             {
-                var status = await syncService.GetAccountStatusStringAsync(CancellationToken.None);
+                var status = await _googleDriveAccountService.GetAccountStatusStringAsync(CancellationToken.None);
                 GoogleDriveStatus = status;
                 GoogleDriveStatusForeground = status == Resources.GoogleDriveNotSignedIn
                     ? System.Windows.Media.Brushes.Gray
@@ -797,7 +800,7 @@ public partial class SettingsViewModel : ObservableObject
         if (credentialsChanged)
         {
             _settings.GoogleDriveFolderId = "";
-            (_cloudSyncService as GoogleDriveSyncService)?.ResetCredentials();
+            _googleDriveAccountService?.ResetCredentials();
         }
 
         App.ApplyUiLanguage(_settings.UiLanguage);

@@ -8,7 +8,7 @@ using MeetingRecorder.Services;
 
 namespace MeetingRecorder.ViewModels;
 
-public partial class TranscriptionOverlayViewModel : ObservableObject
+public partial class TranscriptionOverlayViewModel : ObservableObject, IDisposable
 {
     private readonly ITranscriptionService _transcriptionService;
     private readonly IInsightService _insightService;
@@ -142,6 +142,14 @@ public partial class TranscriptionOverlayViewModel : ObservableObject
             IsInsightVisible = false;
             StatusText = "Waiting for audio...";
         });
+    }
+
+    public void Dispose()
+    {
+        _transcriptionService.SegmentTranscribed -= OnSegmentTranscribed;
+        _transcriptionService.PartialSegmentTranscribed -= OnPartialSegmentTranscribed;
+        _transcriptionService.StatusChanged -= OnStatusChanged;
+        _insightService.InsightGenerated -= OnInsightGenerated;
     }
 
     private void ExecuteOnUIThread(Action action)

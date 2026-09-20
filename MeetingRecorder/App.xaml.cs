@@ -11,6 +11,8 @@ using MeetingRecorder.Services;
 using MeetingRecorder.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Application = System.Windows.Application;
 
@@ -104,6 +106,37 @@ public partial class App : Application
                 var settings = JsonSerializer.Deserialize<AppSettings>(json);
                 if (settings != null)
                 {
+                    // Decrypt DashScope API key if encrypted
+                    if (!string.IsNullOrWhiteSpace(settings.EncryptedDashScopeApiKey))
+                    {
+                        try
+                        {
+                            var cipherBytes = Convert.FromBase64String(settings.EncryptedDashScopeApiKey);
+                            var plainBytes = ProtectedData.Unprotect(cipherBytes, null, DataProtectionScope.CurrentUser);
+                            settings.DashScopeApiKey = Encoding.UTF8.GetString(plainBytes);
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Failed to decrypt DashScope API key: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        // Check for legacy plaintext API key in raw JSON for transparent migration
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(json);
+                            if (doc.RootElement.TryGetProperty("DashScopeApiKey", out var keyProp) && 
+                                !string.IsNullOrWhiteSpace(keyProp.GetString()))
+                            {
+                                settings.DashScopeApiKey = keyProp.GetString()!;
+                                // Re-save immediately so it's persisted in encrypted form
+                                SaveSettings(settings);
+                            }
+                        }
+                        catch { }
+                    }
+
                     return settings;
                 }
             }
@@ -124,6 +157,26 @@ public partial class App : Application
             {
                 Directory.CreateDirectory(directory);
             }
+
+            // Encrypt DashScope API key before writing to disk
+            if (!string.IsNullOrWhiteSpace(settings.DashScopeApiKey))
+            {
+                try
+                {
+                    var plainBytes = Encoding.UTF8.GetBytes(settings.DashScopeApiKey);
+                    var cipherBytes = ProtectedData.Protect(plainBytes, null, DataProtectionScope.CurrentUser);
+                    settings.EncryptedDashScopeApiKey = Convert.ToBase64String(cipherBytes);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to encrypt DashScope API key: {ex.Message}");
+                }
+            }
+            else
+            {
+                settings.EncryptedDashScopeApiKey = null;
+            }
+
             var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(SettingsFilePath, json);
         }
@@ -146,8 +199,10 @@ public partial class App : Application
         services.AddSingleton<IAudioSessionMonitor, AudioSessionDetector>();
         services.AddSingleton<IAudioDeviceService, AudioDeviceService>();
         services.AddSingleton<IAudioRecorder, WasapiRecorder>();
-        services.AddSingleton<ICloudSyncService>(sp =>
+        services.AddSingleton<GoogleDriveSyncService>(sp =>
             new GoogleDriveSyncService(sp.GetRequiredService<AppSettings>()));
+        services.AddSingleton<ICloudSyncService>(sp => sp.GetRequiredService<GoogleDriveSyncService>());
+        services.AddSingleton<IGoogleDriveAccountService>(sp => sp.GetRequiredService<GoogleDriveSyncService>());
         services.AddSingleton<NotebookLmSyncService>(sp =>
             new NotebookLmSyncService(sp.GetRequiredService<AppSettings>()));
         services.AddSingleton<IPythonEnvSetupService, PythonEnvSetupService>();
@@ -165,6 +220,7 @@ public partial class App : Application
         services.AddSingleton<IDashScopePhraseService, DashScopePhraseService>();
         services.AddSingleton<IInsightService, QwenInsightService>();
         services.AddSingleton<ITranscriptionService, DashScopeTranscriptionService>();
+        services.AddSingleton<TranscriptionCoordinator>();
         services.AddSingleton<TranscriptionOverlayViewModel>();
         services.AddTransient<TranscriptionOverlayWindow>();
 

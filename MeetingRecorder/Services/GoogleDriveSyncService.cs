@@ -14,7 +14,7 @@ using MeetingRecorder.Models;
 
 namespace MeetingRecorder.Services;
 
-public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
+public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAccountService, IDisposable
 {
     private readonly AppSettings _settings;
     private readonly Channel<string> _uploadChannel;
@@ -316,19 +316,22 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IDisposable
             // can skip the files.list query and avoid creating duplicates.
             bool settingsChanged = false;
             var resolvedPath = string.Join("/", resolvedSegments);
-            if (_settings.GoogleDriveFolderPath != resolvedPath)
+            lock (_settings.SyncRoot)
             {
-                _settings.GoogleDriveFolderPath = resolvedPath;
-                settingsChanged = true;
-            }
-            if (_settings.GoogleDriveFolderId != _targetFolderId)
-            {
-                _settings.GoogleDriveFolderId = _targetFolderId;
-                settingsChanged = true;
-            }
-            if (settingsChanged)
-            {
-                MeetingRecorder.App.SaveSettings(_settings);
+                if (_settings.GoogleDriveFolderPath != resolvedPath)
+                {
+                    _settings.GoogleDriveFolderPath = resolvedPath;
+                    settingsChanged = true;
+                }
+                if (_settings.GoogleDriveFolderId != _targetFolderId)
+                {
+                    _settings.GoogleDriveFolderId = _targetFolderId;
+                    settingsChanged = true;
+                }
+                if (settingsChanged)
+                {
+                    MeetingRecorder.App.SaveSettings(_settings);
+                }
             }
 
             return _targetFolderId;

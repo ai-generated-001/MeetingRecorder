@@ -36,7 +36,6 @@ public class DashScopeTranscriptionService : ITranscriptionService
     private int _pcmBufferCount = 0;
 
     private string? _currentTaskId;
-    private TimeSpan _sessionStartTimeOffset = TimeSpan.Zero;
     private DateTime _sessionStartTime = DateTime.UtcNow;
 
     public bool IsTranscribing { get; private set; }
@@ -134,28 +133,38 @@ public class DashScopeTranscriptionService : ITranscriptionService
         try
         {
             _audioChannel?.Writer.TryComplete();
-            _cts?.Cancel();
 
             if (_webSocket != null && _webSocket.State == WebSocketState.Open && _currentTaskId != null)
             {
-                // Send finish-task
-                var finishMsg = new
+                // Send finish-task before cancellation
+                try
                 {
-                    header = new
+                    var finishMsg = new
                     {
-                        action = "finish-task",
-                        task_id = _currentTaskId,
-                        streaming = "duplex"
-                    },
-                    payload = new
-                    {
-                        input = new { }
-                    }
-                };
-                var json = JsonSerializer.Serialize(finishMsg);
-                var bytes = Encoding.UTF8.GetBytes(json);
-                _ = _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                        header = new
+                        {
+                            action = "finish-task",
+                            task_id = _currentTaskId,
+                            streaming = "duplex"
+                        },
+                        payload = new
+                        {
+                            input = new { }
+                        }
+                    };
+                    var json = JsonSerializer.Serialize(finishMsg);
+                    var bytes = Encoding.UTF8.GetBytes(json);
+                    using var finishCts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                    _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, finishCts.Token)
+                              .GetAwaiter().GetResult();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[DashScope] Failed to send finish-task: {ex.Message}");
+                }
             }
+
+            _cts?.Cancel();
         }
         catch (Exception ex)
         {

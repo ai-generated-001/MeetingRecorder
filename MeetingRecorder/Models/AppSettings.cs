@@ -1,10 +1,19 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json.Serialization;
 
 namespace MeetingRecorder.Models;
 
 public class AppSettings
 {
+    private readonly object _syncRoot = new();
+
+    /// <summary>
+    /// Thread synchronization lock for safe access and mutation across threads.
+    /// </summary>
+    [JsonIgnore]
+    public object SyncRoot => _syncRoot;
+
     public List<string> WhitelistedProcesses { get; set; } = new()
     {
         "wemeetapp", "Zoom", "ms-teams", "ms-teams_modulehost", "Teams", "Feishu", "DingTalk", "Webex"
@@ -82,7 +91,16 @@ public class AppSettings
 
     // Transcription Settings (DashScope Paraformer Real-time)
     public bool TranscriptionEnabled { get; set; } = false;
+    
+    [JsonIgnore]
     public string DashScopeApiKey { get; set; } = "";
+
+    /// <summary>
+    /// DPAPI-encrypted ciphertext for DashScopeApiKey in Base64.
+    /// Persisted in settings.json instead of plaintext key.
+    /// </summary>
+    public string? EncryptedDashScopeApiKey { get; set; }
+
     public string DashScopeBaseUrl { get; set; } = "https://dashscope.aliyuncs.com";
     public string TranscriptionLanguage { get; set; } = "auto";
     public bool ShowTranscriptionOverlay { get; set; } = true;

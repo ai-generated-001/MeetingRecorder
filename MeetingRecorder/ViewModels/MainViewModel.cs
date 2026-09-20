@@ -260,27 +260,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     internal static bool IsUserMentioned(string text, IEnumerable<string>? mentionNames)
     {
-        if (string.IsNullOrWhiteSpace(text) || mentionNames == null) return false;
-
-        foreach (var nameEntry in mentionNames)
-        {
-            if (string.IsNullOrWhiteSpace(nameEntry)) continue;
-
-            // Support alias syntax: "张伟|张维|Alex|Alec" or "张伟 / 张维"
-            var aliases = nameEntry.Split(new[] { '|', '/' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var alias in aliases)
-            {
-                string trimmed = alias.Trim();
-                if (trimmed.Length == 0) continue;
-
-                if (text.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return TranscriptionCoordinator.IsUserMentioned(text, mentionNames);
     }
 
     private string BuildRecentTranscriptContext(TimeSpan segmentEndTime, int contextSeconds)
@@ -515,6 +495,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
                         foreach (var segment in transcript)
                         {
                             writer.WriteLine($"[{segment.Start:hh\\:mm\\:ss} - {segment.End:hh\\:mm\\:ss}] {segment.Text}");
+                        }
+                        // Ensure the transcript is enqueued for cloud sync once written, resolving race condition
+                        if (_settings.GoogleDriveEnabled && File.Exists(transcriptPath))
+                        {
+                            _cloudSyncService.EnqueueUpload(transcriptPath);
                         }
                     }
                     catch (Exception ex)
