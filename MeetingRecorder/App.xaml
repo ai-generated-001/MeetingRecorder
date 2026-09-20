@@ -6,23 +6,30 @@
              xmlns:properties="clr-namespace:MeetingRecorder"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
-        <converters:EnumToBoolConverter x:Key="EnumToBoolConverter" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Themes/DarkTheme.xaml" />
+                <ResourceDictionary Source="/Themes/Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
 
-        <tb:TaskbarIcon x:Key="NotifyIcon"
-                        ToolTipText="{Binding StatusText}"
-                        TrayMouseDoubleClick="TrayIcon_TrayMouseDoubleClick">
-            <tb:TaskbarIcon.ContextMenu>
-                <ContextMenu Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}">
-                    <MenuItem Header="{Binding ShowStatusWindowText}" Click="Show_Click" />
-                    <MenuItem Header="{Binding OpenFolderText}"
-                              Command="{Binding OpenFolderCommand}" />
-                    <MenuItem Header="{Binding AiStatusText}"
-                              Command="{Binding ToggleAiCommand}" />
-                    <Separator />
-                    <MenuItem Header="{Binding ExitButtonText}"
-                              Command="{Binding ExitCommand}" />
-                </ContextMenu>
-            </tb:TaskbarIcon.ContextMenu>
-        </tb:TaskbarIcon>
+            <converters:EnumToBoolConverter x:Key="EnumToBoolConverter" />
+
+            <tb:TaskbarIcon x:Key="NotifyIcon"
+                            ToolTipText="{Binding StatusText}"
+                            TrayMouseDoubleClick="TrayIcon_TrayMouseDoubleClick">
+                <tb:TaskbarIcon.ContextMenu>
+                    <ContextMenu Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}">
+                        <MenuItem Header="{Binding ShowStatusWindowText}" Click="Show_Click" />
+                        <MenuItem Header="{Binding OpenFolderText}"
+                                  Command="{Binding OpenFolderCommand}" />
+                        <MenuItem Header="{Binding AiStatusText}"
+                                  Command="{Binding ToggleAiCommand}" />
+                        <Separator />
+                        <MenuItem Header="{Binding ExitButtonText}"
+                                  Command="{Binding ExitCommand}" />
+                    </ContextMenu>
+                </tb:TaskbarIcon.ContextMenu>
+            </tb:TaskbarIcon>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>
