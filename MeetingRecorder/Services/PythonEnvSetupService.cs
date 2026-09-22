@@ -247,11 +247,22 @@ public sealed class PythonEnvSetupService : IPythonEnvSetupService, IDisposable
         progress.Report("Upgrading pip inside virtual environment...");
         await RunCommandAsync(venvPython, "-m pip install --upgrade pip", progress, cancellationToken);
 
-        progress.Report("Installing / upgrading notebooklm-py package...");
-        var (pkgExitCode, pkgOutput) = await RunCommandAsync(venvPython, "-m pip install --upgrade notebooklm-py", progress, cancellationToken);
+        progress.Report("Installing / upgrading notebooklm-py [browser] package...");
+        var (pkgExitCode, pkgOutput) = await RunCommandAsync(venvPython, "-m pip install --upgrade \"notebooklm-py[browser]\"", progress, cancellationToken);
         if (pkgExitCode != 0)
         {
             throw new InvalidOperationException($"Failed to install notebooklm-py (exit code {pkgExitCode}): {pkgOutput}");
+        }
+
+        try
+        {
+            progress.Report("Installing Playwright browser components...");
+            await RunCommandAsync(venvPython, "-m playwright install chromium", progress, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // Non-fatal if system Chrome or Edge is available
+            progress.Report($"Playwright browser install notice: {ex.Message}");
         }
 
         var notebookLmExe = GetVenvNotebookLmExecutable();

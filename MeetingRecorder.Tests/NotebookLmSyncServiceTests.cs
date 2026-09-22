@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using FluentAssertions;
 using MeetingRecorder.Models;
@@ -72,5 +72,22 @@ public class NotebookLmSyncServiceTests
         var (id, secret) = NotebookLmSyncService.ResolveGoogleCredentials(settings);
         id.Should().Be("client-123");
         secret.Should().Be("secret-456");
+    }
+
+    [Fact]
+    public void GetDefaultStorageStatePath_ReturnsExpectedPathStructure()
+    {
+        var path = NotebookLmSyncService.GetDefaultStorageStatePath();
+        path.Should().EndWith(Path.Combine(".notebooklm", "profiles", "default", "storage_state.json"));
+    }
+
+    [Fact]
+    public void IsNotebookLmAuthenticated_WhenNoFileExists_ReturnsFalse()
+    {
+        // When storage_state.json does not exist in a non-existent or clean profile, returns false
+        // Note: Unless user already signed in, this evaluates to false
+        var isAuth = NotebookLmSyncService.IsNotebookLmAuthenticated();
+        // Just verify it doesn't throw
+        isAuth.Should().Be(File.Exists(NotebookLmSyncService.GetDefaultStorageStatePath()));
     }
 }

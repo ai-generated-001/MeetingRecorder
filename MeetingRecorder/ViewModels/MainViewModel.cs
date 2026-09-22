@@ -40,11 +40,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IFileIOService _fileIOService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ICloudSyncService _cloudSyncService;
+    private readonly ICloudSyncService? _notebookLmSyncService;
     private readonly IServiceProvider _serviceProvider;
     private readonly ITranscriptionService _transcriptionService;
     private readonly IInsightService _insightService;
     private readonly TranscriptionOverlayViewModel _overlayViewModel;
     private readonly IPythonEnvSetupService? _pythonEnvSetupService;
+    private readonly AppLogger _appLogger;
     private TranscriptionOverlayWindow? _overlayWindow;
 
     private readonly List<TranscriptionSegment> _recentSegments = new();
@@ -72,6 +74,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private int _organizeProgressValue;
 
     public bool ShowOrganizeProgress => IsOrganizing || !string.IsNullOrWhiteSpace(OrganizeStatusText);
+
+    [ObservableProperty]
+    private bool _isLogPanelExpanded = false;
+
+    /// <summary>Chevron icon for the log panel toggle button (▾ when collapsed, ▴ when expanded).</summary>
+    public string LogPanelChevron => IsLogPanelExpanded ? "▴" : "▾";
+
+    partial void OnIsLogPanelExpandedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(LogPanelChevron));
+    }
+
+    /// <summary>The rolling list of activity log entries bound to the log panel.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<Services.LogEntry> LogEntries => _appLogger.Entries;
 
     // Transient override: set by upload callbacks; cleared on the next state change.
     private string? _uploadStatusText;
@@ -161,8 +177,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ITranscriptionService transcriptionService,
         IInsightService insightService,
         TranscriptionOverlayViewModel overlayViewModel,
+        AppLogger? appLogger = null,
         IPythonEnvSetupService? pythonEnvSetupService = null,
-        IAudioDeviceService? audioDeviceService = null)
+        IAudioDeviceService? audioDeviceService = null,
+        NotebookLmSyncService? notebookLmSyncService = null)
     {
         _settings = settings;
         _recorder = recorder;
@@ -170,10 +188,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _fileIOService = fileIOService;
         _dateTimeProvider = dateTimeProvider;
         _cloudSyncService = cloudSyncService;
+        _notebookLmSyncService = notebookLmSyncService;
         _serviceProvider = serviceProvider;
         _transcriptionService = transcriptionService;
         _insightService = insightService;
         _overlayViewModel = overlayViewModel;
+        _appLogger = appLogger ?? new AppLogger();
         _pythonEnvSetupService = pythonEnvSetupService ?? serviceProvider.GetService<IPythonEnvSetupService>();
         _audioDeviceService = audioDeviceService ?? serviceProvider.GetService<IAudioDeviceService>();
 
@@ -193,7 +213,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _sessionCoordinator.StateChanged += OnStateChanged;
         _cloudSyncService.UploadFailed += OnUploadFailed;
         _cloudSyncService.UploadCompleted += OnUploadCompleted;
+        _cloudSyncService.UploadEnqueued += OnUploadEnqueued;
         _cloudSyncService.OrganizeProgressChanged += OnOrganizeProgressChanged;
+
+        if (_notebookLmSyncService != null)
+        {
+            _notebookLmSyncService.UploadFailed += OnNotebookLmUploadFailed;
+            _notebookLmSyncService.UploadCompleted += OnNotebookLmUploadCompleted;
+            _notebookLmSyncService.UploadEnqueued += OnNotebookLmUploadEnqueued;
+        }
         
         _recorder.AudioDataAvailable += OnAudioDataAvailable;
         _recorder.MicrophoneWarning += OnMicrophoneWarning;
@@ -439,7 +467,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         _currentAudioFilePath = e.AudioFilePath;
         _recorder.Start(e.AudioFilePath, _settings.OutputFormat);
-        
+        _appLogger.Log(LogLevel.Info, $"Recording started: {Path.GetFileName(e.AudioFilePath)}");
         if (_settings.TranscriptionEnabled)
         {
             _overlayViewModel.Clear();
@@ -467,7 +495,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnRecordingStopped(object? sender, EventArgs e)
     {
         _recorder.Stop();
-        
+        _appLogger.Log(LogLevel.Info, $"Recording stopped: {Path.GetFileName(_currentAudioFilePath ?? string.Empty)}");
         if (_transcriptionService.IsTranscribing || _settings.TranscriptionEnabled)
         {
             _transcriptionService.StopTranscription();
@@ -523,6 +551,58 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    [RelayCommand]
+    private void ToggleLogPanel()
+    {
+        IsLogPanelExpanded = !IsLogPanelExpanded;
+    }
+
+    // ── Google Drive upload log handlers ─────────────────────────────────────
+
+    private void OnUploadEnqueued(object? sender, string filePath)
+    {
+        _appLogger.Log(LogLevel.Info, $"Google Drive: queued {Path.GetFileName(filePath)}");
+    }
+
+    private void OnUploadFailed(object? sender, string errorMessage)
+    {
+        ExecuteOnUIThread(() =>
+        {
+            _uploadCategory = StatusMessageCategory.UploadError;
+            _uploadStatusText = string.Format(Resources.UploadFailed, errorMessage);
+            UpdateStatusText();
+        });
+        _appLogger.Log(LogLevel.Error, $"Google Drive upload failed: {errorMessage}");
+    }
+
+    private void OnUploadCompleted(object? sender, string filePath)
+    {
+        ExecuteOnUIThread(() =>
+        {
+            _uploadCategory = StatusMessageCategory.UploadSuccess;
+            _uploadStatusText = string.Format(Resources.UploadSucceeded, Path.GetFileName(filePath));
+            UpdateStatusText();
+        });
+        _appLogger.Log(LogLevel.Success, $"Google Drive: uploaded {Path.GetFileName(filePath)}");
+    }
+
+    // ── NotebookLM upload log handlers ────────────────────────────────────────
+
+    private void OnNotebookLmUploadEnqueued(object? sender, string filePath)
+    {
+        _appLogger.Log(LogLevel.Info, $"NotebookLM: queued {Path.GetFileName(filePath)}");
+    }
+
+    private void OnNotebookLmUploadFailed(object? sender, string errorMessage)
+    {
+        _appLogger.Log(LogLevel.Error, $"NotebookLM upload failed: {errorMessage}");
+    }
+
+    private void OnNotebookLmUploadCompleted(object? sender, string filePath)
+    {
+        _appLogger.Log(LogLevel.Success, $"NotebookLM: uploaded {Path.GetFileName(filePath)}");
+    }
+
     private void OnStateChanged(object? sender, SessionStateChangedEventArgs e)
     {
         ExecuteOnUIThread(() =>
@@ -565,37 +645,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// Called on the thread-pool when an upload permanently fails after all retries.
     /// Marshals to the UI thread and shows a transient error in the status area.
     /// </summary>
-    private void OnUploadFailed(object? sender, string errorMessage)
-    {
-        ExecuteOnUIThread(() =>
-        {
-            _uploadCategory = StatusMessageCategory.UploadError;
-            _uploadStatusText = string.Format(Resources.UploadFailed, errorMessage);
-            UpdateStatusText();
-        });
-    }
-
-    /// <summary>
-    /// Called on the thread-pool when an upload completes successfully.
-    /// Marshals to the UI thread and shows a transient success message.
-    /// </summary>
-    private void OnUploadCompleted(object? sender, string filePath)
-    {
-        ExecuteOnUIThread(() =>
-        {
-            _uploadCategory = StatusMessageCategory.UploadSuccess;
-            _uploadStatusText = string.Format(Resources.UploadSucceeded, Path.GetFileName(filePath));
-            UpdateStatusText();
-        });
-    }
 
     private void OnMicrophoneWarning(object? sender, string message)
     {
+        var warningText = string.IsNullOrWhiteSpace(message) ? Resources.MicrophoneSilentWarning : message;
         ExecuteOnUIThread(() =>
         {
-            _micWarningText = string.IsNullOrWhiteSpace(message) ? Resources.MicrophoneSilentWarning : message;
+            _micWarningText = warningText;
             UpdateStatusText();
         });
+        _appLogger.Log(LogLevel.Warning, $"Microphone warning: {warningText}");
     }
 
     private void OnMicrophoneRestored(object? sender, EventArgs e)
@@ -605,6 +664,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _micWarningText = null;
             UpdateStatusText();
         });
+        _appLogger.Log(LogLevel.Info, "Microphone signal restored");
     }
 
     private System.Threading.Timer? _deviceRefreshDebounce;
@@ -782,7 +842,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _sessionCoordinator.StateChanged -= OnStateChanged;
         _cloudSyncService.UploadFailed -= OnUploadFailed;
         _cloudSyncService.UploadCompleted -= OnUploadCompleted;
+        _cloudSyncService.UploadEnqueued -= OnUploadEnqueued;
         _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
+
+        if (_notebookLmSyncService != null)
+        {
+            _notebookLmSyncService.UploadFailed -= OnNotebookLmUploadFailed;
+            _notebookLmSyncService.UploadCompleted -= OnNotebookLmUploadCompleted;
+            _notebookLmSyncService.UploadEnqueued -= OnNotebookLmUploadEnqueued;
+        }
+
         _recorder.AudioDataAvailable -= OnAudioDataAvailable;
         _recorder.MicrophoneWarning -= OnMicrophoneWarning;
         _recorder.MicrophoneRestored -= OnMicrophoneRestored;

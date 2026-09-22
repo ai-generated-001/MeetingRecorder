@@ -195,6 +195,11 @@ public sealed class SessionCoordinator : IDisposable
             if (_settings.NotebookLmEnabled && _notebookLmSyncService != null && _currentAudioPath != null)
             {
                 _notebookLmSyncService.EnqueueUpload(_currentAudioPath);
+                string transcriptPath = Path.ChangeExtension(_currentAudioPath, ".txt");
+                if (File.Exists(transcriptPath))
+                {
+                    _notebookLmSyncService.EnqueueUpload(transcriptPath);
+                }
             }
         }
 

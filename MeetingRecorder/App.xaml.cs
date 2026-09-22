@@ -224,6 +224,7 @@ public partial class App : Application
         services.AddSingleton<TranscriptionOverlayViewModel>();
         services.AddTransient<TranscriptionOverlayWindow>();
 
+        services.AddSingleton<AppLogger>();
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
         services.AddTransient<SettingsViewModel>();

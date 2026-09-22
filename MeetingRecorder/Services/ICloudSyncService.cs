@@ -23,6 +23,12 @@ public interface ICloudSyncService
     void EnqueueUpload(string filePath);
 
     /// <summary>
+    /// Raised when a file is accepted into the upload queue.
+    /// The event argument is the absolute path to the file.
+    /// </summary>
+    event EventHandler<string>? UploadEnqueued;
+
+    /// <summary>
     /// Raised on the thread-pool when a file permanently fails to upload
     /// (i.e. after all retry attempts are exhausted).
     /// The event argument is a short, user-readable error message.

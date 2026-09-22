@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using MeetingRecorder.ViewModels;
@@ -19,6 +20,17 @@ public partial class MainWindow : Window
     {
         base.OnContentRendered(e);
         _viewModel.OnWindowLoaded();
+
+        // Subscribe to log entry additions so the ScrollViewer stays at the bottom.
+        _viewModel.LogEntries.CollectionChanged += OnLogEntriesChanged;
+    }
+
+    private void OnLogEntriesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Add)
+        {
+            LogScrollViewer.ScrollToEnd();
+        }
     }
 
     protected override void OnClosing(CancelEventArgs e)

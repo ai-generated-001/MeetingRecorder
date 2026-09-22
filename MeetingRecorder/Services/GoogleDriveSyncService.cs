@@ -30,6 +30,9 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
     /// <inheritdoc />
     public event EventHandler<string>? UploadCompleted;
 
+    /// <inheritdoc />
+    public event EventHandler<string>? UploadEnqueued;
+
     public GoogleDriveSyncService(AppSettings settings)
     {
         _settings = settings;
@@ -67,6 +70,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
     {
         if (string.IsNullOrWhiteSpace(filePath)) return;
         _uploadChannel.Writer.TryWrite(filePath);
+        UploadEnqueued?.Invoke(this, filePath);
     }
 
     private async Task ProcessQueueAsync(CancellationToken cancellationToken)

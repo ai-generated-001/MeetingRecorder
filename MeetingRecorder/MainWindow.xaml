@@ -199,6 +199,10 @@
                     <RowDefinition Height="Auto"/>
                     <!-- Spacer to push footer to bottom -->
                     <RowDefinition Height="*"/>
+                    <!-- Activity Log toggle header -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Activity Log panel body -->
+                    <RowDefinition Height="Auto"/>
                     <!-- Divider -->
                     <RowDefinition Height="Auto"/>
                     <!-- Control buttons -->
@@ -391,11 +395,53 @@
                     </Button>
                 </Grid>
 
-                <!-- Separator -->
-                <Border Grid.Row="6" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,12" SnapsToDevicePixels="True"/>
+                <!-- Activity Log toggle header (Row 6) -->
+                <Button Grid.Row="6" Command="{Binding ToggleLogPanelCommand}"
+                        Background="Transparent" BorderThickness="0" Padding="0,6,0,6"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Activity Log" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding LogPanelChevron}" FontSize="11" Margin="5,0,0,0"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
 
-                <!-- Action buttons -->
-                <Grid Grid.Row="7">
+                <!-- Activity Log panel body (Row 7) -->
+                <Border Grid.Row="7" x:Name="LogPanelBorder"
+                        Visibility="{Binding IsLogPanelExpanded, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Background="{DynamicResource DriveCardBackgroundBrush}"
+                        BorderBrush="{DynamicResource DriveCardBorderBrush}"
+                        BorderThickness="1" CornerRadius="6"
+                        Margin="0,0,0,10" MaxHeight="140">
+                    <ScrollViewer x:Name="LogScrollViewer" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled" Padding="8,6">
+                        <ItemsControl x:Name="LogItemsControl" ItemsSource="{Binding LogEntries}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,1">
+                                        <TextBlock Text="{Binding TimestampText}" FontSize="11"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   FontFamily="Consolas, Courier New"
+                                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Icon}" FontSize="11"
+                                                   VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="{Binding Message}" FontSize="11"
+                                                   Foreground="{DynamicResource WindowForegroundBrush}"
+                                                   TextWrapping="NoWrap" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Separator (Row 8) -->
+                <Border Grid.Row="8" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,12" SnapsToDevicePixels="True"/>
+
+                <!-- Action buttons (Row 9) -->
+                <Grid Grid.Row="9">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>

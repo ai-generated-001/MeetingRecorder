@@ -129,6 +129,18 @@ public partial class SettingsViewModel : ObservableObject
     private bool _canEnableNotebookLm;
 
     [ObservableProperty]
+    private string _notebookLmAuthStatus = "Not Signed In";
+
+    [ObservableProperty]
+    private System.Windows.Media.Brush _notebookLmAuthStatusForeground = System.Windows.Media.Brushes.Gray;
+
+    [ObservableProperty]
+    private bool _isNotebookLmAuthenticated;
+
+    [ObservableProperty]
+    private bool _isNotebookLmLoggingIn;
+
+    [ObservableProperty]
     private string _notebookLmCliStatus = "";
 
     [ObservableProperty]
@@ -471,20 +483,24 @@ public partial class SettingsViewModel : ObservableObject
 
     private void UpdateNotebookLmState()
     {
-        // Must have credentials and be signed in (dpapi_user.dat exists)
-        bool hasCreds = NotebookLmSyncService.HasGoogleOAuthCredentials(_settings);
-        bool isAuthenticated = NotebookLmSyncService.IsGoogleUserAuthenticated();
-        CanEnableNotebookLm = hasCreds && isAuthenticated;
+        var cliPath = NotebookLmSyncService.FindNotebookLmExecutable(NotebookLmCliPath);
+        bool hasCli = !string.IsNullOrWhiteSpace(cliPath);
+        IsPythonEnvReady = _pythonEnvSetupService.IsVenvReady();
+
+        IsNotebookLmAuthenticated = NotebookLmSyncService.IsNotebookLmAuthenticated();
+        NotebookLmAuthStatus = IsNotebookLmAuthenticated ? "Signed In" : "Not Signed In";
+        NotebookLmAuthStatusForeground = IsNotebookLmAuthenticated
+            ? System.Windows.Media.Brushes.Green
+            : System.Windows.Media.Brushes.Gray;
+
+        CanEnableNotebookLm = hasCli && IsNotebookLmAuthenticated;
 
         if (!CanEnableNotebookLm && NotebookLmEnabled)
         {
             NotebookLmEnabled = false;
         }
 
-        IsPythonEnvReady = _pythonEnvSetupService.IsVenvReady();
-
-        var cliPath = NotebookLmSyncService.FindNotebookLmExecutable(NotebookLmCliPath);
-        if (string.IsNullOrWhiteSpace(cliPath))
+        if (!hasCli)
         {
             NotebookLmCliStatus = "CLI not found";
             NotebookLmCliStatusForeground = System.Windows.Media.Brushes.Orange;
@@ -492,7 +508,7 @@ public partial class SettingsViewModel : ObservableObject
         else
         {
             bool isVenv = !string.IsNullOrWhiteSpace(App.PythonEnvFolderPath) &&
-                          cliPath.StartsWith(App.PythonEnvFolderPath, StringComparison.OrdinalIgnoreCase);
+                          cliPath!.StartsWith(App.PythonEnvFolderPath, StringComparison.OrdinalIgnoreCase);
             NotebookLmCliStatus = isVenv
                 ? "Ready (managed venv)"
                 : $"CLI detected: {Path.GetFileName(cliPath)}";
@@ -501,6 +517,83 @@ public partial class SettingsViewModel : ObservableObject
 
         // Asynchronously check for host python
         _ = CheckHostPythonAsync();
+    }
+
+    [RelayCommand]
+    private async Task LoginNotebookLmAsync()
+    {
+        if (IsNotebookLmLoggingIn) return;
+
+        IsNotebookLmLoggingIn = true;
+        NotebookLmAuthStatus = "Signing in...";
+        NotebookLmAuthStatusForeground = System.Windows.Media.Brushes.Orange;
+
+        try
+        {
+            bool ok = await NotebookLmSyncService.RunLoginAsync(NotebookLmCliPath);
+            if (ok)
+            {
+                System.Windows.MessageBox.Show(
+                    System.Windows.Application.Current.MainWindow,
+                    "Successfully signed in to NotebookLM!",
+                    "NotebookLM Sign In",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show(
+                    System.Windows.Application.Current.MainWindow,
+                    "NotebookLM sign-in was not completed or failed.",
+                    "NotebookLM Sign In",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                System.Windows.Application.Current.MainWindow,
+                $"NotebookLM sign-in error: {ex.Message}",
+                "NotebookLM Sign In",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            IsNotebookLmLoggingIn = false;
+            UpdateNotebookLmState();
+        }
+    }
+
+    [RelayCommand]
+    private async Task LogoutNotebookLmAsync()
+    {
+        try
+        {
+            await NotebookLmSyncService.RunLogoutAsync(NotebookLmCliPath);
+            _settings.NotebookLmEnabled = false;
+            NotebookLmEnabled = false;
+            App.SaveSettings(_settings);
+
+            UpdateNotebookLmState();
+
+            System.Windows.MessageBox.Show(
+                System.Windows.Application.Current.MainWindow,
+                "Signed out from NotebookLM and cleared session credentials.",
+                "NotebookLM",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                System.Windows.Application.Current.MainWindow,
+                $"NotebookLM logout error: {ex.Message}",
+                "NotebookLM",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private async Task CheckHostPythonAsync()
