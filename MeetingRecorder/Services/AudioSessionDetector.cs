@@ -24,6 +24,7 @@ public class AudioSessionDetector : IAudioSessionMonitor
     private Task? _monitoringTask;
     private MeetingDetectedEventArgs? _currentMeeting;
     private MeetingDetectedEventArgs? _tentativeMeeting;
+    private bool _disposed;
 
     public bool IsMonitoring { get; private set; }
     public event EventHandler<MeetingDetectedEventArgs>? MeetingStarted;
@@ -321,6 +322,9 @@ public class AudioSessionDetector : IAudioSessionMonitor
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         StopMonitoring();
         _deviceEnumerator.Dispose();
     }

@@ -15,6 +15,7 @@ public sealed class PythonEnvSetupService : IPythonEnvSetupService, IDisposable
     private Process? _currentProcess;
     private CancellationTokenSource? _setupCts;
     private Task? _setupTask;
+    private bool _disposed;
 
     public bool IsSettingUp { get; private set; }
     public string ProgressText { get; private set; } = "";
@@ -115,6 +116,9 @@ public sealed class PythonEnvSetupService : IPythonEnvSetupService, IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         Cancel();
         _setupCts?.Dispose();
     }

@@ -16,6 +16,7 @@ public sealed class NotebookLmSyncService : ICloudSyncService, IDisposable
     private readonly AppSettings _settings;
     private readonly Channel<string> _uploadChannel;
     private readonly CancellationTokenSource _cts;
+    private bool _disposed;
 
     public event EventHandler<string>? UploadFailed;
     public event EventHandler<string>? UploadCompleted;
@@ -427,7 +428,15 @@ public sealed class NotebookLmSyncService : ICloudSyncService, IDisposable
 
     public void Dispose()
     {
-        _cts.Cancel();
+        if (_disposed) return;
+        _disposed = true;
+
+        try
+        {
+            _cts.Cancel();
+        }
+        catch (ObjectDisposedException) { }
+
         _cts.Dispose();
     }
 }

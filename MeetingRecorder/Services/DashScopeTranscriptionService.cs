@@ -27,6 +27,7 @@ public class DashScopeTranscriptionService : ITranscriptionService
     private Task? _receiveTask;
     private Task? _sendAudioTask;
     private Channel<byte[]>? _audioChannel;
+    private bool _disposed;
 
     private readonly List<TranscriptionSegment> _fullTranscript = new();
     private TranscriptionSegment? _latestPartialSegment;
@@ -508,6 +509,9 @@ public class DashScopeTranscriptionService : ITranscriptionService
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         StopTranscription();
         _webSocket?.Dispose();
         _cts?.Dispose();

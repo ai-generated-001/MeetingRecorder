@@ -23,6 +23,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
     private readonly SemaphoreSlim _folderSemaphore = new(1, 1);
     private DriveService? _driveService;
     private string? _targetFolderId;
+    private bool _disposed;
 
     /// <inheritdoc />
     public event EventHandler<string>? UploadFailed;
@@ -75,34 +76,41 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
 
     private async Task ProcessQueueAsync(CancellationToken cancellationToken)
     {
-        while (await _uploadChannel.Reader.WaitToReadAsync(cancellationToken))
+        try
         {
-            while (_uploadChannel.Reader.TryRead(out var filePath))
+            while (await _uploadChannel.Reader.WaitToReadAsync(cancellationToken))
             {
-                try
+                while (_uploadChannel.Reader.TryRead(out var filePath))
                 {
-                    if (cancellationToken.IsCancellationRequested) return;
-
-                    if (!File.Exists(filePath))
+                    try
                     {
-                        System.Diagnostics.Debug.WriteLine($"File not found, skipping sync: {filePath}");
-                        continue;
-                    }
+                        if (cancellationToken.IsCancellationRequested) return;
 
-                    await UploadFileWithRetryAsync(filePath, cancellationToken);
-                    UploadCompleted?.Invoke(this, filePath);
-                }
-                catch (OperationCanceledException)
-                {
-                    // Cancellation is expected on app shutdown — do not report as a failure.
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Failed to upload file '{filePath}': {ex}");
-                    UploadFailed?.Invoke(this, ex.Message);
+                        if (!File.Exists(filePath))
+                        {
+                            System.Diagnostics.Debug.WriteLine($"File not found, skipping sync: {filePath}");
+                            continue;
+                        }
+
+                        await UploadFileWithRetryAsync(filePath, cancellationToken);
+                        UploadCompleted?.Invoke(this, filePath);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Cancellation is expected on app shutdown — do not report as a failure.
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Failed to upload file '{filePath}': {ex}");
+                        UploadFailed?.Invoke(this, ex.Message);
+                    }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected on app shutdown
         }
     }
 
@@ -566,14 +574,24 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
     {
         if (IsOrganizing) return;
 
+        CancellationToken token;
+        try
+        {
+            token = _cts.Token;
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
+
         // Start background organization task
         _ = Task.Run(async () =>
         {
             try
             {
                 ReportProgress(true, "Connecting to Google Drive...", 0);
-                var service = await GetDriveServiceAsync(_cts.Token);
-                var parentFolderId = await GetOrCreateFolderIdAsync(service, _cts.Token);
+                var service = await GetDriveServiceAsync(token);
+                var parentFolderId = await GetOrCreateFolderIdAsync(service, token);
 
                 ReportProgress(true, "Listing files...", 10);
                 var filesToMove = new List<Google.Apis.Drive.v3.Data.File>();
@@ -587,15 +605,15 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
                     listRequest.PageToken = pageToken;
                     listRequest.PageSize = 100;
 
-                    var response = await listRequest.ExecuteAsync(_cts.Token);
+                    var response = await listRequest.ExecuteAsync(token);
                     if (response.Files != null)
                     {
                         filesToMove.AddRange(response.Files);
                     }
                     pageToken = response.NextPageToken;
-                } while (pageToken != null && !_cts.Token.IsCancellationRequested);
+                } while (pageToken != null && !token.IsCancellationRequested);
 
-                if (_cts.Token.IsCancellationRequested)
+                if (token.IsCancellationRequested)
                 {
                     ReportProgress(false, "Cancelled", 0);
                     return;
@@ -612,7 +630,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
                 int movedCount = 0;
                 for (int i = 0; i < total; i++)
                 {
-                    if (_cts.Token.IsCancellationRequested)
+                    if (token.IsCancellationRequested)
                     {
                         ReportProgress(false, "Cancelled", 0);
                         return;
@@ -627,7 +645,7 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
                     ReportProgress(true, $"Organizing '{file.Name}' ({movedCount + 1}/{total})...", (int)(10 + (double)i / total * 90));
 
                     // Get or create the subfolder under parentFolderId
-                    var (targetFolderId, _) = await GetOrCreateSingleFolderAsync(service, monthFolderName, parentFolderId, _cts.Token);
+                    var (targetFolderId, _) = await GetOrCreateSingleFolderAsync(service, monthFolderName, parentFolderId, token);
 
                     if (targetFolderId != parentFolderId)
                     {
@@ -642,13 +660,17 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
                             updateRequest.RemoveParents = parentFolderId;
                         }
                         updateRequest.Fields = "id, parents";
-                        await updateRequest.ExecuteAsync(_cts.Token);
+                        await updateRequest.ExecuteAsync(token);
                         movedCount++;
                     }
                 }
 
                 ReportProgress(false, string.Format(global::MeetingRecorder.Resources.OrganizeSuccess, movedCount), 100);
                 _ = Task.Delay(5000).ContinueWith(_ => { if (!IsOrganizing) ReportProgress(false, "", 0); });
+            }
+            catch (OperationCanceledException)
+            {
+                ReportProgress(false, "Cancelled", 0);
             }
             catch (Exception ex)
             {
@@ -661,7 +683,15 @@ public sealed class GoogleDriveSyncService : ICloudSyncService, IGoogleDriveAcco
 
     public void Dispose()
     {
-        _cts.Cancel();
+        if (_disposed) return;
+        _disposed = true;
+
+        try
+        {
+            _cts.Cancel();
+        }
+        catch (ObjectDisposedException) { }
+
         _cts.Dispose();
         _driveService?.Dispose();
         _authSemaphore.Dispose();

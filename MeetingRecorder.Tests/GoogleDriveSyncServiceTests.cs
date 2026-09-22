@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using MeetingRecorder.Models;
 using MeetingRecorder.Services;
+using Microsoft.Extensions.DependencyInjection;
 using FluentAssertions;
 using Xunit;
 
@@ -54,5 +55,41 @@ public class GoogleDriveSyncServiceTests
         {
             ex.InnerException.Message.Should().Contain("No Google OAuth credentials found");
         }
+    }
+
+    [Fact]
+    public void Dispose_CanBeCalledMultipleTimes_WithoutThrowing()
+    {
+        var settings = new AppSettings();
+        var service = new GoogleDriveSyncService(settings);
+
+        var act = () =>
+        {
+            service.Dispose();
+            service.Dispose();
+            service.Dispose();
+        };
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void ServiceProvider_DisposingMultipleRegistrationsOfGoogleDriveSyncService_DoesNotThrow()
+    {
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        var settings = new AppSettings();
+        services.AddSingleton(settings);
+        services.AddSingleton<GoogleDriveSyncService>(sp =>
+            new GoogleDriveSyncService(sp.GetRequiredService<AppSettings>()));
+        services.AddSingleton<ICloudSyncService>(sp => sp.GetRequiredService<GoogleDriveSyncService>());
+        services.AddSingleton<IGoogleDriveAccountService>(sp => sp.GetRequiredService<GoogleDriveSyncService>());
+
+        var provider = services.BuildServiceProvider();
+        _ = provider.GetRequiredService<GoogleDriveSyncService>();
+        _ = provider.GetRequiredService<ICloudSyncService>();
+        _ = provider.GetRequiredService<IGoogleDriveAccountService>();
+
+        var act = () => provider.Dispose();
+        act.Should().NotThrow();
     }
 }

@@ -301,7 +301,14 @@ public partial class App : Application
 
         Microsoft.Win32.SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         _notifyIcon?.Dispose();
-        _serviceProvider?.Dispose();
+        try
+        {
+            _serviceProvider?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error disposing service provider on exit: {ex}");
+        }
         try
         {
             _mutex?.ReleaseMutex();
