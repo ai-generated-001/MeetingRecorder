@@ -75,19 +75,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public bool ShowOrganizeProgress => IsOrganizing || !string.IsNullOrWhiteSpace(OrganizeStatusText);
 
-    [ObservableProperty]
-    private bool _isLogPanelExpanded = false;
-
-    /// <summary>Chevron icon for the log panel toggle button (▾ when collapsed, ▴ when expanded).</summary>
-    public string LogPanelChevron => IsLogPanelExpanded ? "▴" : "▾";
-
-    partial void OnIsLogPanelExpandedChanged(bool value)
-    {
-        OnPropertyChanged(nameof(LogPanelChevron));
-    }
-
-    /// <summary>The rolling list of activity log entries bound to the log panel.</summary>
-    public System.Collections.ObjectModel.ObservableCollection<Services.LogEntry> LogEntries => _appLogger.Entries;
 
     // Transient override: set by upload callbacks; cleared on the next state change.
     private string? _uploadStatusText;
@@ -552,9 +539,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void ToggleLogPanel()
+    private void OpenLogWindow()
     {
-        IsLogPanelExpanded = !IsLogPanelExpanded;
+        var existing = System.Windows.Application.Current?.Windows
+            .OfType<LogWindow>()
+            .FirstOrDefault();
+
+        if (existing != null)
+        {
+            if (existing.WindowState == System.Windows.WindowState.Minimized)
+                existing.WindowState = System.Windows.WindowState.Normal;
+            existing.Activate();
+        }
+        else
+        {
+            var window = _serviceProvider.GetRequiredService<LogWindow>();
+            window.Owner = System.Windows.Application.Current?.MainWindow;
+            window.Show();
+        }
     }
 
     // ── Google Drive upload log handlers ─────────────────────────────────────

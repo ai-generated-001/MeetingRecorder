@@ -227,6 +227,8 @@ public partial class App : Application
         services.AddSingleton<AppLogger>();
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
+        services.AddTransient<LogViewModel>();
+        services.AddTransient<LogWindow>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<SettingsWindow>();
 

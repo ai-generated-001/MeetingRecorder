@@ -1,4 +1,3 @@
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using MeetingRecorder.ViewModels;
@@ -16,21 +15,10 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
-    protected override void OnContentRendered(System.EventArgs e)
+    protected override void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
         _viewModel.OnWindowLoaded();
-
-        // Subscribe to log entry additions so the ScrollViewer stays at the bottom.
-        _viewModel.LogEntries.CollectionChanged += OnLogEntriesChanged;
-    }
-
-    private void OnLogEntriesChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (e.Action == NotifyCollectionChangedAction.Add)
-        {
-            LogScrollViewer.ScrollToEnd();
-        }
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -41,7 +29,7 @@ public partial class MainWindow : Window
         base.OnClosing(e);
     }
 
-    private void MicrophoneComboBox_DropDownOpened(object sender, System.EventArgs e)
+    private void MicrophoneComboBox_DropDownOpened(object sender, EventArgs e)
     {
         _viewModel.RefreshMicrophones();
     }

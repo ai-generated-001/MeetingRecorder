@@ -199,10 +199,6 @@
                     <RowDefinition Height="Auto"/>
                     <!-- Spacer to push footer to bottom -->
                     <RowDefinition Height="*"/>
-                    <!-- Activity Log toggle header -->
-                    <RowDefinition Height="Auto"/>
-                    <!-- Activity Log panel body -->
-                    <RowDefinition Height="Auto"/>
                     <!-- Divider -->
                     <RowDefinition Height="Auto"/>
                     <!-- Control buttons -->
@@ -224,7 +220,13 @@
                             <Path Data="M4 4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2H4zm0 2h5.17l2 2H20v10H4V6z" 
                                   Fill="{DynamicResource TextSecondaryBrush}" Width="18" Height="18" Stretch="Uniform"/>
                         </Button>
-                        
+
+                        <!-- Activity Log Button -->
+                        <Button ToolTip="Activity Log" Command="{Binding OpenLogWindowCommand}" Style="{StaticResource HeaderIconButtonStyle}" Margin="0,0,4,0">
+                            <Path Data="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12zM7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"
+                                  Fill="{DynamicResource TextSecondaryBrush}" Width="18" Height="18" Stretch="Uniform"/>
+                        </Button>
+
                         <!-- Settings Button -->
                         <Button ToolTip="{Binding SettingsButtonText}" Command="{Binding OpenSettingsCommand}" Style="{StaticResource HeaderIconButtonStyle}">
                             <Path Data="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87c-0.12,0.21-0.08,0.47,0.12,0.61l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.04,0.32,0.08,0.62l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" 
@@ -395,53 +397,11 @@
                     </Button>
                 </Grid>
 
-                <!-- Activity Log toggle header (Row 6) -->
-                <Button Grid.Row="6" Command="{Binding ToggleLogPanelCommand}"
-                        Background="Transparent" BorderThickness="0" Padding="0,6,0,6"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Cursor="Hand">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Activity Log" FontSize="11" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding LogPanelChevron}" FontSize="11" Margin="5,0,0,0"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
+                <!-- Separator -->
+                <Border Grid.Row="6" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,12" SnapsToDevicePixels="True"/>
 
-                <!-- Activity Log panel body (Row 7) -->
-                <Border Grid.Row="7" x:Name="LogPanelBorder"
-                        Visibility="{Binding IsLogPanelExpanded, Converter={StaticResource BooleanToVisibilityConverter}}"
-                        Background="{DynamicResource DriveCardBackgroundBrush}"
-                        BorderBrush="{DynamicResource DriveCardBorderBrush}"
-                        BorderThickness="1" CornerRadius="6"
-                        Margin="0,0,0,10" MaxHeight="140">
-                    <ScrollViewer x:Name="LogScrollViewer" VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Disabled" Padding="8,6">
-                        <ItemsControl x:Name="LogItemsControl" ItemsSource="{Binding LogEntries}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="0,1">
-                                        <TextBlock Text="{Binding TimestampText}" FontSize="11"
-                                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                                   FontFamily="Consolas, Courier New"
-                                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock Text="{Binding Icon}" FontSize="11"
-                                                   VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                        <TextBlock Text="{Binding Message}" FontSize="11"
-                                                   Foreground="{DynamicResource WindowForegroundBrush}"
-                                                   TextWrapping="NoWrap" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Border>
-
-                <!-- Separator (Row 8) -->
-                <Border Grid.Row="8" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,4,0,12" SnapsToDevicePixels="True"/>
-
-                <!-- Action buttons (Row 9) -->
-                <Grid Grid.Row="9">
+                <!-- Action buttons -->
+                <Grid Grid.Row="7">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
