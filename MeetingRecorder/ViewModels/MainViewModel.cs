@@ -134,23 +134,53 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IAudioDeviceService? _audioDeviceService;
     public ObservableCollection<AudioDeviceItem> AvailableMicrophones { get; } = new();
 
+    private bool _isPopulatingMicrophones;
+
     public string SelectedMicrophoneDeviceId
     {
         get => _settings.MicrophoneDeviceId ?? "";
         set
         {
-            var newVal = value ?? "";
-            if (_settings.MicrophoneDeviceId != newVal)
+            if (_isPopulatingMicrophones) return;
+            ApplyMicrophoneChange(value);
+        }
+    }
+
+    private void ApplyMicrophoneChange(string? deviceId)
+    {
+        var newVal = deviceId ?? "";
+        if (_settings.MicrophoneDeviceId != newVal)
+        {
+            _settings.MicrophoneDeviceId = newVal;
+            OnPropertyChanged(nameof(SelectedMicrophoneDeviceId));
+            App.SaveSettings(_settings);
+            _recorder.SwitchMicrophone(newVal);
+
+            try
             {
-                _settings.MicrophoneDeviceId = newVal;
-                OnPropertyChanged();
-                App.SaveSettings(_settings);
-                if (_recorder.IsRecording)
+                var settingsWindow = System.Windows.Application.Current?.Windows
+                    .OfType<SettingsWindow>()
+                    .FirstOrDefault();
+                if (settingsWindow?.DataContext is SettingsViewModel settingsVm)
                 {
-                    _recorder.SwitchMicrophone(newVal);
+                    settingsVm.SyncSelectedMicrophone(newVal);
                 }
             }
+            catch { }
         }
+    }
+
+    public void SyncSelectedMicrophone(string deviceId)
+    {
+        var newVal = deviceId ?? "";
+        if (_settings.MicrophoneDeviceId != newVal)
+        {
+            _settings.MicrophoneDeviceId = newVal;
+        }
+        ExecuteOnUIThread(() =>
+        {
+            OnPropertyChanged(nameof(SelectedMicrophoneDeviceId));
+        });
     }
 
     public MainViewModel(
@@ -315,6 +345,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             UpdateLanguage();
         }
+        OnPropertyChanged(nameof(SelectedMicrophoneDeviceId));
     }
 
     [RelayCommand(CanExecute = nameof(CanStartMonitoring))]
@@ -675,24 +706,41 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void PopulateMicrophonesDirect()
     {
-        var devices = _audioDeviceService?.GetAvailableMicrophones() ?? new List<AudioDeviceItem>
+        _isPopulatingMicrophones = true;
+        try
         {
-            new AudioDeviceItem(Resources.MicrophoneDefault, "")
-        };
+            var devices = _audioDeviceService?.GetAvailableMicrophones() ?? new List<AudioDeviceItem>
+            {
+                new AudioDeviceItem(Resources.MicrophoneDefault, "")
+            };
 
-        AvailableMicrophones.Clear();
-        foreach (var d in devices)
+            AvailableMicrophones.Clear();
+            foreach (var d in devices)
+            {
+                AvailableMicrophones.Add(d);
+            }
+
+            if (!AvailableMicrophones.Any(m => m.Id == _settings.MicrophoneDeviceId))
+            {
+                SelectedMicrophoneDeviceId = "";
+            }
+            else
+            {
+                OnPropertyChanged(nameof(SelectedMicrophoneDeviceId));
+                if (string.IsNullOrEmpty(_settings.MicrophoneDeviceId) && _recorder.IsRecording)
+                {
+                    _recorder.SwitchMicrophone("");
+                }
+            }
+        }
+        finally
         {
-            AvailableMicrophones.Add(d);
+            _isPopulatingMicrophones = false;
         }
 
         if (!AvailableMicrophones.Any(m => m.Id == _settings.MicrophoneDeviceId))
         {
-            SelectedMicrophoneDeviceId = "";
-        }
-        else
-        {
-            OnPropertyChanged(nameof(SelectedMicrophoneDeviceId));
+            ApplyMicrophoneChange("");
         }
     }
 

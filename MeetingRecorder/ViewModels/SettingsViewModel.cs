@@ -213,6 +213,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IInsightService _insightService;
     private readonly IDashScopePhraseService _phraseService;
     private readonly IAudioDeviceService? _audioDeviceService;
+    private readonly IAudioRecorder? _audioRecorder;
 
     public SettingsViewModel(
         AppSettings settings,
@@ -224,7 +225,8 @@ public partial class SettingsViewModel : ObservableObject
         IDashScopePhraseService phraseService,
         IPythonEnvSetupService pythonEnvSetupService,
         IAudioDeviceService? audioDeviceService = null,
-        IGoogleDriveAccountService? googleDriveAccountService = null)
+        IGoogleDriveAccountService? googleDriveAccountService = null,
+        IAudioRecorder? audioRecorder = null)
     {
         _settings = settings;
         _cloudSyncService = cloudSyncService;
@@ -236,6 +238,13 @@ public partial class SettingsViewModel : ObservableObject
         _pythonEnvSetupService = pythonEnvSetupService;
         _audioDeviceService = audioDeviceService ?? serviceProvider.GetService(typeof(IAudioDeviceService)) as IAudioDeviceService;
         _googleDriveAccountService = googleDriveAccountService ?? serviceProvider.GetService(typeof(IGoogleDriveAccountService)) as IGoogleDriveAccountService;
+        _audioRecorder = audioRecorder ?? serviceProvider.GetService(typeof(IAudioRecorder)) as IAudioRecorder;
+
+        if (_audioDeviceService != null)
+        {
+            _audioDeviceService.DevicesChanged += OnAudioDevicesChanged;
+            _audioDeviceService.DefaultDeviceChanged += OnAudioDevicesChanged;
+        }
 
         // Initialize from settings
         OutputDirectory = string.IsNullOrWhiteSpace(_settings.OutputDirectory)
@@ -291,40 +300,114 @@ public partial class SettingsViewModel : ObservableObject
         _pythonEnvSetupService.SetupCompleted += OnPythonEnvSetupCompleted;
     }
 
+    private bool _isLoadingMicrophones;
+
     public void LoadMicrophones()
     {
-        AvailableMicrophones.Clear();
-        IReadOnlyList<AudioDeviceItem> devices;
-        if (_audioDeviceService != null)
+        _isLoadingMicrophones = true;
+        try
         {
-            devices = _audioDeviceService.GetAvailableMicrophones();
+            AvailableMicrophones.Clear();
+            IReadOnlyList<AudioDeviceItem> devices;
+            if (_audioDeviceService != null)
+            {
+                devices = _audioDeviceService.GetAvailableMicrophones();
+            }
+            else
+            {
+                try
+                {
+                    var items = new List<AudioDeviceItem> { new(Resources.MicrophoneDefault, "") };
+                    using var enumerator = new MMDeviceEnumerator();
+                    foreach (var d in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
+                    {
+                        items.Add(new AudioDeviceItem(d.FriendlyName, d.ID));
+                    }
+                    devices = items;
+                }
+                catch
+                {
+                    devices = new List<AudioDeviceItem> { new(Resources.MicrophoneDefault, "") };
+                }
+            }
+
+            foreach (var device in devices)
+            {
+                AvailableMicrophones.Add(device);
+            }
+
+            var targetId = AvailableMicrophones.Any(m => m.Id == _settings.MicrophoneDeviceId)
+                ? _settings.MicrophoneDeviceId
+                : "";
+
+            SelectedMicrophoneDeviceId = targetId;
         }
-        else
+        finally
         {
+            _isLoadingMicrophones = false;
+        }
+
+        if (!AvailableMicrophones.Any(m => m.Id == _settings.MicrophoneDeviceId))
+        {
+            ApplyMicrophoneChange("");
+        }
+        else if (string.IsNullOrEmpty(_settings.MicrophoneDeviceId) && _audioRecorder?.IsRecording == true)
+        {
+            _audioRecorder.SwitchMicrophone("");
+        }
+    }
+
+    private void OnAudioDevicesChanged(object? sender, EventArgs e)
+    {
+        ExecuteOnUIThread(LoadMicrophones);
+    }
+
+    partial void OnSelectedMicrophoneDeviceIdChanged(string value)
+    {
+        if (_isLoadingMicrophones) return;
+        ApplyMicrophoneChange(value);
+    }
+
+    private void ApplyMicrophoneChange(string? deviceId)
+    {
+        var newVal = deviceId ?? "";
+        if (_settings.MicrophoneDeviceId != newVal)
+        {
+            _settings.MicrophoneDeviceId = newVal;
+            App.SaveSettings(_settings);
+            _audioRecorder?.SwitchMicrophone(newVal);
+
             try
             {
-                var items = new List<AudioDeviceItem> { new(Resources.MicrophoneDefault, "") };
-                using var enumerator = new MMDeviceEnumerator();
-                foreach (var d in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
-                {
-                    items.Add(new AudioDeviceItem(d.FriendlyName, d.ID));
-                }
-                devices = items;
+                var mainVm = _serviceProvider?.GetService(typeof(MainViewModel)) as MainViewModel;
+                mainVm?.SyncSelectedMicrophone(newVal);
             }
-            catch
-            {
-                devices = new List<AudioDeviceItem> { new(Resources.MicrophoneDefault, "") };
-            }
+            catch { }
         }
+    }
 
-        foreach (var device in devices)
+    public void SyncSelectedMicrophone(string deviceId)
+    {
+        var newVal = deviceId ?? "";
+        if (_settings.MicrophoneDeviceId != newVal)
         {
-            AvailableMicrophones.Add(device);
+            _settings.MicrophoneDeviceId = newVal;
         }
-
-        SelectedMicrophoneDeviceId = AvailableMicrophones.Any(m => m.Id == _settings.MicrophoneDeviceId)
-            ? _settings.MicrophoneDeviceId
-            : "";
+        ExecuteOnUIThread(() =>
+        {
+            if (SelectedMicrophoneDeviceId != newVal)
+            {
+                _isLoadingMicrophones = true;
+                try
+                {
+                    SelectedMicrophoneDeviceId = newVal;
+                }
+                finally
+                {
+                    _isLoadingMicrophones = false;
+                }
+            }
+        });
     }
 
     [RelayCommand]
@@ -900,6 +983,7 @@ public partial class SettingsViewModel : ObservableObject
         App.ApplyTheme(_settings.Theme);
         App.ApplyStartupSetting(_settings.StartWithWindows);
         App.SaveSettings(_settings);
+        _audioRecorder?.SwitchMicrophone(_settings.MicrophoneDeviceId);
 
         RequestClose?.Invoke(this, true);
     }
@@ -925,13 +1009,13 @@ public partial class SettingsViewModel : ObservableObject
 
     private void ExecuteOnUIThread(Action action)
     {
-        if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == true)
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
         {
-            action();
+            dispatcher.Invoke(action);
         }
         else
         {
-            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(action);
+            action();
         }
     }
 
@@ -941,5 +1025,11 @@ public partial class SettingsViewModel : ObservableObject
         _cloudSyncService.OrganizeProgressChanged -= OnOrganizeProgressChanged;
         _pythonEnvSetupService.SetupProgressChanged -= OnPythonEnvSetupProgressChanged;
         _pythonEnvSetupService.SetupCompleted -= OnPythonEnvSetupCompleted;
+
+        if (_audioDeviceService != null)
+        {
+            _audioDeviceService.DevicesChanged -= OnAudioDevicesChanged;
+            _audioDeviceService.DefaultDeviceChanged -= OnAudioDevicesChanged;
+        }
     }
 }

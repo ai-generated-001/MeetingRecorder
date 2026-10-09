@@ -260,6 +260,175 @@ public class MicrophoneSelectionTests : IDisposable
         _audioDeviceMock.Verify(x => x.GetAvailableMicrophones(), Times.Once);
     }
 
+    [Fact]
+    public void SettingsViewModel_ChangingSelectedMic_UpdatesSettingsAndCallsSwitchMicrophoneImmediately()
+    {
+        var cloudSyncMock = new Mock<ICloudSyncService>();
+        var updateMock = new Mock<IUpdateService>();
+        var phraseMock = new Mock<IDashScopePhraseService>();
+        var pythonMock = new Mock<IPythonEnvSetupService>();
+
+        _recorderMock.Setup(r => r.SwitchMicrophone(It.IsAny<string>())).Returns(true);
+
+        var vm = new SettingsViewModel(
+            _settings,
+            cloudSyncMock.Object,
+            _serviceProviderMock.Object,
+            updateMock.Object,
+            _transcriptionServiceMock.Object,
+            _insightServiceMock.Object,
+            phraseMock.Object,
+            pythonMock.Object,
+            _audioDeviceMock.Object,
+            audioRecorder: _recorderMock.Object);
+
+        // Act - user changes input device in Settings UI (without calling SaveCommand)
+        vm.SelectedMicrophoneDeviceId = "device-usb-id";
+
+        // Assert - changes applied immediately
+        _settings.MicrophoneDeviceId.Should().Be("device-usb-id");
+        _recorderMock.Verify(r => r.SwitchMicrophone("device-usb-id"), Times.Once);
+    }
+
+    [Fact]
+    public void SettingsViewModel_ChangingSelectedMic_SyncsToMainViewModel()
+    {
+        var cloudSyncMock = new Mock<ICloudSyncService>();
+        var updateMock = new Mock<IUpdateService>();
+        var phraseMock = new Mock<IDashScopePhraseService>();
+        var pythonMock = new Mock<IPythonEnvSetupService>();
+
+        using var mainVm = CreateMainViewModel();
+        _serviceProviderMock.Setup(sp => sp.GetService(typeof(MainViewModel))).Returns(mainVm);
+
+        var settingsVm = new SettingsViewModel(
+            _settings,
+            cloudSyncMock.Object,
+            _serviceProviderMock.Object,
+            updateMock.Object,
+            _transcriptionServiceMock.Object,
+            _insightServiceMock.Object,
+            phraseMock.Object,
+            pythonMock.Object,
+            _audioDeviceMock.Object,
+            audioRecorder: _recorderMock.Object);
+
+        // Act - user changes device in SettingsViewModel
+        settingsVm.SelectedMicrophoneDeviceId = "device-usb-id";
+
+        // Assert - MainViewModel is synchronized
+        mainVm.SelectedMicrophoneDeviceId.Should().Be("device-usb-id");
+    }
+
+    [Fact]
+    public void MainViewModel_DefaultDeviceChanged_WhileRecording_SwitchesMicrophoneImmediately()
+    {
+        _settings.MicrophoneDeviceId = "";
+        _recorderMock.SetupGet(r => r.IsRecording).Returns(true);
+        _recorderMock.Setup(r => r.SwitchMicrophone(It.IsAny<string>())).Returns(true);
+
+        using var vm = CreateMainViewModel();
+        vm.DeviceRefreshDebounceMs = 0;
+
+        _recorderMock.Invocations.Clear();
+
+        // Raise DefaultDeviceChanged event
+        _audioDeviceMock.Raise(x => x.DefaultDeviceChanged += null, EventArgs.Empty);
+
+        _recorderMock.Verify(r => r.SwitchMicrophone(""), Times.Once);
+    }
+
+    [Fact]
+    public void SettingsViewModel_DevicesChanged_ReloadsMicrophones()
+    {
+        var cloudSyncMock = new Mock<ICloudSyncService>();
+        var updateMock = new Mock<IUpdateService>();
+        var phraseMock = new Mock<IDashScopePhraseService>();
+        var pythonMock = new Mock<IPythonEnvSetupService>();
+
+        var vm = new SettingsViewModel(
+            _settings,
+            cloudSyncMock.Object,
+            _serviceProviderMock.Object,
+            updateMock.Object,
+            _transcriptionServiceMock.Object,
+            _insightServiceMock.Object,
+            phraseMock.Object,
+            pythonMock.Object,
+            _audioDeviceMock.Object,
+            audioRecorder: _recorderMock.Object);
+
+        _audioDeviceMock.Setup(x => x.GetAvailableMicrophones()).Returns(new List<AudioDeviceItem>
+        {
+            new("System Default (New)", ""),
+            new("Brand New Mic", "new-mic-id")
+        });
+
+        _audioDeviceMock.Raise(x => x.DevicesChanged += null, EventArgs.Empty);
+
+        vm.AvailableMicrophones.Should().HaveCount(2);
+        vm.AvailableMicrophones[1].DisplayName.Should().Be("Brand New Mic");
+    }
+
+    [Fact]
+    public void SettingsViewModel_DefaultDeviceChanged_WhileRecording_SwitchesMicrophoneImmediately()
+    {
+        var cloudSyncMock = new Mock<ICloudSyncService>();
+        var updateMock = new Mock<IUpdateService>();
+        var phraseMock = new Mock<IDashScopePhraseService>();
+        var pythonMock = new Mock<IPythonEnvSetupService>();
+
+        _settings.MicrophoneDeviceId = "";
+        _recorderMock.SetupGet(r => r.IsRecording).Returns(true);
+        _recorderMock.Setup(r => r.SwitchMicrophone(It.IsAny<string>())).Returns(true);
+
+        var vm = new SettingsViewModel(
+            _settings,
+            cloudSyncMock.Object,
+            _serviceProviderMock.Object,
+            updateMock.Object,
+            _transcriptionServiceMock.Object,
+            _insightServiceMock.Object,
+            phraseMock.Object,
+            pythonMock.Object,
+            _audioDeviceMock.Object,
+            audioRecorder: _recorderMock.Object);
+
+        _recorderMock.Invocations.Clear();
+
+        _audioDeviceMock.Raise(x => x.DefaultDeviceChanged += null, EventArgs.Empty);
+
+        _recorderMock.Verify(r => r.SwitchMicrophone(""), Times.Once);
+    }
+
+    [Fact]
+    public void SettingsViewModel_InvalidSelectedMic_FallsBackToDefaultAndAppliesImmediately()
+    {
+        var cloudSyncMock = new Mock<ICloudSyncService>();
+        var updateMock = new Mock<IUpdateService>();
+        var phraseMock = new Mock<IDashScopePhraseService>();
+        var pythonMock = new Mock<IPythonEnvSetupService>();
+
+        _settings.MicrophoneDeviceId = "missing-device-id";
+
+        var vm = new SettingsViewModel(
+            _settings,
+            cloudSyncMock.Object,
+            _serviceProviderMock.Object,
+            updateMock.Object,
+            _transcriptionServiceMock.Object,
+            _insightServiceMock.Object,
+            phraseMock.Object,
+            pythonMock.Object,
+            _audioDeviceMock.Object,
+            audioRecorder: _recorderMock.Object);
+
+        // Assert - invalid setting was automatically corrected to default and persisted
+        vm.SelectedMicrophoneDeviceId.Should().Be("");
+        _settings.MicrophoneDeviceId.Should().Be("");
+        _recorderMock.Verify(r => r.SwitchMicrophone(""), Times.Once);
+    }
+
     public void Dispose()
     {
         if (File.Exists(_tempSettingsPath))
