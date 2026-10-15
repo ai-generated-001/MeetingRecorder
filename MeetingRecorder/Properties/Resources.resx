@@ -327,7 +327,7 @@
     <value>System Default ({0})</value>
   </data>
   <data name="MicrophoneSilentWarning" xml:space="preserve">
-    <value>Microphone silent / no audio detected</value>
+    <value>No microphone audio detected</value>
   </data>
   <data name="MicrophoneDisconnectedWarning" xml:space="preserve">
     <value>Selected microphone disconnected. Switched to system default microphone.</value>

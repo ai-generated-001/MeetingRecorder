@@ -363,7 +363,7 @@ public class WasapiRecorder : IAudioRecorder
                     if ((DateTime.UtcNow - _lastMicAudioTime).TotalSeconds >= 5 && !_hasReportedMicSilence)
                     {
                         _hasReportedMicSilence = true;
-                        MicrophoneWarning?.Invoke(this, "Microphone silent / no audio detected");
+                        MicrophoneWarning?.Invoke(this, Resources.MicrophoneSilentWarning);
                     }
                 }
             }

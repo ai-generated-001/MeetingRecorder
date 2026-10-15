@@ -389,7 +389,7 @@ public class MainViewModelTests
         vm.StatusText.Should().Be(Resources.Recording);
 
         // Act: Raise MicrophoneWarning
-        _recorderMock.Raise(r => r.MicrophoneWarning += null, _recorderMock.Object, "Microphone silent / no audio detected");
+        _recorderMock.Raise(r => r.MicrophoneWarning += null, _recorderMock.Object, Resources.MicrophoneSilentWarning);
 
         // Assert
         vm.StatusText.Should().Contain(Resources.Recording);
